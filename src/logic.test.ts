@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assets, parks, vsipThaiBinh } from "./data";
+import { assets, expos, parks, vsipThaiBinh } from "./data";
 import {
   canPublish,
   canTransition,
@@ -78,6 +78,21 @@ describe("industrial park dataset", () => {
       expect(park).toBeDefined();
       expect(asset.image).toBe(park?.media[0]?.url);
       expect(asset.industries).toEqual(park?.suitableIndustries.slice(0, 3));
+    }
+  });
+});
+
+describe("expo reporting fixtures", () => {
+  it("provides traceable I/O RFQ and deal metrics for every Expo", () => {
+    for (const expo of expos) {
+      const report = expo.analytics;
+      expect(report.updatedAt).toBeTruthy();
+      expect(report.trend.length).toBeGreaterThan(0);
+      expect(report.inboundRfqs).toBeGreaterThanOrEqual(0);
+      expect(report.outboundRfqs).toBeGreaterThanOrEqual(0);
+      expect(report.inboundDeals).toBeGreaterThanOrEqual(0);
+      expect(report.outboundDeals).toBeGreaterThanOrEqual(0);
+      expect(report.completedConnections).toBeLessThanOrEqual(report.activeConnections);
     }
   });
 });

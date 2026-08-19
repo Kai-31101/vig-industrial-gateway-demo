@@ -50,4 +50,22 @@ export type RequestKind = 'find_demand' | 'find_supply';
 export type RequestStatus = 'submitted' | 'under_review' | 'verified' | 'matching' | 'connection_scheduled' | 'closed' | 'rejected';
 export interface RequestActivity { id: string; at: string; actor: string; action: LocalizedText; }
 export interface IndustrialRequest { id: string; kind: RequestKind; organization: string; contactName: string; email: string; phone: string; service: string; assetType: string; location: string; areaMin: number; areaMax: number; transaction: 'lease' | 'sale'; budgetOrPrice: string; industry: string; availabilityDate: string; requirements: string; status: RequestStatus; submittedAt: string; assignedTo: string; activities: RequestActivity[]; rejectionReason?: string; }
-export interface ExpoProgram { id: string; title: LocalizedText; market: string; industries: string[]; date: string; status: 'upcoming' | 'live'; exhibitors: number; }
+export interface ExpoDailyMetric { date: string; rfqs: number; connections: number; }
+export interface ExpoIndustryMetric { industry: string; rfqs: number; connections: number; }
+export interface ExpoMarketMetric { market: string; connections: number; }
+export interface ExpoAnalytics {
+  visitors: number;
+  products: number;
+  inboundRfqs: number;
+  outboundRfqs: number;
+  inboundDeals: number;
+  outboundDeals: number;
+  activeConnections: number;
+  completedConnections: number;
+  estimatedDealValueUsd: number;
+  updatedAt: string;
+  trend: ExpoDailyMetric[];
+  topIndustries: ExpoIndustryMetric[];
+  topMarkets: ExpoMarketMetric[];
+}
+export interface ExpoProgram { id: string; title: LocalizedText; market: string; industries: string[]; date: string; status: 'upcoming' | 'live'; exhibitors: number; analytics: ExpoAnalytics; }

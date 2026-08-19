@@ -1,4 +1,4 @@
-import { FormEvent, ReactNode, useMemo, useState } from "react";
+import { CSSProperties, FormEvent, ReactNode, useMemo, useState } from "react";
 import {
   HashRouter,
   Link,
@@ -60,6 +60,8 @@ import {
   requestTransitions,
 } from "./logic";
 import type {
+  ExpoDailyMetric,
+  ExpoProgram,
   IndustrialParkProfile,
   IndustrialRequest,
   LocalizedText,
@@ -123,6 +125,7 @@ const industryVi: Record<string, string> = {
   "Aquaculture processing": "Chế biến thủy sản nuôi trồng",
   "Animal feed": "Thức ăn chăn nuôi",
   "Export logistics": "Logistics xuất khẩu",
+  "Supply chain": "Chuỗi cung ứng",
 };
 const industryLabel = (value: string, language: "vi" | "en") =>
   language === "vi" ? industryVi[value] || value : value;
@@ -180,6 +183,8 @@ const labels: Record<string, LocalizedText> = {
   ready_built_factory: tx("Nhà xưởng xây sẵn", "Ready-built factory"),
   warehouse: tx("Kho", "Warehouse"),
   build_to_suit: tx("Xây theo yêu cầu", "Build-to-suit"),
+  upcoming: tx("Sắp diễn ra", "Upcoming"),
+  live: tx("Đang diễn ra", "Live"),
 };
 
 function Badge({ value, tone = "blue" }: { value: string; tone?: string }) {
@@ -2364,6 +2369,11 @@ function AdminShell({ children }: { children: ReactNode }) {
       language === "vi" ? "Dữ liệu KCN" : "Park data",
     ],
     [
+      "/admin/expos",
+      BarChart3,
+      language === "vi" ? "Quản lý Expo" : "Expo management",
+    ],
+    [
       "/admin/requests",
       ClipboardCheck,
       language === "vi" ? "Quản lý yêu cầu" : "Request management",
@@ -2491,10 +2501,7 @@ function Kpi({
   );
 }
 function AdminDashboard() {
-  const { language, parks, requests } = useApp();
-  const overdue = requests.filter(
-    (r) => r.status === "submitted" || r.status === "under_review",
-  ).length;
+  const { language, parks, requests, expos } = useApp();
   return (
     <AdminShell>
       <div className="admin-page">
@@ -2533,10 +2540,10 @@ function AdminDashboard() {
             tone="gold"
           />
           <Kpi
-            label={language === "vi" ? "Yêu cầu cần xử lý" : "SLA attention"}
-            value={overdue}
-            icon={Clock3}
-            tone="red"
+            label={language === "vi" ? "Kết nối thành công" : "Completed connections"}
+            value={expos.reduce((total, expo) => total + expo.analytics.completedConnections, 0)}
+            icon={Handshake}
+            tone="green"
           />
         </div>
         <div className="admin-grid">
@@ -2592,6 +2599,210 @@ function AdminDashboard() {
     </AdminShell>
   );
 }
+
+const formatReportNumber = (value: number, language: "vi" | "en") =>
+  new Intl.NumberFormat(language === "vi" ? "vi-VN" : "en-US", {
+    notation: value >= 10000 ? "compact" : "standard",
+    maximumFractionDigits: 1,
+  }).format(value);
+const formatReportUsd = (value: number, language: "vi" | "en") =>
+  language === "vi"
+    ? `${new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 1 }).format(value / 1_000_000)} triệu USD`
+    : `$${new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 }).format(value / 1_000_000)}M`;
+
+function ExpoTrendChart({ data }: { data: ExpoDailyMetric[] }) {
+  const { language } = useApp();
+  const width = 660;
+  const height = 220;
+  const chartTop = 20;
+  const chartBottom = 174;
+  const left = 28;
+  const right = 642;
+  const max = Math.max(1, ...data.flatMap((item) => [item.rfqs, item.connections]));
+  const point = (value: number, index: number) => {
+    const x = data.length === 1 ? left : left + (index / (data.length - 1)) * (right - left);
+    const y = chartBottom - (value / max) * (chartBottom - chartTop);
+    return `${x},${y}`;
+  };
+  const rfqPoints = data.map((item, index) => point(item.rfqs, index)).join(" ");
+  const connectionPoints = data.map((item, index) => point(item.connections, index)).join(" ");
+  return (
+    <div className="expo-trend-chart">
+      <div className="chart-legend">
+        <span><i className="rfq" />RFQ</span>
+        <span><i className="connection" />{language === "vi" ? "Kết nối" : "Connections"}</span>
+      </div>
+      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={language === "vi" ? "Biểu đồ xu hướng RFQ và kết nối" : "RFQ and connection trend chart"}>
+        {[0, 1, 2, 3].map((line) => {
+          const y = chartTop + (line / 3) * (chartBottom - chartTop);
+          return <line key={line} x1={left} x2={right} y1={y} y2={y} className="chart-grid-line" />;
+        })}
+        <polyline points={rfqPoints} className="chart-line rfq-line" />
+        <polyline points={connectionPoints} className="chart-line connection-line" />
+        {data.map((item, index) => {
+          const x = data.length === 1 ? left : left + (index / (data.length - 1)) * (right - left);
+          return <text key={item.date} x={x} y="205" textAnchor="middle">{item.date}</text>;
+        })}
+      </svg>
+    </div>
+  );
+}
+
+function ExpoStatus({ expo }: { expo: ExpoProgram }) {
+  return <Badge value={expo.status} tone={expo.status === "live" ? "green" : "amber"} />;
+}
+
+function AdminExpos() {
+  const { language, expos } = useApp();
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState("all");
+  const filtered = expos.filter((expo) =>
+    (status === "all" || expo.status === status) &&
+    `${tr(expo.title, language)} ${expo.market}`.toLowerCase().includes(query.toLowerCase()),
+  );
+  const totals = expos.reduce(
+    (sum, expo) => ({
+      exhibitors: sum.exhibitors + expo.exhibitors,
+      rfqs: sum.rfqs + expo.analytics.inboundRfqs + expo.analytics.outboundRfqs,
+      deals: sum.deals + expo.analytics.inboundDeals + expo.analytics.outboundDeals,
+      completed: sum.completed + expo.analytics.completedConnections,
+    }),
+    { exhibitors: 0, rfqs: 0, deals: 0, completed: 0 },
+  );
+  const trend = expos[0].analytics.trend.map((item, index) => ({
+    date: item.date,
+    rfqs: expos.reduce((sum, expo) => sum + (expo.analytics.trend[index]?.rfqs || 0), 0),
+    connections: expos.reduce((sum, expo) => sum + (expo.analytics.trend[index]?.connections || 0), 0),
+  }));
+  const allRfqs = totals.rfqs || 1;
+  return (
+    <AdminShell>
+      <div className="admin-page expo-admin-page">
+        <div className="admin-title">
+          <div>
+            <span>EXPO OPERATIONS</span>
+            <h1>{language === "vi" ? "Quản lý Expo" : "Expo Management"}</h1>
+            <p>{language === "vi" ? "Theo dõi RFQ, giao dịch và kết quả kết nối theo từng Expo." : "Track RFQs, deals, and connection outcomes for each Expo."}</p>
+          </div>
+          <span className="demo-data-label">{language === "vi" ? "Dữ liệu mô phỏng" : "Demo data"}</span>
+        </div>
+        <div className="kpi-grid">
+          <Kpi label={language === "vi" ? "Expo đang quản lý" : "Managed Expos"} value={expos.length} icon={Globe2} />
+          <Kpi label={language === "vi" ? "Đơn vị trưng bày" : "Exhibitors"} value={formatReportNumber(totals.exhibitors, language)} icon={Building2} tone="gold" />
+          <Kpi label={language === "vi" ? "Tổng RFQ hai chiều" : "Total I/O RFQs"} value={formatReportNumber(totals.rfqs, language)} icon={FileText} />
+          <Kpi label={language === "vi" ? "Kết nối thành công" : "Completed connections"} value={formatReportNumber(totals.completed, language)} icon={Handshake} tone="green" />
+        </div>
+        <div className="expo-report-grid">
+          <section className="admin-panel expo-chart-panel">
+            <div className="panel-head">
+              <div>
+                <h2><BarChart3 /> {language === "vi" ? "Xu hướng hoạt động kết nối" : "Connection activity trend"}</h2>
+                <small>{language === "vi" ? "Tổng hợp 7 ngày gần nhất từ tất cả Expo" : "Combined last 7 days across all Expos"}</small>
+              </div>
+            </div>
+            <ExpoTrendChart data={trend} />
+          </section>
+          <section className="admin-panel connection-summary-panel">
+            <div className="panel-head"><h2><Handshake /> {language === "vi" ? "Tổng quan chuyển đổi" : "Conversion overview"}</h2></div>
+            <div className="conversion-ring" style={{ "--progress": `${Math.round((totals.completed / allRfqs) * 100)}%` } as CSSProperties}>
+              <div><b>{Math.round((totals.completed / allRfqs) * 100)}%</b><span>RFQ → {language === "vi" ? "kết nối thành công" : "completed"}</span></div>
+            </div>
+            <div className="connection-mini-stats">
+              <div><span>{language === "vi" ? "Giao dịch I/O" : "I/O deals"}</span><b>{totals.deals}</b></div>
+              <div><span>{language === "vi" ? "Expo đang diễn ra" : "Live Expos"}</span><b>{expos.filter((expo) => expo.status === "live").length}</b></div>
+            </div>
+          </section>
+        </div>
+        <section className="admin-panel">
+          <div className="panel-head">
+            <div>
+              <h2>{language === "vi" ? "Báo cáo theo Expo" : "Reports by Expo"}</h2>
+              <small>{language === "vi" ? "Chọn một Expo để xem báo cáo kết nối chi tiết." : "Select an Expo to review its detailed connection report."}</small>
+            </div>
+          </div>
+          <div className="admin-filter expo-report-filter">
+            <label><Search /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={language === "vi" ? "Tìm theo tên hoặc thị trường" : "Search name or market"} /></label>
+            <select value={status} onChange={(event) => setStatus(event.target.value)}>
+              <option value="all">{language === "vi" ? "Tất cả trạng thái" : "All statuses"}</option>
+              <option value="live">{language === "vi" ? "Đang diễn ra" : "Live"}</option>
+              <option value="upcoming">{language === "vi" ? "Sắp diễn ra" : "Upcoming"}</option>
+            </select>
+          </div>
+          <div className="table-wrap expo-report-table">
+            <table>
+              <thead><tr>
+                <th>Expo</th><th>{language === "vi" ? "Trạng thái" : "Status"}</th><th>{language === "vi" ? "Khách truy cập" : "Visitors"}</th><th>RFQ I / O</th><th>{language === "vi" ? "Giao dịch I / O" : "Deals I / O"}</th><th>{language === "vi" ? "Kết nối thành công" : "Completed"}</th><th></th>
+              </tr></thead>
+              <tbody>{filtered.map((expo) => <tr key={expo.id}>
+                <td><b>{tr(expo.title, language)}</b><small>{expo.market} · {expo.date}</small></td>
+                <td><ExpoStatus expo={expo} /></td>
+                <td>{formatReportNumber(expo.analytics.visitors, language)}</td>
+                <td><span className="io-metric"><i>I</i>{expo.analytics.inboundRfqs}<i>O</i>{expo.analytics.outboundRfqs}</span></td>
+                <td><span className="io-metric"><i>I</i>{expo.analytics.inboundDeals}<i>O</i>{expo.analytics.outboundDeals}</span></td>
+                <td><b className="success-value">{expo.analytics.completedConnections}</b></td>
+                <td><Link className="table-action" to={`/admin/expos/${expo.id}`}>{language === "vi" ? "Xem báo cáo" : "View report"}<ChevronRight /></Link></td>
+              </tr>)}</tbody>
+            </table>
+          </div>
+        </section>
+        <p className="report-source-note">{language === "vi" ? "Mô hình báo cáo tham chiếu Partner Portal: chỉ số khách truy cập được cập nhật gần thời gian thực; đơn vị trưng bày và sản phẩm theo bản chụp; RFQ theo luồng hoạt động. Bản TSX này sử dụng dữ liệu mô phỏng tĩnh." : "Reporting model adapted from Partner Portal: near-real-time visitors, snapshot exhibitor/product counts, and activity-based RFQs. This TSX demo uses static fixture data."}</p>
+      </div>
+    </AdminShell>
+  );
+}
+
+function AdminExpoDetail() {
+  const { language, expos } = useApp();
+  const { id } = useParams();
+  const expo = expos.find((item) => item.id === id);
+  if (!expo) return <Navigate to="/admin/expos" replace />;
+  const report = expo.analytics;
+  const totalRfqs = report.inboundRfqs + report.outboundRfqs;
+  const conversion = totalRfqs ? Math.round((report.completedConnections / totalRfqs) * 100) : 0;
+  const maxMarket = Math.max(...report.topMarkets.map((item) => item.connections), 1);
+  return (
+    <AdminShell>
+      <div className="admin-page expo-admin-page">
+        <div className="admin-breadcrumb"><Link to="/admin/expos">{language === "vi" ? "Quản lý Expo" : "Expo Management"}</Link><ChevronRight />{tr(expo.title, language)}</div>
+        <div className="admin-title expo-detail-title">
+          <div><div className="title-badges"><ExpoStatus expo={expo} /><span className="demo-data-label">{language === "vi" ? "Dữ liệu mô phỏng" : "Demo data"}</span></div><h1>{tr(expo.title, language)}</h1><p>{expo.market} · {expo.date} · {expo.industries.map((industry) => industryLabel(industry, language)).join(" · ")}</p></div>
+          <div className="report-updated"><Clock3 /><span>{language === "vi" ? "Cập nhật lúc" : "Updated"}<b>{new Date(report.updatedAt).toLocaleString(language === "vi" ? "vi-VN" : "en-US")}</b></span></div>
+        </div>
+        <div className="kpi-grid">
+          <Kpi label={language === "vi" ? "Khách truy cập" : "Visitors"} value={formatReportNumber(report.visitors, language)} icon={Users} />
+          <Kpi label={language === "vi" ? "Đơn vị trưng bày" : "Exhibitors"} value={expo.exhibitors} icon={Building2} tone="gold" />
+          <Kpi label={language === "vi" ? "Sản phẩm trưng bày" : "Products"} value={formatReportNumber(report.products, language)} icon={PackageSearch} />
+          <Kpi label={language === "vi" ? "Kết nối thành công" : "Completed connections"} value={report.completedConnections} icon={Handshake} tone="green" />
+        </div>
+        <div className="expo-report-grid">
+          <section className="admin-panel expo-chart-panel">
+            <div className="panel-head"><div><h2><BarChart3 /> {language === "vi" ? "RFQ và kết nối theo ngày" : "Daily RFQs and connections"}</h2><small>{language === "vi" ? "Hoạt động trong 7 ngày gần nhất" : "Activity over the last 7 days"}</small></div></div>
+            <ExpoTrendChart data={report.trend} />
+          </section>
+          <section className="admin-panel connection-summary-panel">
+            <div className="panel-head"><h2><Activity /> {language === "vi" ? "Hiệu quả kết nối" : "Connection performance"}</h2></div>
+            <div className="conversion-ring" style={{ "--progress": `${conversion}%` } as CSSProperties}><div><b>{conversion}%</b><span>RFQ → {language === "vi" ? "kết nối thành công" : "completed"}</span></div></div>
+            <div className="connection-mini-stats"><div><span>{language === "vi" ? "Đang kết nối" : "Active"}</span><b>{report.activeConnections}</b></div><div><span>{language === "vi" ? "Giá trị giao dịch dự kiến" : "Est. deal value"}</span><b>{formatReportUsd(report.estimatedDealValueUsd, language)}</b></div></div>
+          </section>
+        </div>
+        <section className="admin-panel">
+          <div className="panel-head"><div><h2><Handshake /> {language === "vi" ? "Hoạt động kết nối hai chiều" : "Inbound / outbound connection activity"}</h2><small>{language === "vi" ? "I = tiếp nhận từ đối tác; O = chủ động gửi tới đối tác." : "I = received from partners; O = initiated toward partners."}</small></div></div>
+          <div className="io-report-grid">
+            <article className="io-report-card inbound"><div><span>I</span><div><b>{language === "vi" ? "Luồng tiếp nhận" : "Inbound"}</b><small>{language === "vi" ? "Nhu cầu gửi đến đơn vị trưng bày" : "Demand received by exhibitors"}</small></div></div><dl><div><dt>RFQ</dt><dd>{report.inboundRfqs}</dd></div><div><dt>{language === "vi" ? "Giao dịch" : "Deals"}</dt><dd>{report.inboundDeals}</dd></div></dl></article>
+            <article className="io-report-card outbound"><div><span>O</span><div><b>{language === "vi" ? "Luồng chủ động" : "Outbound"}</b><small>{language === "vi" ? "Nhu cầu do đơn vị tham gia khởi tạo" : "Demand initiated by participants"}</small></div></div><dl><div><dt>RFQ</dt><dd>{report.outboundRfqs}</dd></div><div><dt>{language === "vi" ? "Giao dịch" : "Deals"}</dt><dd>{report.outboundDeals}</dd></div></dl></article>
+            <article className="io-report-card completed"><div><CheckCircle2 /><div><b>{language === "vi" ? "Kết nối thành công" : "Completed connections"}</b><small>{language === "vi" ? "Hai bên đã xác nhận kết quả kết nối" : "Outcome confirmed by both parties"}</small></div></div><strong>{report.completedConnections}</strong></article>
+          </div>
+        </section>
+        <div className="expo-report-grid lower">
+          <section className="admin-panel"><div className="panel-head"><h2>{language === "vi" ? "Hiệu quả theo ngành" : "Performance by industry"}</h2></div><div className="industry-report-list">{report.topIndustries.map((item) => <div key={item.industry}><span><b>{industryLabel(item.industry, language)}</b><small>{item.rfqs} RFQ</small></span><strong>{item.connections}<small>{language === "vi" ? " kết nối" : " connections"}</small></strong></div>)}</div></section>
+          <section className="admin-panel"><div className="panel-head"><h2>{language === "vi" ? "Kết nối theo thị trường" : "Connections by market"}</h2></div><div className="market-report-bars">{report.topMarkets.map((item) => <div key={item.market}><span><b>{item.market}</b><strong>{item.connections}</strong></span><i><em style={{ width: `${(item.connections / maxMarket) * 100}%` }} /></i></div>)}</div></section>
+        </div>
+        <section className="admin-panel metric-definition-panel"><div className="panel-head"><h2>{language === "vi" ? "Định nghĩa chỉ số" : "Metric definitions"}</h2></div><div className="metric-definitions"><p><b>RFQ I/O</b>{language === "vi" ? "Yêu cầu báo giá tiếp nhận hoặc chủ động gửi trong Expo." : "Requests for quotation received or initiated within the Expo."}</p><p><b>{language === "vi" ? "Giao dịch I/O" : "Deals I/O"}</b>{language === "vi" ? "Cơ hội giao dịch được tạo từ luồng tiếp nhận hoặc chủ động." : "Deal opportunities created from inbound or outbound activity."}</p><p><b>{language === "vi" ? "Kết nối thành công" : "Completed connection"}</b>{language === "vi" ? "Kết nối được hai bên xác nhận; không đồng nghĩa giao dịch đã ký hoặc đã thanh toán." : "A connection confirmed by both parties; it does not mean a contract was signed or paid."}</p></div></section>
+      </div>
+    </AdminShell>
+  );
+}
+
 function RequestTable({ requests }: { requests: IndustrialRequest[] }) {
   const { language } = useApp();
   return (
@@ -3273,6 +3484,22 @@ function AppRoutes() {
         element={
           <AdminGuard>
             <AdminDashboard />
+          </AdminGuard>
+        }
+      />
+      <Route
+        path="/admin/expos"
+        element={
+          <AdminGuard>
+            <AdminExpos />
+          </AdminGuard>
+        }
+      />
+      <Route
+        path="/admin/expos/:id"
+        element={
+          <AdminGuard>
+            <AdminExpoDetail />
           </AdminGuard>
         }
       />

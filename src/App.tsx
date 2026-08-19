@@ -1750,6 +1750,13 @@ function AssetsPage() {
   const { language, assets } = useApp();
   const [type, setType] = useState("all");
   const filtered = assets.filter((a) => type === "all" || a.type === type);
+  const assetTypeFilters = [
+    { value: "all", icon: PackageSearch, vi: "Tất cả loại hình", en: "All assets" },
+    { value: "industrial_land", icon: Map, vi: "Đất công nghiệp", en: "Industrial land" },
+    { value: "ready_built_factory", icon: Factory, vi: "Nhà xưởng xây sẵn", en: "Ready-built factory" },
+    { value: "warehouse", icon: Warehouse, vi: "Kho vận", en: "Warehouse" },
+    { value: "build_to_suit", icon: HardHat, vi: "Xây theo yêu cầu", en: "Build-to-suit" },
+  ];
   return (
     <PublicShell>
       <div className="page page-top">
@@ -1766,32 +1773,45 @@ function AssetsPage() {
               : "Land, factories, warehouses and build-to-suit solutions."}
           </p>
         </div>
-        <div className="filter-tabs">
-          {[
-            "all",
-            "industrial_land",
-            "ready_built_factory",
-            "warehouse",
-            "build_to_suit",
-          ].map((x) => (
-            <button
-              className={type === x ? "active" : ""}
-              onClick={() => setType(x)}
-              key={x}
-            >
-              {x === "all"
-                ? language === "vi"
-                  ? "Tất cả loại hình"
-                  : "All"
-                : tr(labels[x], language)}
-            </button>
-          ))}
+        <div
+          className="filter-tabs"
+          role="group"
+          aria-label={language === "vi" ? "Lọc loại hình bất động sản" : "Filter asset type"}
+        >
+          {assetTypeFilters.map((option) => {
+            const FilterIcon = option.icon;
+            return (
+              <button
+                type="button"
+                className={type === option.value ? "active" : ""}
+                aria-pressed={type === option.value}
+                onClick={() => setType(option.value)}
+                key={option.value}
+              >
+                <FilterIcon size={16} />
+                {language === "vi" ? option.vi : option.en}
+              </button>
+            );
+          })}
         </div>
-        <div className="asset-grid">
-          {filtered.map((a) => (
-            <AssetCard key={a.id} asset={a} />
-          ))}
+        <div className="asset-result-bar">
+          <b>
+            {filtered.length} {language === "vi" ? "bất động sản công nghiệp" : "industrial assets"}
+          </b>
+          <span>{language === "vi" ? "Dữ liệu minh họa" : "Demo inventory"}</span>
         </div>
+        {filtered.length ? (
+          <div className="asset-grid">
+            {filtered.map((a) => (
+              <AssetCard key={a.id} asset={a} />
+            ))}
+          </div>
+        ) : (
+          <Empty
+            title={language === "vi" ? "Chưa có tài sản phù hợp" : "No matching assets"}
+            text={language === "vi" ? "Vui lòng chọn loại hình khác hoặc gửi yêu cầu tìm mặt bằng." : "Choose another asset type or submit a supply request."}
+          />
+        )}
       </div>
     </PublicShell>
   );

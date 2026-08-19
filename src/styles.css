@@ -1220,6 +1220,60 @@ b {
 .tax-timeline small {
   font-size: 10px;
 }
+.filter-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 22px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(8, 47, 73, 0.04);
+}
+.filter-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 8px 13px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: #526471;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: 0.18s ease;
+}
+.filter-tabs button:hover {
+  border-color: #cdd9df;
+  background: #f5f8f9;
+  color: var(--navy);
+}
+.filter-tabs button.active {
+  border-color: var(--navy);
+  background: var(--navy);
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(5, 47, 70, 0.18);
+}
+.asset-result-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+  color: var(--navy);
+  font-size: 13px;
+}
+.asset-result-bar span {
+  color: #71828e;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
 .asset-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -2417,6 +2471,23 @@ td small {
   .page {
     padding-left: 18px;
     padding-right: 18px;
+  }
+  .filter-tabs {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .filter-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .filter-tabs button {
+    flex: 0 0 auto;
+  }
+  .asset-result-bar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
   }
   .header-inner {
     padding: 0 16px;

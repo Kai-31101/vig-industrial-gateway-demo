@@ -462,9 +462,12 @@ function PublicShell({ children }: { children: ReactNode }) {
 }
 
 function HomePage() {
-  const { language, parks, assets } = useApp();
+  const { language, parks, assets, requests } = useApp();
   const navigate = useNavigate();
   const featured = parks.slice(0, 4);
+  const completedConnections = requests.filter(
+    (request) => request.status === "closed",
+  ).length;
   return (
     <PublicShell>
       <section className="hero">
@@ -519,9 +522,11 @@ function HomePage() {
               </span>
             </div>
             <div>
-              <b>2</b>
+              <b>{completedConnections}</b>
               <span>
-                {language === "vi" ? "luồng kết nối" : "assisted funnels"}
+                {language === "vi"
+                  ? "kết nối đã hoàn tất"
+                  : "completed connections"}
               </span>
             </div>
           </div>

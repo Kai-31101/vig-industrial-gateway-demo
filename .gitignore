@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.codex_work/
+*.inspect.ndjson
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts

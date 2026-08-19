@@ -1,0 +1,3298 @@
+import { FormEvent, ReactNode, useMemo, useState } from "react";
+import {
+  HashRouter,
+  Link,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
+import {
+  Activity,
+  ArrowRight,
+  BarChart3,
+  Building2,
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  CircleDollarSign,
+  ClipboardCheck,
+  Clock3,
+  Database,
+  Download,
+  ExternalLink,
+  Factory,
+  FileCheck2,
+  FileText,
+  Filter,
+  Globe2,
+  Handshake,
+  HardHat,
+  LayoutDashboard,
+  Lock,
+  LogIn,
+  Map,
+  MapPin,
+  Menu,
+  MessageCircle,
+  PackageSearch,
+  Phone,
+  Plane,
+  RotateCcw,
+  Search,
+  Send,
+  ShieldCheck,
+  Ship,
+  Sparkles,
+  TrainFront,
+  Users,
+  Warehouse,
+  X,
+  Zap,
+} from "lucide-react";
+import { AppProvider, tr, useApp } from "./AppContext";
+import {
+  canPublish,
+  displaySourced,
+  getParkStandardChecklist,
+  requestTransitions,
+} from "./logic";
+import type {
+  IndustrialParkProfile,
+  IndustrialRequest,
+  LocalizedText,
+  RequestKind,
+  RequestStatus,
+  SourcedValue,
+} from "./types";
+
+const tx = (vi: string, en: string): LocalizedText => ({ vi, en });
+const industryVi: Record<string, string> = {
+  Electronics: "Điện tử",
+  Semiconductors: "Bán dẫn",
+  Automotive: "Ô tô và linh kiện",
+  "Supporting industries": "Công nghiệp hỗ trợ",
+  "Food processing": "Chế biến thực phẩm",
+  Logistics: "Logistics",
+  "Precision engineering": "Cơ khí chính xác",
+  "Data centers": "Trung tâm dữ liệu",
+  "Renewable energy equipment": "Thiết bị năng lượng tái tạo",
+  "Electrical equipment": "Thiết bị điện",
+  "Battery systems": "Hệ thống pin và lưu trữ năng lượng",
+  "Electronic components": "Linh kiện điện tử",
+  "Industrial automation": "Tự động hóa công nghiệp",
+  Pharmaceuticals: "Dược phẩm",
+  "Medical devices": "Thiết bị y tế",
+  Biotechnology: "Công nghệ sinh học",
+  "Laboratory equipment": "Thiết bị phòng thí nghiệm",
+  "Industrial machinery": "Máy móc công nghiệp",
+  "Metal fabrication": "Gia công kim loại",
+  "Advanced materials": "Vật liệu công nghệ cao",
+  "Industrial components": "Linh kiện công nghiệp",
+  "Construction technology": "Công nghệ xây dựng",
+  Textiles: "Dệt",
+  Garments: "May mặc",
+  Footwear: "Da giày",
+  Packaging: "Bao bì",
+  "Smart electronics": "Điện tử thông minh",
+  Beverages: "Đồ uống",
+  "Cold-chain logistics": "Logistics chuỗi lạnh",
+  Furniture: "Nội thất",
+  "Engineered wood": "Gỗ kỹ thuật",
+  "Agricultural machinery": "Máy nông nghiệp",
+  "Seafood processing": "Chế biến thủy sản",
+  "Cold storage": "Kho lạnh",
+  "Marine logistics": "Logistics hàng hải",
+  Robotics: "Robot công nghiệp",
+  "Consumer electronics": "Điện tử tiêu dùng",
+  "Aerospace components": "Linh kiện hàng không",
+  "Engineered rubber": "Cao su kỹ thuật",
+  Warehousing: "Kho vận",
+  "Solar equipment": "Thiết bị điện mặt trời",
+  "Agricultural processing": "Chế biến nông sản",
+  "Port logistics": "Logistics cảng",
+  "Offshore energy equipment": "Thiết bị năng lượng ngoài khơi",
+  "Steel fabrication": "Gia công kết cấu thép",
+  "Rice processing": "Chế biến lúa gạo",
+  "Food biotechnology": "Công nghệ sinh học thực phẩm",
+  Biomaterials: "Vật liệu sinh học",
+  "Biomass energy": "Năng lượng sinh khối",
+  "Sustainable packaging": "Bao bì bền vững",
+  "Aquaculture processing": "Chế biến thủy sản nuôi trồng",
+  "Animal feed": "Thức ăn chăn nuôi",
+  "Export logistics": "Logistics xuất khẩu",
+};
+const industryLabel = (value: string, language: "vi" | "en") =>
+  language === "vi" ? industryVi[value] || value : value;
+const standardGroupLabels: Record<string, LocalizedText> = {
+  identity: tx("Thông tin nhận diện", "Identity"),
+  operator: tx("Đơn vị phát triển/vận hành", "Developer and operator"),
+  location: tx("Vị trí", "Location"),
+  provincial_context: tx("Bối cảnh kinh tế địa phương", "Provincial context"),
+  workforce: tx("Nguồn nhân lực", "Workforce"),
+  land_availability: tx("Quỹ đất và sản phẩm sẵn có", "Land and availability"),
+  masterplan: tx("Quy hoạch mặt bằng", "Masterplan"),
+  connectivity: tx("Kết nối giao thông", "Connectivity"),
+  infrastructure: tx("Hạ tầng kỹ thuật", "Infrastructure and utilities"),
+  amenities: tx("Tiện ích và dịch vụ hỗ trợ", "Amenities and support"),
+  target_industries: tx("Ngành nghề thu hút đầu tư", "Target industries"),
+  incentives: tx("Ưu đãi đầu tư", "Investment incentives"),
+  investment_process: tx("Quy trình đầu tư và thuê đất", "Investment process"),
+  logistics: tx("Năng lực logistics", "Logistics"),
+  sustainability_community: tx("Bền vững và cộng đồng", "Sustainability and community"),
+  existing_tenants: tx("Doanh nghiệp đang hoạt động", "Existing tenants"),
+  contact: tx("Thông tin liên hệ", "Contact"),
+  media: tx("Hình ảnh và truyền thông", "Media"),
+  legal_documents: tx("Hồ sơ pháp lý", "Legal evidence"),
+  data_governance: tx("Nguồn và quản trị dữ liệu", "Data governance"),
+};
+const labels: Record<string, LocalizedText> = {
+  operational: tx("Đang hoạt động", "Operational"),
+  developing: tx("Đang phát triển", "Developing"),
+  planned: tx("Quy hoạch", "Planned"),
+  published: tx("Đã công bố", "Published"),
+  in_review: tx("Đang duyệt", "In review"),
+  draft: tx("Bản nháp", "Draft"),
+  archived: tx("Lưu trữ", "Archived"),
+  submitted: tx("Đã tiếp nhận", "Submitted"),
+  under_review: tx("Đang xác minh", "Under review"),
+  verified: tx("Đã xác minh", "Verified"),
+  matching: tx("Đang ghép nối", "Matching"),
+  connection_scheduled: tx("Đã hẹn kết nối", "Connection scheduled"),
+  closed: tx("Đã đóng", "Closed"),
+  rejected: tx("Từ chối", "Rejected"),
+  reviewed: tx("Đã rà soát", "Reviewed"),
+  unverified: tx("Chưa xác minh", "Unverified"),
+  construction: tx("Đang thi công", "Under construction"),
+  planning: tx("Đang quy hoạch", "Planning"),
+  public: tx("Công khai", "Public"),
+  admin_only: tx("Chỉ quản trị viên", "Admin only"),
+  establishment_decision: tx("Quyết định thành lập", "Establishment decision"),
+  enterprise_registration: tx(
+    "Đăng ký doanh nghiệp",
+    "Enterprise registration",
+  ),
+  legal_approval: tx("Văn bản pháp lý", "Legal approval"),
+  presentation: tx("Tài liệu giới thiệu", "Presentation"),
+  industrial_land: tx("Đất công nghiệp", "Industrial land"),
+  ready_built_factory: tx("Nhà xưởng xây sẵn", "Ready-built factory"),
+  warehouse: tx("Kho", "Warehouse"),
+  build_to_suit: tx("Xây theo yêu cầu", "Build-to-suit"),
+};
+
+function Badge({ value, tone = "blue" }: { value: string; tone?: string }) {
+  const { language } = useApp();
+  return (
+    <span className={`badge ${tone}`}>
+      {labels[value] ? tr(labels[value], language) : value.replaceAll("_", " ")}
+    </span>
+  );
+}
+function SectionTitle({
+  eyebrow,
+  title,
+  description,
+}: {
+  eyebrow?: string;
+  title: string;
+  description?: string;
+}) {
+  return (
+    <div className="section-title">
+      {eyebrow && <span>{eyebrow}</span>}
+      <h2>{title}</h2>
+      {description && <p>{description}</p>}
+    </div>
+  );
+}
+function Empty({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="empty">
+      <Database size={34} />
+      <h3>{title}</h3>
+      <p>{text}</p>
+    </div>
+  );
+}
+function StandardChecklist({ park }: { park: IndustrialParkProfile }) {
+  const { language } = useApp();
+  return (
+    <div className="checklist standard-checklist">
+      {getParkStandardChecklist(park).map((item) => (
+        <div key={item.key} className={item.status}>
+          {item.status === "available" ? (
+            <Check />
+          ) : item.status === "partial" ? (
+            <Activity />
+          ) : (
+            <X />
+          )}
+          <span>{tr(standardGroupLabels[item.key], language)}</span>
+          {item.requiredForPublication ? (
+            <small>
+              {language === "vi" ? "Bắt buộc công bố" : "Required to publish"}
+            </small>
+          ) : null}
+          <b>
+            {item.status === "available"
+              ? language === "vi"
+                ? "Có dữ liệu"
+                : "Available"
+              : item.status === "partial"
+                ? language === "vi"
+                  ? "Chưa đầy đủ"
+                  : "Partial"
+                : language === "vi"
+                  ? "Chưa có"
+                  : "Missing"}
+          </b>
+        </div>
+      ))}
+    </div>
+  );
+}
+function SourceValue({
+  value,
+  compact = false,
+}: {
+  value: SourcedValue<unknown>;
+  compact?: boolean;
+}) {
+  const { language } = useApp();
+  return (
+    <div className={compact ? "source-value compact" : "source-value"}>
+      <strong>{displaySourced(value, language)}</strong>
+      {!compact && (
+        <small>
+          {value.calculated
+            ? language === "vi"
+              ? "Được tính toán"
+              : "Calculated"
+            : value.asOf
+              ? `${language === "vi" ? "Cập nhật" : "As of"} ${value.asOf}`
+              : ""}{" "}
+          ·{" "}
+          {tr(
+            labels[value.verificationStatus] ||
+              tx(value.verificationStatus, value.verificationStatus),
+            language,
+          )}
+        </small>
+      )}
+    </div>
+  );
+}
+
+function LanguageToggle({ compact = false }: { compact?: boolean }) {
+  const { language, setLanguage } = useApp();
+  return (
+    <div
+      className={`language-toggle${compact ? " compact" : ""}`}
+      role="group"
+      aria-label={language === "vi" ? "Chọn ngôn ngữ" : "Select language"}
+    >
+      <button
+        type="button"
+        className={language === "vi" ? "active" : ""}
+        aria-pressed={language === "vi"}
+        onClick={() => setLanguage("vi")}
+      >
+        VI
+      </button>
+      <button
+        type="button"
+        className={language === "en" ? "active" : ""}
+        aria-pressed={language === "en"}
+        onClick={() => setLanguage("en")}
+      >
+        EN
+      </button>
+    </div>
+  );
+}
+
+function Header() {
+  const { language, role } = useApp();
+  const [open, setOpen] = useState(false);
+  const location = useLocation();
+  const nav = [
+    [
+      "/industrial-parks",
+      language === "vi" ? "Khu công nghiệp" : "Industrial parks",
+    ],
+    ["/assets", language === "vi" ? "BĐS công nghiệp" : "Assets"],
+    ["/find-supply", language === "vi" ? "Tìm mặt bằng" : "Find supply"],
+    ["/find-demand", language === "vi" ? "Tìm khách thuê/mua" : "Find demand"],
+    ["/industrial-expo", "Industrial Expo"],
+  ];
+  return (
+    <header className="header">
+      <div className="header-inner">
+        <Link to="/home" className="brand">
+          <span className="brand-mark">VIG</span>
+          <span>
+            <b>Vietnam Industrial Gateway</b>
+            <small>
+              {language === "vi"
+                ? "Hạ tầng số công nghiệp Việt Nam"
+                : "Vietnam industrial digital infrastructure"}
+            </small>
+          </span>
+        </Link>
+        <button
+          className="mobile-menu"
+          aria-label={
+            language === "vi"
+              ? open
+                ? "Đóng trình đơn"
+                : "Mở trình đơn"
+              : open
+                ? "Close menu"
+                : "Open menu"
+          }
+          onClick={() => setOpen(!open)}
+        >
+          {open ? <X /> : <Menu />}
+        </button>
+        <nav className={open ? "nav open" : "nav"}>
+          {nav.map(([path, label]) => (
+            <Link
+              key={path}
+              className={location.pathname.startsWith(path) ? "active" : ""}
+              to={path}
+              onClick={() => setOpen(false)}
+            >
+              {label}
+            </Link>
+          ))}
+          <div className="nav-language">
+            <LanguageToggle />
+          </div>
+        </nav>
+        <div className="header-actions">
+          <LanguageToggle />
+          {role === "admin" ? (
+            <Link className="admin-chip" to="/admin/dashboard">
+              <ShieldCheck size={16} /> Admin
+            </Link>
+          ) : (
+            <Link className="login-link" to="/login">
+              <LogIn size={16} />
+              {language === "vi" ? "Quản trị" : "Admin"}
+            </Link>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function Footer() {
+  const { language } = useApp();
+  return (
+    <footer>
+      <div className="footer-grid">
+        <div>
+          <div className="brand footer-brand">
+            <span className="brand-mark">VIG</span>
+            <span>
+              <b>Vietnam Industrial Gateway</b>
+            </span>
+          </div>
+          <p>
+            {language === "vi"
+              ? "Kết nối năng lực công nghiệp Việt Nam với nhu cầu đầu tư và sản xuất toàn cầu."
+              : "Connecting Vietnam’s industrial capacity with global investment and manufacturing demand."}
+          </p>
+        </div>
+        <div>
+          <b>{language === "vi" ? "Khám phá" : "Discover"}</b>
+          <Link to="/industrial-parks">
+            {language === "vi" ? "Khu công nghiệp" : "Industrial Parks"}
+          </Link>
+          <Link to="/assets">
+            {language === "vi"
+              ? "Bất động sản công nghiệp"
+              : "Industrial Assets"}
+          </Link>
+          <Link to="/industrial-expo">Industrial Expo</Link>
+        </div>
+        <div>
+          <b>{language === "vi" ? "Kết nối" : "Connect"}</b>
+          <Link to="/find-supply">
+            {language === "vi" ? "Tìm mặt bằng" : "Find Supply"}
+          </Link>
+          <Link to="/find-demand">
+            {language === "vi" ? "Tìm khách thuê/mua" : "Find Demand"}
+          </Link>
+          <span>
+            {language === "vi" ? "Ghép nối chuyên sâu" : "Premium Matching"}
+          </span>
+        </div>
+        <div>
+          <b>{language === "vi" ? "Minh bạch dữ liệu" : "Data transparency"}</b>
+          <span>
+            {language === "vi"
+              ? "Dữ liệu có nguồn và ngày xác minh"
+              : "Sourced and dated information"}
+          </span>
+          <span>
+            {language === "vi"
+              ? "Nội dung mẫu được gắn nhãn rõ ràng"
+              : "Demo records clearly identified"}
+          </span>
+        </div>
+      </div>
+      <div className="copyright">
+        © 2026 Vietnam Industrial Gateway · Interactive demo
+      </div>
+    </footer>
+  );
+}
+function PublicShell({ children }: { children: ReactNode }) {
+  return (
+    <>
+      <Header />
+      <main>{children}</main>
+      <Footer />
+    </>
+  );
+}
+
+function HomePage() {
+  const { language, parks, assets } = useApp();
+  const navigate = useNavigate();
+  const featured = parks.slice(0, 4);
+  return (
+    <PublicShell>
+      <section className="hero">
+        <img
+          src="/images/vig-industrial-hero.png"
+          alt={
+            language === "vi"
+              ? "Toàn cảnh khu công nghiệp và cảng biển"
+              : "Industrial park and seaport panorama"
+          }
+        />
+        <div className="hero-overlay" />
+        <div className="hero-content">
+          <span className="hero-kicker">
+            <Sparkles size={16} />
+            {language === "vi"
+              ? "Dữ liệu chuẩn hóa · Kết nối đầu tư"
+              : "Data-powered · Intelligently connected"}
+          </span>
+          <h1>
+            {language === "vi"
+              ? "Cửa ngõ đầu tư công nghiệp Việt Nam"
+              : "Vietnam’s industrial gateway"}
+          </h1>
+          <p>
+            {language === "vi"
+              ? "Tra cứu khu công nghiệp, quỹ đất, nhà xưởng và kho vận; gửi nhu cầu và kết nối trực tiếp với đơn vị phát triển dự án."
+              : "Discover industrial parks, assets and the right opportunities — from search to connection in one experience."}
+          </p>
+          <div className="hero-actions">
+            <Link className="button gold" to="/industrial-parks">
+              {language === "vi" ? "Tra cứu khu công nghiệp" : "Explore supply"}
+              <ArrowRight size={18} />
+            </Link>
+            <Link className="button ghost" to="/find-supply">
+              {language === "vi"
+                ? "Gửi yêu cầu tìm mặt bằng"
+                : "Submit requirement"}
+            </Link>
+          </div>
+          <div className="hero-stats">
+            <div>
+              <b>20</b>
+              <span>
+                {language === "vi" ? "hồ sơ khu công nghiệp" : "park profiles"}
+              </span>
+            </div>
+            <div>
+              <b>{assets.length}</b>
+              <span>
+                {language === "vi" ? "BĐS công nghiệp mẫu" : "demo assets"}
+              </span>
+            </div>
+            <div>
+              <b>2</b>
+              <span>
+                {language === "vi" ? "luồng kết nối" : "assisted funnels"}
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section className="search-band">
+        <div>
+          <Search />
+          <input
+            aria-label="Industrial search"
+            placeholder={
+              language === "vi"
+                ? "Tìm KCN, tỉnh, ngành hoặc loại tài sản..."
+                : "Search park, province, industry or asset type..."
+            }
+          />
+        </div>
+        <button onClick={() => navigate("/industrial-parks")}>
+          {language === "vi" ? "Tìm kiếm" : "Search"}
+        </button>
+      </section>
+      <section className="page section">
+        <SectionTitle
+          eyebrow="INDUSTRIAL DATA LAYER"
+          title={
+            language === "vi"
+              ? "Hồ sơ khu công nghiệp nổi bật"
+              : "Featured industrial park profiles"
+          }
+          description={
+            language === "vi"
+              ? "Dữ liệu được chuẩn hóa, có nguồn, đơn vị và thời điểm xác minh."
+              : "Standardised data with sources, units and verification dates."
+          }
+        />
+        <div className="park-grid">
+          {featured.map((p) => (
+            <ParkCard key={p.id} park={p} />
+          ))}
+        </div>
+        <div className="center">
+          <Link className="text-link" to="/industrial-parks">
+            {language === "vi" ? "Xem tất cả 20 hồ sơ" : "View all 20 profiles"}
+            <ArrowRight size={17} />
+          </Link>
+        </div>
+      </section>
+      <section className="dark-section">
+        <div className="page">
+          <SectionTitle
+            eyebrow="TWO-WAY REQUEST"
+            title={
+              language === "vi"
+                ? "Kết nối nhu cầu thuê, mua và chào thuê"
+                : "Two connection directions, one gateway"
+            }
+          />
+          <div className="funnel-grid">
+            <div className="funnel-card">
+              <Warehouse />
+              <span>FIND DEMAND</span>
+              <h3>
+                {language === "vi"
+                  ? "Tôi có mặt bằng công nghiệp"
+                  : "I have supply"}
+              </h3>
+              <p>
+                {language === "vi"
+                  ? "Tìm khách thuê hoặc bên nhận chuyển nhượng đất, nhà xưởng và kho."
+                  : "Find tenants or buyers for land, factories and warehouses."}
+              </p>
+              <Link to="/find-demand">
+                {language === "vi" ? "Tìm khách thuê/mua" : "Find Demand"}{" "}
+                <ArrowRight size={16} />
+              </Link>
+            </div>
+            <div className="funnel-card featured">
+              <PackageSearch />
+              <span>FIND SUPPLY</span>
+              <h3>
+                {language === "vi" ? "Tôi cần tìm mặt bằng" : "I need supply"}
+              </h3>
+              <p>
+                {language === "vi"
+                  ? "Tìm khu công nghiệp, quỹ đất, nhà xưởng hoặc kho phù hợp với dự án."
+                  : "Find the right park, land, factory or warehouse."}
+              </p>
+              <Link to="/find-supply">
+                {language === "vi" ? "Tìm mặt bằng phù hợp" : "Find Supply"}{" "}
+                <ArrowRight size={16} />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section className="page section">
+        <SectionTitle
+          eyebrow="HOW VIG WORKS"
+          title={
+            language === "vi"
+              ? "Từ yêu cầu đầu tư đến kết nối dự án"
+              : "From requirement to opportunity"
+          }
+        />
+        <div className="steps">
+          {[
+            [Search, language === "vi" ? "Tra cứu" : "Search"],
+            [FileText, language === "vi" ? "Gửi yêu cầu" : "Request"],
+            [Sparkles, language === "vi" ? "Đề xuất" : "Matching"],
+            [Handshake, language === "vi" ? "Kết nối" : "Connect"],
+            [Users, language === "vi" ? "Trao đổi" : "Meeting"],
+          ].map(([Icon, label], i) => {
+            const C = Icon as typeof Search;
+            return (
+              <div key={String(label)}>
+                <span>{i + 1}</span>
+                <C />
+                <b>{String(label)}</b>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+      <section className="page section expo-banner">
+        <div>
+          <span>DIGITAL INDUSTRIAL EXPO</span>
+          <h2>
+            {language === "vi"
+              ? "Mở rộng tiếp cận thị trường toàn cầu"
+              : "Expand global market reach"}
+          </h2>
+          <p>China · Korea · Japan · Singapore · Global–Vietnam</p>
+          <Link className="button gold" to="/industrial-expo">
+            {language === "vi" ? "Khám phá Expo" : "Explore Expo"}
+          </Link>
+        </div>
+        <Globe2 size={150} />
+      </section>
+    </PublicShell>
+  );
+}
+
+function ParkCard({ park }: { park: IndustrialParkProfile }) {
+  const { language } = useApp();
+  const available = park.availability[0]?.available;
+  return (
+    <article className="park-card">
+      <Link to={`/industrial-parks/${park.slug}`} className="park-image">
+        <img src={park.media[0]?.url} alt={tr(park.name, language)} />
+        <span className="demo-label">
+          {park.id.includes("demo")
+            ? language === "vi"
+              ? "DỮ LIỆU MINH HỌA"
+              : "DEMO DATA"
+            : language === "vi"
+              ? "HỒ SƠ THAM CHIẾU"
+              : "REFERENCE PROFILE"}
+        </span>
+      </Link>
+      <div className="park-body">
+        <div className="park-meta">
+          <Badge value={park.status} tone="green" />
+          <span>
+            <MapPin size={14} />
+            {park.province}
+          </span>
+        </div>
+        <h3>
+          <Link to={`/industrial-parks/${park.slug}`}>
+            {tr(park.name, language)}
+          </Link>
+        </h3>
+        <p>{tr(park.summary, language)}</p>
+        <div className="park-facts">
+          <div>
+            <small>{language === "vi" ? "Tổng diện tích" : "Total area"}</small>
+            <SourceValue value={park.totalArea} compact />
+          </div>
+          <div>
+            <small>
+              {language === "vi" ? "Diện tích còn trống" : "Available"}
+            </small>
+            {available ? <SourceValue value={available} compact /> : "—"}
+          </div>
+        </div>
+        <div className="industries">
+          {park.suitableIndustries.slice(0, 3).map((x) => (
+            <span key={x}>{industryLabel(x, language)}</span>
+          ))}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function ParksPage() {
+  const { language, parks } = useApp();
+  const [q, setQ] = useState("");
+  const [region, setRegion] = useState("all");
+  const [status, setStatus] = useState("all");
+  const [industry, setIndustry] = useState("all");
+  const industryOptions = useMemo(
+    () =>
+      [...new Set(parks.flatMap((park) => park.suitableIndustries))].sort(
+        (a, b) =>
+          industryLabel(a, language).localeCompare(
+            industryLabel(b, language),
+            language === "vi" ? "vi" : "en",
+          ),
+      ),
+    [parks, language],
+  );
+  const filtered = parks.filter(
+    (p) =>
+      (!q ||
+        `${tr(p.name, language)} ${p.province} ${p.suitableIndustries}`
+          .toLowerCase()
+          .includes(q.toLowerCase())) &&
+      (region === "all" || p.region === region) &&
+      (industry === "all" || p.suitableIndustries.includes(industry)) &&
+      (status === "all" || p.status === status),
+  );
+  return (
+    <PublicShell>
+      <div className="page page-top">
+        <div className="page-heading">
+          <span>INDUSTRIAL DATA LAYER</span>
+          <h1>
+            {language === "vi"
+              ? "Danh mục khu công nghiệp"
+              : "Industrial park directory"}
+          </h1>
+          <p>
+            {language === "vi"
+              ? "Tra cứu vị trí, quỹ đất, hạ tầng kỹ thuật, khả năng kết nối và hồ sơ pháp lý của từng khu công nghiệp."
+              : "Explore industrial supply through standardised, source-aware profiles."}
+          </p>
+        </div>
+        <div className="filter-panel">
+          <label>
+            <Search size={17} />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder={
+                language === "vi"
+                  ? "Tìm theo tên khu công nghiệp, tỉnh/thành hoặc ngành nghề..."
+                  : "Search name, province, industry..."
+              }
+            />
+          </label>
+          <select value={region} onChange={(e) => setRegion(e.target.value)}>
+            <option value="all">
+              {language === "vi" ? "Tất cả vùng miền" : "All regions"}
+            </option>
+            <option value="North">
+              {language === "vi" ? "Miền Bắc" : "North"}
+            </option>
+            <option value="Central">
+              {language === "vi" ? "Miền Trung" : "Central"}
+            </option>
+            <option value="South">
+              {language === "vi" ? "Miền Nam" : "South"}
+            </option>
+          </select>
+          <select
+            value={industry}
+            onChange={(e) => setIndustry(e.target.value)}
+            aria-label={language === "vi" ? "Lọc theo ngành" : "Filter by industry"}
+          >
+            <option value="all">
+              {language === "vi" ? "Tất cả ngành nghề" : "All industries"}
+            </option>
+            {industryOptions.map((item) => (
+              <option value={item} key={item}>
+                {industryLabel(item, language)}
+              </option>
+            ))}
+          </select>
+          <select value={status} onChange={(e) => setStatus(e.target.value)}>
+            <option value="all">
+              {language === "vi" ? "Tất cả trạng thái" : "All statuses"}
+            </option>
+            <option value="operational">
+              {tr(labels.operational, language)}
+            </option>
+            <option value="developing">
+              {tr(labels.developing, language)}
+            </option>
+            <option value="planned">{tr(labels.planned, language)}</option>
+          </select>
+        </div>
+        <div className="result-bar">
+          <b>
+            {filtered.length}{" "}
+            {language === "vi" ? "khu công nghiệp" : "industrial parks"}
+          </b>
+          <span>
+            <ShieldCheck size={16} />
+            {language === "vi"
+              ? "Dữ liệu có nguồn đối chiếu"
+              : "Source-aware fields"}
+          </span>
+        </div>
+        {filtered.length ? (
+          <div className="park-grid">
+            {filtered.map((p) => (
+              <ParkCard key={p.id} park={p} />
+            ))}
+          </div>
+        ) : (
+          <Empty
+            title={
+              language === "vi"
+                ? "Không tìm thấy khu công nghiệp phù hợp"
+                : "No results"
+            }
+            text={
+              language === "vi"
+                ? "Vui lòng điều chỉnh từ khóa hoặc bộ lọc."
+                : "Try changing your filters."
+            }
+          />
+        )}
+      </div>
+    </PublicShell>
+  );
+}
+
+function Modal({
+  title,
+  children,
+  close,
+}: {
+  title: string;
+  children: ReactNode;
+  close: () => void;
+}) {
+  return (
+    <div className="modal-backdrop" onMouseDown={close}>
+      <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
+        <div className="modal-head">
+          <h3>{title}</h3>
+          <button onClick={close}>
+            <X />
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+function ContactModal({
+  type,
+  park,
+  close,
+}: {
+  type: string;
+  park: IndustrialParkProfile;
+  close: () => void;
+}) {
+  const { language } = useApp();
+  const [sent, setSent] = useState(false);
+  const modalTitle: Record<string, LocalizedText> = {
+    Inquiry: tx("Yêu cầu tư vấn", "Inquiry"),
+    Chat: tx("Trao đổi trực tuyến", "Chat"),
+    Meeting: tx("Yêu cầu cuộc hẹn", "Meeting request"),
+  };
+  if (sent)
+    return (
+      <Modal
+        title={language === "vi" ? "Đã ghi nhận" : "Request recorded"}
+        close={close}
+      >
+        <div className="success-state">
+          <CheckCircle2 />
+          <h3>
+            {language === "vi"
+              ? "VIG đã tiếp nhận yêu cầu"
+              : "VIG received your request"}
+          </h3>
+          <p>
+            {language === "vi"
+              ? "Yêu cầu đã được ghi nhận trong phiên bản demo. Bộ phận quản trị VIG sẽ tiếp tục xử lý ở bước tiếp theo."
+              : "This is a simulation. VIG Admin would be notified to coordinate the next step."}
+          </p>
+          <button className="button primary" onClick={close}>
+            {language === "vi" ? "Hoàn tất" : "Done"}
+          </button>
+        </div>
+      </Modal>
+    );
+  return (
+    <Modal
+      title={`${tr(modalTitle[type] || tx(type, type), language)} · ${tr(park.name, language)}`}
+      close={close}
+    >
+      <form
+        className="modal-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          setSent(true);
+        }}
+      >
+        <label>
+          {language === "vi" ? "Họ tên" : "Name"}
+          <input required />
+        </label>
+        <label>
+          Email
+          <input type="email" required />
+        </label>
+        <label>
+          {language === "vi" ? "Nội dung" : "Message"}
+          <textarea
+            defaultValue={
+              language === "vi"
+                ? `Tôi muốn tìm hiểu thêm về ${tr(park.name, language)}.`
+                : `I would like to know more about ${tr(park.name, language)}.`
+            }
+          />
+        </label>
+        <button className="button primary">
+          <Send size={16} />
+          {language === "vi" ? "Gửi yêu cầu" : "Send demo request"}
+        </button>
+      </form>
+    </Modal>
+  );
+}
+
+function ParkDetailPage() {
+  const { slug } = useParams();
+  const { language, parks, assets } = useApp();
+  const [modal, setModal] = useState("");
+  const park = parks.find((p) => p.slug === slug);
+  if (!park)
+    return (
+      <PublicShell>
+        <div className="page page-top">
+          <Empty
+            title={
+              language === "vi" ? "Không tìm thấy hồ sơ" : "Profile not found"
+            }
+            text={
+              language === "vi"
+                ? "Hồ sơ khu công nghiệp này không tồn tại."
+                : "This industrial park profile does not exist."
+            }
+          />
+        </div>
+      </PublicShell>
+    );
+  const linked = assets.filter((a) => a.parkId === park.id);
+  const publicDocs = park.documents;
+  const scrollToSection = (id: string) =>
+    document.getElementById(id)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  return (
+    <PublicShell>
+      <div className="detail-hero">
+        <img src={park.media[0]?.url} alt={tr(park.name, language)} />
+        <div className="detail-shade" />
+        <div className="page detail-hero-content">
+          <div className="breadcrumbs">
+            <Link to="/industrial-parks">
+              {language === "vi" ? "Khu công nghiệp" : "Industrial parks"}
+            </Link>
+            <ChevronRight size={14} />
+            <span>{tr(park.name, language)}</span>
+          </div>
+          <div className="detail-badges">
+            <Badge value={park.status} tone="green" />
+            <span className="verified">
+              <ShieldCheck size={15} />
+              {language === "vi" ? "Hồ sơ đã xác minh" : "Verified profile"}
+            </span>
+          </div>
+          <h1>{tr(park.name, language)}</h1>
+          <p>
+            <MapPin size={18} />
+            {tr(park.address, language)}
+          </p>
+          <div className="detail-actions">
+            <button className="button gold" onClick={() => setModal("Inquiry")}>
+              <Send size={17} />
+              {language === "vi" ? "Gửi yêu cầu" : "Send inquiry"}
+            </button>
+            <button className="button ghost" onClick={() => setModal("Chat")}>
+              <MessageCircle size={17} />
+              {language === "vi" ? "Trao đổi" : "Chat"}
+            </button>
+            <button
+              className="button ghost"
+              onClick={() =>
+                setModal(
+                  language === "vi" ? "Yêu cầu cuộc hẹn" : "Request meeting",
+                )
+              }
+            >
+              <Users size={17} />
+              {language === "vi" ? "Đặt lịch kết nối" : "Request meeting"}
+            </button>
+          </div>
+        </div>
+      </div>
+      <nav className="anchor-nav">
+        <div className="page">
+          <button type="button" onClick={() => scrollToSection("overview")}>
+            {language === "vi" ? "Tổng quan" : "Overview"}
+          </button>
+          <button type="button" onClick={() => scrollToSection("connectivity")}>
+            {language === "vi" ? "Kết nối" : "Connectivity"}
+          </button>
+          <button type="button" onClick={() => scrollToSection("infrastructure")}>
+            {language === "vi" ? "Hạ tầng" : "Infrastructure"}
+          </button>
+          <button type="button" onClick={() => scrollToSection("workforce")}>
+            {language === "vi" ? "Nhân lực" : "Workforce"}
+          </button>
+          <button type="button" onClick={() => scrollToSection("incentives")}>
+            {language === "vi" ? "Ưu đãi" : "Incentives"}
+          </button>
+          <button type="button" onClick={() => scrollToSection("media")}>
+            {language === "vi" ? "Hình ảnh" : "Media"}
+          </button>
+          <button type="button" onClick={() => scrollToSection("documents")}>
+            {language === "vi" ? "Tài liệu" : "Documents"}
+          </button>
+        </div>
+      </nav>
+      <div className="page detail-page">
+        <section className="key-facts">
+          <div>
+            <span>{language === "vi" ? "Tổng diện tích" : "Total area"}</span>
+            <SourceValue value={park.totalArea} />
+          </div>
+          <div>
+            <span>
+              {language === "vi" ? "Đất công nghiệp" : "Industrial land"}
+            </span>
+            <SourceValue value={park.industrialLandArea} />
+          </div>
+          <div>
+            <span>
+              {language === "vi" ? "Diện tích sẵn sàng" : "Available area"}
+            </span>
+            <SourceValue value={park.availability[0].available} />
+          </div>
+          <div>
+            <span>{language === "vi" ? "Lô tối thiểu" : "Minimum plot"}</span>
+            {park.availability[0].minimumPlot ? (
+              <SourceValue value={park.availability[0].minimumPlot} />
+            ) : (
+              <b>—</b>
+            )}
+          </div>
+        </section>
+        <section id="overview" className="detail-grid">
+          <div className="content-card wide">
+            <SectionTitle
+              eyebrow="01 · PROFILE"
+              title={
+                language === "vi"
+                  ? "Tổng quan khu công nghiệp"
+                  : "Industrial park overview"
+              }
+            />
+            <p className="lead">{tr(park.summary, language)}</p>
+            <div className="info-grid">
+              <div>
+                <small>{language === "vi" ? "Loại hình" : "Park type"}</small>
+                <b>{tr(park.parkType, language)}</b>
+              </div>
+              <div>
+                <small>
+                  {language === "vi" ? "Khu kinh tế" : "Economic zone"}
+                </small>
+                <b>{tr(park.economicZone, language)}</b>
+              </div>
+              <div>
+                <small>
+                  {language === "vi" ? "Năm thành lập" : "Established"}
+                </small>
+                <b>{park.establishmentYear}</b>
+              </div>
+              <div>
+                <small>{language === "vi" ? "Giai đoạn" : "Phase"}</small>
+                <b>{tr(park.phases[0].name, language)}</b>
+              </div>
+            </div>
+          </div>
+          <aside className="content-card operator-card">
+            <span>{park.logoText}</span>
+            <h3>{park.operator.name}</h3>
+            <p>{tr(park.operator.overview, language)}</p>
+            <a href={park.operator.website} target="_blank">
+              {language === "vi"
+                ? "Website đơn vị phát triển"
+                : "Developer website"}
+              <ExternalLink size={14} />
+            </a>
+          </aside>
+        </section>
+        <section className="profile-stats">
+          <SectionTitle
+            eyebrow="OPERATOR TRACK RECORD"
+            title={
+              language === "vi"
+                ? "Năng lực đơn vị phát triển"
+                : "Developer track record"
+            }
+          />
+          <div>
+            {park.operator.portfolioStats.map((x) => (
+              <article key={x.label.en}>
+                <SourceValue value={x.value} compact />
+                <span>{tr(x.label, language)}</span>
+              </article>
+            ))}
+          </div>
+          {park.conflicts?.length ? (
+            <div className="warning">
+              <Activity />
+              <div>
+                <b>
+                  {language === "vi"
+                    ? "Có dữ liệu cần đối soát"
+                    : "Source conflict requires review"}
+                </b>
+                <p>
+                  {park.conflicts[0].field}: {park.conflicts[0].primary} ↔{" "}
+                  {park.conflicts[0].secondary}
+                </p>
+              </div>
+            </div>
+          ) : null}
+        </section>
+        <section id="connectivity">
+          <SectionTitle
+            eyebrow="02 · LOCATION"
+            title={
+              language === "vi"
+                ? "Vị trí và kết nối chiến lược"
+                : "Location and strategic connectivity"
+            }
+          />
+          <div className="connect-grid">
+            <div className="map-panel">
+              <div className="map-rings">
+                <span className="map-point park">VIG</span>
+                <span className="map-point port">
+                  <Ship /> Port
+                </span>
+                <span className="map-point airport">
+                  <Plane /> Airport
+                </span>
+                <span className="map-point city">Hanoi</span>
+                <i />
+                <i />
+                <i />
+              </div>
+              <div className="coordinates">
+                <MapPin size={16} />
+                {park.coordinates?.lat.toFixed(4)},{" "}
+                {park.coordinates?.lng.toFixed(4)}
+              </div>
+            </div>
+            <div className="connect-list">
+              {park.connectivity.map((c, i) => (
+                <article key={i}>
+                  {c.type === "port" ? (
+                    <Ship />
+                  ) : c.type === "airport" ? (
+                    <Plane />
+                  ) : c.type === "rail" ? (
+                    <TrainFront />
+                  ) : (
+                    <MapPin />
+                  )}
+                  <div>
+                    <b>{tr(c.name, language)}</b>
+                    <span>
+                      {c.distanceKm
+                        ? displaySourced(c.distanceKm, language)
+                        : ""}{" "}
+                      {c.travelTime ? `· ${tr(c.travelTime, language)}` : ""}
+                    </span>
+                    {c.completionYear && (
+                      <small>
+                        {language === "vi"
+                          ? "Dự kiến hoàn thành"
+                          : "Expected completion"}{" "}
+                        {c.completionYear}
+                      </small>
+                    )}
+                  </div>
+                  <Badge
+                    value={c.status}
+                    tone={c.status === "operational" ? "green" : "amber"}
+                  />
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+        <section>
+          <SectionTitle
+            eyebrow="03 · MASTERPLAN"
+            title={
+              language === "vi"
+                ? "Quy hoạch mặt bằng và hiện trạng quỹ đất"
+                : "Masterplan and land availability"
+            }
+          />
+          <div className="masterplan-card">
+            <div className="masterplan">
+              <span className="zone available">A1</span>
+              <span className="zone occupied">B1</span>
+              <span className="zone reserved">C1</span>
+              <span className="zone future">D1</span>
+              <span className="zone utility">
+                <Zap />U
+              </span>
+              <div className="road horizontal" />
+              <div className="road vertical" />
+            </div>
+            <div className="legend">
+              <b>{language === "vi" ? "Chú giải" : "Legend"}</b>
+              <span>
+                <i className="available" />
+                {language === "vi" ? "Sẵn sàng bàn giao" : "Available"}
+              </span>
+              <span>
+                <i className="reserved" />
+                {language === "vi" ? "Đã giữ chỗ" : "Reserved"}
+              </span>
+              <span>
+                <i className="occupied" />
+                {language === "vi" ? "Đã lấp đầy" : "Occupied"}
+              </span>
+              <span>
+                <i className="utility" />
+                {language === "vi" ? "Hạ tầng kỹ thuật" : "Utility"}
+              </span>
+              <span>
+                <i className="future" />
+                {language === "vi" ? "Khu mở rộng" : "Future"}
+              </span>
+              <small>
+                {language === "vi"
+                  ? "Sơ đồ quy hoạch minh họa trong phiên bản demo"
+                  : "Interactive schematic for demonstration"}
+              </small>
+            </div>
+          </div>
+        </section>
+        <section id="infrastructure">
+          <SectionTitle
+            eyebrow="04 · INFRASTRUCTURE"
+            title={
+              language === "vi"
+                ? "Hạ tầng và tiện ích đồng bộ"
+                : "Integrated infrastructure and utilities"
+            }
+          />
+          <div className="utility-grid">
+            {park.utilities.map((u, i) => {
+              const UtilityIcon = [
+                Zap,
+                Warehouse,
+                Activity,
+                Globe2,
+                ShieldCheck,
+                Factory,
+              ][i % 6];
+              return (
+                <article key={u.key}>
+                  <UtilityIcon size={25} />
+                  <span>{tr(u.label, language)}</span>
+                  <SourceValue value={u.capacity} />
+                </article>
+              );
+            })}
+          </div>
+          <div className="pill-list">
+            {park.amenities.map((x) => (
+              <span key={x.en}>
+                <Check />
+                {tr(x, language)}
+              </span>
+            ))}
+          </div>
+        </section>
+        <section id="workforce" className="detail-grid">
+          <div className="content-card wide">
+            <SectionTitle
+              eyebrow="05 · PROVINCIAL CONTEXT"
+              title={
+                language === "vi"
+                  ? "Kinh tế địa phương và nguồn nhân lực"
+                  : "Provincial economy and workforce"
+              }
+            />
+            <div className="metric-grid">
+              <div>
+                <small>{language === "vi" ? "Dân số" : "Population"}</small>
+                <SourceValue value={park.provinceProfile.population} />
+              </div>
+              <div>
+                <small>GRDP</small>
+                <SourceValue value={park.provinceProfile.grdp} />
+              </div>
+              <div>
+                <small>
+                  {language === "vi" ? "Tốc độ tăng trưởng" : "Growth"}
+                </small>
+                <SourceValue value={park.provinceProfile.growthRate} />
+              </div>
+              <div>
+                <small>
+                  {language === "vi" ? "Lực lượng lao động" : "Labour force"}
+                </small>
+                <SourceValue value={park.workforce.laborForce} />
+              </div>
+              <div>
+                <small>
+                  {language === "vi"
+                    ? "Lao động qua đào tạo"
+                    : "Skilled labour"}
+                </small>
+                <SourceValue value={park.workforce.skilledLabor} />
+              </div>
+              <div>
+                <small>
+                  {language === "vi"
+                    ? "Nguồn lao động trong bán kính 20 km"
+                    : "20 km catchment"}
+                </small>
+                <SourceValue value={park.workforce.catchmentPopulation} />
+              </div>
+            </div>
+            <p>{tr(park.provinceProfile.context, language)}</p>
+          </div>
+          <aside className="content-card">
+            <h3>
+              {language === "vi" ? "Mức lương tham khảo" : "Salary benchmark"}
+            </h3>
+            {park.workforce.salaryBenchmark.length ? (
+              park.workforce.salaryBenchmark.map((x) => (
+                <div className="salary" key={x.role.en}>
+                  <span>{tr(x.role, language)}</span>
+                  <b>{x.rangeUsd}</b>
+                </div>
+              ))
+            ) : (
+              <p>{language === "vi" ? "Chưa có dữ liệu" : "Not available"}</p>
+            )}
+          </aside>
+        </section>
+        <section id="incentives">
+          <SectionTitle
+            eyebrow="06 · INCENTIVES"
+            title={
+              language === "vi" ? "Ưu đãi đầu tư" : "Investment incentives"
+            }
+          />
+          {park.incentives.length ? (
+            park.incentives.map((x) => (
+              <div className="tax-card" key={x.name.en}>
+                <div>
+                  <h3>{tr(x.name, language)}</h3>
+                  <p>{tr(x.eligibility, language)}</p>
+                  <small>
+                    {language === "vi" ? "Hiệu lực" : "Effective"}:{" "}
+                    {x.effectiveDate} · Source: {x.sourceDocumentId}
+                  </small>
+                </div>
+                <div className="tax-timeline">
+                  {x.schedule.map((s, i) => (
+                    <article key={i}>
+                      <b>{s.rate}</b>
+                      <span>{tr(s.label, language)}</span>
+                      <small>{s.years}</small>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            ))
+          ) : (
+            <Empty
+              title={
+                language === "vi"
+                  ? "Chưa có thông tin ưu đãi"
+                  : "No incentive information"
+              }
+              text={
+                language === "vi"
+                  ? "Dữ liệu chưa được cung cấp."
+                  : "This information has not been provided."
+              }
+            />
+          )}
+        </section>
+        <section>
+          <SectionTitle
+            eyebrow="07 · AVAILABILITY"
+            title={
+              language === "vi"
+                ? "Quỹ đất và nhà xưởng đang chào thuê"
+                : "Available land and industrial assets"
+            }
+          />
+          {linked.length ? (
+            <div className="asset-grid">
+              {linked.map((a) => (
+                <AssetCard key={a.id} asset={a} />
+              ))}
+            </div>
+          ) : (
+            <Empty
+              title={
+                language === "vi"
+                  ? "Chưa có sản phẩm được công bố"
+                  : "No published assets"
+              }
+              text={
+                language === "vi"
+                  ? "Liên hệ VIG để được hỗ trợ tìm mặt bằng phù hợp."
+                  : "Contact VIG for supply sourcing support."
+              }
+            />
+          )}
+        </section>
+        <section>
+          <SectionTitle
+            eyebrow="08 · INVESTMENT PROCESS"
+            title={
+              language === "vi"
+                ? "Quy trình thuê đất và thực hiện thủ tục đầu tư"
+                : "Land lease and investment procedure"
+            }
+          />
+          <div className="process-list">
+            {park.process.map((p) => (
+              <article key={p.order}>
+                <span>{p.order}</span>
+                <div>
+                  <h3>{tr(p.title, language)}</h3>
+                  <p>
+                    {tr(p.authority, language)} · {tr(p.duration, language)}
+                  </p>
+                  <small>
+                    {language === "vi" ? "Kết quả hồ sơ" : "Output"}:{" "}
+                    {tr(p.output, language)}
+                  </small>
+                </div>
+                {p.payment && <b>{p.payment}</b>}
+              </article>
+            ))}
+          </div>
+        </section>
+        <section className="detail-grid">
+          <div className="content-card wide">
+            <SectionTitle
+              eyebrow="09 · LOGISTICS"
+              title={
+                language === "vi"
+                  ? "Năng lực kết nối logistics"
+                  : "Logistics capability"
+              }
+            />
+            <div className="metric-grid">
+              {park.logistics.portCapacityDwt && (
+                <div>
+                  <small>
+                    {language === "vi"
+                      ? "Cỡ tàu tiếp nhận tối đa"
+                      : "Maximum vessel"}
+                  </small>
+                  <SourceValue value={park.logistics.portCapacityDwt} />
+                </div>
+              )}
+              {park.logistics.cargoThroughput && (
+                <div>
+                  <small>
+                    {language === "vi"
+                      ? "Sản lượng hàng hóa qua cảng"
+                      : "Port throughput"}
+                  </small>
+                  <SourceValue value={park.logistics.cargoThroughput} />
+                </div>
+              )}
+            </div>
+            <div className="route-list">
+              {park.logistics.shippingRoutes.map((r) => (
+                <div key={r.destination}>
+                  <Ship />
+                  <b>{r.destination}</b>
+                  <span>{r.time}</span>
+                  <small>{r.frequency}</small>
+                </div>
+              ))}
+            </div>
+          </div>
+          <aside className="content-card">
+            <h3>
+              {language === "vi"
+                ? "Chi phí vận chuyển tham khảo"
+                : "Indicative costs"}
+            </h3>
+            {park.logistics.indicativeCosts.map((c) => (
+              <div className="salary" key={c.container}>
+                <span>Container {c.container}</span>
+                <SourceValue value={c.usd} compact />
+              </div>
+            ))}
+            <small>
+              {language === "vi"
+                ? "Chi phí mang tính tham khảo tại thời điểm của tài liệu nguồn."
+                : "Indicative only, based on the source profile."}
+            </small>
+          </aside>
+        </section>
+        <section className="triple">
+          <div className="content-card">
+            <h3>
+              {language === "vi" ? "Ngành phù hợp" : "Suitable industries"}
+            </h3>
+            <div className="pill-list">
+              {park.suitableIndustries.map((x) => (
+                <span key={x}>
+                  <Check /> {industryLabel(x, language)}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="content-card">
+            <h3>
+              {language === "vi" ? "Phát triển bền vững" : "Sustainability"}
+            </h3>
+            {park.sustainability.map((x) => (
+              <p className="checkline" key={x.en}>
+                <Check />
+                {tr(x, language)}
+              </p>
+            ))}
+          </div>
+          <div className="content-card">
+            <h3>{language === "vi" ? "Cộng đồng" : "Community"}</h3>
+            {park.community.length ? (
+              park.community.map((x) => (
+                <p className="checkline" key={x.en}>
+                  <Check />
+                  {tr(x, language)}
+                </p>
+              ))
+            ) : (
+              <p>{language === "vi" ? "Chưa có dữ liệu" : "Not available"}</p>
+            )}
+          </div>
+        </section>
+        {park.media.length ? (
+          <section id="media">
+            <SectionTitle
+              eyebrow="10 · MEDIA"
+              title={
+                language === "vi"
+                  ? "Hình ảnh và mặt bằng khu công nghiệp"
+                  : "Industrial park media and masterplan"
+              }
+            />
+            <div className="media-gallery">
+              {park.media
+                .filter((item) => item.approved)
+                .map((item) => (
+                  <figure key={item.id}>
+                    <img src={item.url} alt={tr(item.title, language)} />
+                    <figcaption>
+                      <b>{tr(item.title, language)}</b>
+                      <span>
+                        {item.capturedAt
+                          ? `${language === "vi" ? "Ngày cập nhật" : "Updated"}: ${item.capturedAt}`
+                          : language === "vi"
+                            ? "Hình ảnh minh họa"
+                            : "Illustrative media"}
+                      </span>
+                    </figcaption>
+                  </figure>
+                ))}
+            </div>
+            {park.id.includes("demo") ? (
+              <p className="media-disclaimer">
+                {language === "vi"
+                  ? "Hình ảnh được tạo cho mục đích mô phỏng giao diện và không phản ánh một dự án thực tế."
+                  : "Images were created for interface demonstration and do not depict a real project."}
+              </p>
+            ) : null}
+          </section>
+        ) : null}
+        <section id="documents">
+          <SectionTitle
+            eyebrow="11 · DOCUMENTS"
+            title={
+              language === "vi"
+                ? "Hồ sơ pháp lý và tài liệu dự án"
+                : "Legal evidence and verification"
+            }
+          />
+          <div className="doc-list">
+            {publicDocs.map((d) => (
+              <article key={d.id}>
+                <span
+                  className={`doc-icon ${d.visibility === "admin_only" ? "locked" : ""}`}
+                >
+                  {d.visibility === "admin_only" ? <Lock /> : <FileCheck2 />}
+                </span>
+                <div>
+                  <h3>{tr(d.title, language)}</h3>
+                  <p>
+                    {tr(d.issuer, language)}{" "}
+                    {d.issueDate ? `· ${d.issueDate}` : ""} ·{" "}
+                    {d.language.toUpperCase()}
+                  </p>
+                  <small>
+                    {tr(
+                      labels[d.verificationStatus] ||
+                        tx(d.verificationStatus, d.verificationStatus),
+                      language,
+                    )}{" "}
+                    ·{" "}
+                    {d.visibility === "admin_only"
+                      ? language === "vi"
+                        ? "chỉ quản trị viên"
+                        : "admin only"
+                      : language === "vi"
+                        ? "công khai"
+                        : "public"}
+                  </small>
+                </div>
+                {d.visibility === "admin_only" ? (
+                  <button disabled>
+                    <Lock size={15} />
+                    {language === "vi" ? "Chỉ quản trị viên" : "Admin only"}
+                  </button>
+                ) : (
+                  <a href={d.sourceUrl} target="_blank" rel="noreferrer">
+                    <Download size={15} />
+                    {language === "vi" ? "Xem tài liệu" : "View source"}
+                  </a>
+                )}
+              </article>
+            ))}
+          </div>
+        </section>
+        <section className="contact-card">
+          <div>
+            <span>CONTACT VIG</span>
+            <h2>
+              {language === "vi"
+                ? "Quan tâm đến cơ hội đầu tư tại khu công nghiệp này?"
+                : "Ready to explore this opportunity?"}
+            </h2>
+            <p>
+              {park.contact
+                ? `${tr(park.contact.office, language)} · ${park.contact.email}`
+                : ""}
+            </p>
+          </div>
+          <div>
+            <button
+              className="button primary"
+              onClick={() => setModal("Inquiry")}
+            >
+              <Send size={17} />
+              {language === "vi" ? "Gửi yêu cầu tư vấn" : "Send inquiry"}
+            </button>
+            <Link className="button outline" to="/find-supply">
+              <PackageSearch size={17} />
+              {language === "vi" ? "Tìm mặt bằng tương tự" : "Find Supply"}
+            </Link>
+          </div>
+        </section>
+      </div>
+      {modal && (
+        <ContactModal type={modal} park={park} close={() => setModal("")} />
+      )}
+    </PublicShell>
+  );
+}
+
+function AssetCard({
+  asset,
+}: {
+  asset: ReturnType<typeof useApp>["assets"][number];
+}) {
+  const { language, parks } = useApp();
+  const park = parks.find((p) => p.id === asset.parkId);
+  return (
+    <article className="asset-card">
+      <Link to={`/assets/${asset.id}`}>
+        <img src={asset.image} alt={tr(asset.name, language)} />
+      </Link>
+      <div>
+        <Badge value={asset.type} tone="blue" />
+        <h3>
+          <Link to={`/assets/${asset.id}`}>{tr(asset.name, language)}</Link>
+        </h3>
+        <p>
+          <MapPin size={14} />
+          {park ? tr(park.name, language) : ""}
+        </p>
+        <div>
+          <b>
+            {asset.area.toLocaleString()} {asset.unit}
+          </b>
+          <SourceValue value={asset.price} compact />
+        </div>
+      </div>
+    </article>
+  );
+}
+function AssetsPage() {
+  const { language, assets } = useApp();
+  const [type, setType] = useState("all");
+  const filtered = assets.filter((a) => type === "all" || a.type === type);
+  return (
+    <PublicShell>
+      <div className="page page-top">
+        <div className="page-heading">
+          <span>INDUSTRIAL ASSETS</span>
+          <h1>
+            {language === "vi"
+              ? "Bất động sản công nghiệp"
+              : "Industrial supply"}
+          </h1>
+          <p>
+            {language === "vi"
+              ? "Quỹ đất công nghiệp, nhà xưởng xây sẵn, kho vận và giải pháp xây theo yêu cầu."
+              : "Land, factories, warehouses and build-to-suit solutions."}
+          </p>
+        </div>
+        <div className="filter-tabs">
+          {[
+            "all",
+            "industrial_land",
+            "ready_built_factory",
+            "warehouse",
+            "build_to_suit",
+          ].map((x) => (
+            <button
+              className={type === x ? "active" : ""}
+              onClick={() => setType(x)}
+              key={x}
+            >
+              {x === "all"
+                ? language === "vi"
+                  ? "Tất cả loại hình"
+                  : "All"
+                : tr(labels[x], language)}
+            </button>
+          ))}
+        </div>
+        <div className="asset-grid">
+          {filtered.map((a) => (
+            <AssetCard key={a.id} asset={a} />
+          ))}
+        </div>
+      </div>
+    </PublicShell>
+  );
+}
+function AssetDetailPage() {
+  const { id } = useParams();
+  const { assets, parks, language } = useApp();
+  const asset = assets.find((a) => a.id === id);
+  if (!asset) return <Navigate to="/assets" />;
+  const park = parks.find((p) => p.id === asset.parkId)!;
+  return (
+    <PublicShell>
+      <div className="page page-top">
+        <div className="breadcrumbs">
+          <Link to="/assets">
+            {language === "vi" ? "Bất động sản công nghiệp" : "Assets"}
+          </Link>
+          <ChevronRight size={14} />
+          <span>{tr(asset.name, language)}</span>
+        </div>
+        <div className="asset-detail">
+          <img src={asset.image} alt={tr(asset.name, language)} />
+          <div>
+            <Badge value={asset.type} />
+            <h1>{tr(asset.name, language)}</h1>
+            <p>
+              <MapPin size={16} />
+              <Link to={`/industrial-parks/${park.slug}`}>
+                {tr(park.name, language)}
+              </Link>
+            </p>
+            <p>{tr(asset.description, language)}</p>
+            <div className="key-facts stacked">
+              <div>
+                <span>
+                  {language === "vi" ? "Diện tích chào thuê" : "Area"}
+                </span>
+                <b>
+                  {asset.area.toLocaleString()} {asset.unit}
+                </b>
+              </div>
+              <div>
+                <span>{language === "vi" ? "Đơn giá tham khảo" : "Price"}</span>
+                <SourceValue value={asset.price} />
+              </div>
+              <div>
+                <span>
+                  {language === "vi" ? "Thời điểm bàn giao" : "Available from"}
+                </span>
+                <b>{asset.availableFrom}</b>
+              </div>
+              <div>
+                <span>{language === "vi" ? "Công suất điện" : "Power"}</span>
+                <b>{asset.powerMva} MVA</b>
+              </div>
+            </div>
+            <Link className="button primary" to="/find-supply">
+              <Send />{" "}
+              {language === "vi" ? "Gửi yêu cầu tư vấn" : "Send requirement"}
+            </Link>
+          </div>
+        </div>
+      </div>
+    </PublicShell>
+  );
+}
+
+const emptyForm = {
+  organization: "",
+  contactName: "",
+  email: "",
+  phone: "",
+  service: "Premium Matching",
+  assetType: "",
+  location: "",
+  areaMin: "",
+  areaMax: "",
+  transaction: "lease",
+  budgetOrPrice: "",
+  industry: "",
+  availabilityDate: "",
+  requirements: "",
+};
+function RequestFormPage({ kind }: { kind: RequestKind }) {
+  const { language, createRequest } = useApp();
+  const navigate = useNavigate();
+  const [form, setForm] = useState(emptyForm);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const isSupply = kind === "find_supply";
+  const update = (k: string, v: string) => setForm((x) => ({ ...x, [k]: v }));
+  function submit(e: FormEvent) {
+    e.preventDefault();
+    const er: Record<string, string> = {};
+    [
+      "organization",
+      "contactName",
+      "email",
+      "phone",
+      "assetType",
+      "location",
+      "areaMin",
+      "areaMax",
+      "industry",
+      "availabilityDate",
+    ].forEach((k) => {
+      if (!String(form[k as keyof typeof form]).trim())
+        er[k] = language === "vi" ? "Vui lòng nhập thông tin" : "Required";
+    });
+    if (form.email && !/^\S+@\S+\.\S+$/.test(form.email))
+      er.email =
+        language === "vi" ? "Địa chỉ email không hợp lệ" : "Invalid email";
+    if (
+      +form.areaMin <= 0 ||
+      +form.areaMax <= 0 ||
+      +form.areaMin > +form.areaMax
+    )
+      er.areaMin =
+        language === "vi"
+          ? "Khoảng diện tích không hợp lệ"
+          : "Invalid area range";
+    if (
+      form.availabilityDate &&
+      new Date(form.availabilityDate) < new Date(new Date().toDateString())
+    )
+      er.availabilityDate =
+        language === "vi"
+          ? "Thời điểm bàn giao phải từ hôm nay trở đi"
+          : "Date must be in the future";
+    setErrors(er);
+    if (Object.keys(er).length) return;
+    const id = createRequest({
+      ...form,
+      kind,
+      areaMin: +form.areaMin,
+      areaMax: +form.areaMax,
+      transaction: form.transaction as "lease" | "sale",
+    });
+    navigate(`/request-confirmation/${id}`);
+  }
+  const field = (key: keyof typeof form, label: string, type = "text") => (
+    <label className={errors[key] ? "invalid" : ""}>
+      <span>{label} *</span>
+      <input
+        type={type}
+        value={form[key]}
+        onChange={(e) => update(key, e.target.value)}
+      />
+      {errors[key] && <small>{errors[key]}</small>}
+    </label>
+  );
+  return (
+    <PublicShell>
+      <div className="request-hero">
+        <div className="page">
+          <span>
+            {isSupply
+              ? "FIND SUPPLY · TÌM MẶT BẰNG"
+              : "FIND DEMAND · TÌM KHÁCH THUÊ/MUA"}
+          </span>
+          <h1>
+            {isSupply
+              ? language === "vi"
+                ? "Tìm khu công nghiệp, đất, nhà xưởng hoặc kho phù hợp"
+                : "Find an industrial park, land, factory or warehouse"
+              : language === "vi"
+                ? "Tìm khách thuê hoặc bên nhận chuyển nhượng phù hợp"
+                : "Find the right tenant or buyer"}
+          </h1>
+          <p>
+            {language === "vi"
+              ? "Đội ngũ VIG sẽ tiếp nhận, rà soát nhu cầu và hỗ trợ kết nối với các bên phù hợp."
+              : "VIG Admin will receive, verify and coordinate the connection."}
+          </p>
+        </div>
+      </div>
+      <div className="page request-layout">
+        <form className="request-form" onSubmit={submit}>
+          <div className="form-section">
+            <h2>
+              1.{" "}
+              {language === "vi"
+                ? isSupply
+                  ? "Nhu cầu mặt bằng công nghiệp"
+                  : "Thông tin mặt bằng chào thuê/chuyển nhượng"
+                : "Industrial requirement"}
+            </h2>
+            <div className="form-grid">
+              {field(
+                "assetType",
+                language === "vi" ? "Loại hình bất động sản" : "Asset type",
+              )}
+              {field(
+                "location",
+                language === "vi"
+                  ? isSupply
+                    ? "Tỉnh/thành hoặc khu vực mong muốn"
+                    : "Vị trí tài sản"
+                  : "Location",
+              )}{" "}
+              {field(
+                "areaMin",
+                language === "vi" ? "Diện tích từ (m²)" : "Minimum area",
+                "number",
+              )}
+              {field(
+                "areaMax",
+                language === "vi" ? "Diện tích đến (m²)" : "Maximum area",
+                "number",
+              )}
+              <label>
+                <span>
+                  {language === "vi" ? "Hình thức giao dịch" : "Transaction"} *
+                </span>
+                <select
+                  value={form.transaction}
+                  onChange={(e) => update("transaction", e.target.value)}
+                >
+                  <option value="lease">
+                    {language === "vi"
+                      ? isSupply
+                        ? "Thuê"
+                        : "Cho thuê"
+                      : "Lease"}
+                  </option>
+                  <option value="sale">
+                    {isSupply
+                      ? language === "vi"
+                        ? "Nhận chuyển nhượng"
+                        : "Purchase"
+                      : language === "vi"
+                        ? "Chuyển nhượng"
+                        : "Sale"}
+                  </option>
+                </select>
+              </label>
+              {field(
+                "budgetOrPrice",
+                isSupply
+                  ? language === "vi"
+                    ? "Ngân sách dự kiến / Chưa xác định"
+                    : "Budget / Not specified"
+                  : language === "vi"
+                    ? "Đơn giá chào / Thỏa thuận"
+                    : "Asking price / Negotiable",
+              )}
+              {field(
+                "industry",
+                language === "vi"
+                  ? isSupply
+                    ? "Ngành nghề dự kiến"
+                    : "Ngành nghề tiếp nhận"
+                  : "Suitable industry",
+              )}
+              {field(
+                "availabilityDate",
+                isSupply
+                  ? language === "vi"
+                    ? "Thời điểm cần bàn giao"
+                    : "Required date"
+                  : language === "vi"
+                    ? "Thời điểm sẵn sàng bàn giao"
+                    : "Available from",
+                "date",
+              )}
+            </div>
+            <label>
+              <span>
+                {language === "vi"
+                  ? "Yêu cầu về điện, hạ tầng kỹ thuật, môi trường và điều kiện khác"
+                  : "Technical, infrastructure and other requirements"}
+              </span>
+              <textarea
+                value={form.requirements}
+                onChange={(e) => update("requirements", e.target.value)}
+                rows={4}
+              />
+            </label>
+          </div>
+          <div className="form-section">
+            <h2>
+              2.{" "}
+              {language === "vi"
+                ? "Thông tin doanh nghiệp và đầu mối liên hệ"
+                : "Organisation and contact"}
+            </h2>
+            <div className="form-grid">
+              {field(
+                "organization",
+                language === "vi" ? "Tên doanh nghiệp" : "Organisation",
+              )}
+              {field(
+                "contactName",
+                language === "vi" ? "Họ tên người liên hệ" : "Contact name",
+              )}
+              {field("email", "Email", "email")}
+              {field("phone", language === "vi" ? "Số điện thoại" : "Phone")}
+            </div>
+          </div>
+          <div className="form-section">
+            <h2>
+              3.{" "}
+              {language === "vi" ? "Gói hỗ trợ mong muốn" : "Preferred service"}
+            </h2>
+            <div className="service-options">
+              {(isSupply
+                ? [
+                    "Find Supply",
+                    "Premium Matching",
+                    "Supply Sourcing",
+                    "Meeting / Connection",
+                  ]
+                : [
+                    "Find Demand",
+                    "Premium Matching",
+                    "Market Outreach",
+                    "Meeting / Connection",
+                  ]
+              ).map((x) => (
+                <label key={x} className={form.service === x ? "selected" : ""}>
+                  <input
+                    type="radio"
+                    name="service"
+                    checked={form.service === x}
+                    onChange={() => update("service", x)}
+                  />
+                  <CheckCircle2 />
+                  <span>{x}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <label className="consent">
+            <input type="checkbox" required />
+            {language === "vi"
+              ? "Tôi đồng ý để VIG sử dụng thông tin đã cung cấp nhằm hỗ trợ tìm kiếm và kết nối đối tác."
+              : "I agree that VIG may use this information to coordinate the connection."}
+          </label>
+          <button className="button primary submit">
+            <Send />
+            {language === "vi" ? "Gửi yêu cầu cho VIG" : "Submit request"}
+          </button>
+        </form>
+        <aside className="request-aside">
+          <ShieldCheck />
+          <h3>
+            {language === "vi"
+              ? "Quy trình hỗ trợ của VIG"
+              : "Admin-assisted workflow"}
+          </h3>
+          {[
+            language === "vi" ? "Tiếp nhận yêu cầu" : "Receive request",
+            language === "vi" ? "Rà soát và xác minh" : "Verify information",
+            language === "vi"
+              ? "Đề xuất phương án phù hợp"
+              : "Match candidates",
+            language === "vi" ? "Kết nối các bên" : "Coordinate connection",
+          ].map((x, i) => (
+            <div key={x}>
+              <span>{i + 1}</span>
+              <b>{x}</b>
+            </div>
+          ))}
+          <small>
+            {language === "vi"
+              ? "Phiên bản demo chỉ mô phỏng quy trình tiếp nhận và kết nối; không thực hiện giao dịch, thanh toán hoặc tổ chức cuộc họp."
+              : "The demo does not execute transactions, payments or live meetings."}
+          </small>
+        </aside>
+      </div>
+    </PublicShell>
+  );
+}
+function ConfirmationPage() {
+  const { id } = useParams();
+  const { language, requests } = useApp();
+  const r = requests.find((x) => x.id === id);
+  return (
+    <PublicShell>
+      <div className="page confirmation">
+        <CheckCircle2 />
+        <span>
+          {language === "vi" ? "GỬI YÊU CẦU THÀNH CÔNG" : "SUBMITTED"}
+        </span>
+        <h1>
+          {language === "vi"
+            ? "VIG đã tiếp nhận yêu cầu"
+            : "VIG received your request"}
+        </h1>
+        <p>
+          {language === "vi" ? "Mã tham chiếu" : "Reference"}: <b>{id}</b>
+        </p>
+        {r && (
+          <div className="confirmation-card">
+            <div>
+              <small>
+                {language === "vi" ? "Doanh nghiệp" : "Organisation"}
+              </small>
+              <b>{r.organization}</b>
+            </div>
+            <div>
+              <small>{language === "vi" ? "Dịch vụ" : "Service"}</small>
+              <b>{r.service}</b>
+            </div>
+            <div>
+              <small>{language === "vi" ? "Trạng thái" : "Status"}</small>
+              <Badge value={r.status} />
+            </div>
+          </div>
+        )}
+        <p>
+          {language === "vi"
+            ? "VIG Admin đã được thông báo. Đây là luồng mô phỏng và không gửi dữ liệu ra bên ngoài."
+            : "VIG Admin has been notified. This is a simulation and no data was transmitted externally."}
+        </p>
+        <div>
+          <Link className="button primary" to="/industrial-parks">
+            {language === "vi" ? "Tiếp tục khám phá" : "Continue exploring"}
+          </Link>
+          <Link className="button outline" to="/home">
+            Home
+          </Link>
+        </div>
+      </div>
+    </PublicShell>
+  );
+}
+function ExpoPage() {
+  const { language, expos } = useApp();
+  return (
+    <PublicShell>
+      <div className="expo-hero">
+        <div className="page">
+          <Globe2 />
+          <span>DIGITAL TRADEXPO</span>
+          <h1>
+            {language === "vi"
+              ? "Triển lãm Công nghiệp số"
+              : "Digital Industrial Expo"}
+          </h1>
+          <p>
+            {language === "vi"
+              ? "Kết nối doanh nghiệp Việt Nam với thị trường quốc tế qua gian hàng số và phiên kết nối trực tuyến."
+              : "Connect Vietnamese enterprises with global markets through digital booths and online sessions."}
+          </p>
+        </div>
+      </div>
+      <div className="page section">
+        <div className="expo-grid">
+          {expos.map((e) => (
+            <article key={e.id}>
+              <Badge
+                value={e.status}
+                tone={e.status === "live" ? "red" : "amber"}
+              />
+              <Globe2 />
+              <h2>{tr(e.title, language)}</h2>
+              <p>{e.industries.join(" · ")}</p>
+              <div>
+                <span>
+                  <Clock3 /> {e.date}
+                </span>
+                <span>
+                  <Users /> {e.exhibitors} exhibitors
+                </span>
+              </div>
+              <button
+                className="button primary"
+                onClick={() =>
+                  alert(
+                    language === "vi"
+                      ? "Mô phỏng: mở trang chi tiết Expo"
+                      : "Demo: open Expo detail",
+                  )
+                }
+              >
+                {language === "vi" ? "Khám phá Expo" : "Explore Expo"}
+              </button>
+            </article>
+          ))}
+        </div>
+      </div>
+    </PublicShell>
+  );
+}
+function LoginPage() {
+  const { language, setRole } = useApp();
+  const navigate = useNavigate();
+  return (
+    <PublicShell>
+      <div className="login-page">
+        <div className="login-card">
+          <span className="brand-mark">VIG</span>
+          <h1>
+            {language === "vi"
+              ? "Truy cập hệ thống quản trị VIG"
+              : "Access VIG Admin"}
+          </h1>
+          <p>
+            {language === "vi"
+              ? "Phiên bản demo cho phép truy cập trực tiếp, không yêu cầu tài khoản."
+              : "Demo mode does not require real credentials."}
+          </p>
+          <button
+            className="button primary"
+            onClick={() => {
+              setRole("admin");
+              navigate("/admin/dashboard");
+            }}
+          >
+            <ShieldCheck />{" "}
+            {language === "vi" ? "Vào trang quản trị" : "Enter admin console"}
+          </button>
+          <Link to="/home">
+            {language === "vi"
+              ? "Quay lại trang công khai"
+              : "Return to public portal"}
+          </Link>
+        </div>
+      </div>
+    </PublicShell>
+  );
+}
+
+function AdminGuard({ children }: { children: ReactNode }) {
+  const { role } = useApp();
+  return role === "admin" ? children : <Navigate to="/login" replace />;
+}
+function AdminShell({ children }: { children: ReactNode }) {
+  const { language, setRole, resetDemo } = useApp();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const openPublicPortal = () => {
+    navigate("/home");
+    window.setTimeout(() => setRole("public"), 0);
+  };
+  const links = [
+    [
+      "/admin/dashboard",
+      LayoutDashboard,
+      language === "vi" ? "Tổng quan" : "Overview",
+    ],
+    [
+      "/admin/industrial-parks",
+      Factory,
+      language === "vi" ? "Dữ liệu KCN" : "Park data",
+    ],
+    [
+      "/admin/requests",
+      ClipboardCheck,
+      language === "vi" ? "Quản lý yêu cầu" : "Request management",
+    ],
+  ];
+  return (
+    <div className="admin-shell">
+      <aside className="admin-sidebar">
+        <Link to="/admin/dashboard" className="admin-brand">
+          <span>VIG</span>
+          <div>
+            <b>VIG Admin</b>
+            <small>Operations Console</small>
+          </div>
+        </Link>
+        <nav>
+          {links.map(([path, I, label]) => {
+            const Icon = I as typeof Factory;
+            return (
+              <Link
+                className={
+                  location.pathname.startsWith(path as string) ? "active" : ""
+                }
+                to={path as string}
+                key={String(path)}
+              >
+                <Icon size={19} />
+                {String(label)}
+              </Link>
+            );
+          })}
+        </nav>
+        <div className="sidebar-bottom">
+          <button onClick={resetDemo}>
+            <RotateCcw />
+            {language === "vi" ? "Khôi phục dữ liệu demo" : "Reset demo"}
+          </button>
+          <button onClick={openPublicPortal}>
+            <Globe2 />
+            {language === "vi" ? "Trang công khai" : "Public portal"}
+          </button>
+        </div>
+      </aside>
+      <div className="admin-main">
+        <header>
+          <div>
+            <b>
+              {language === "vi"
+                ? "Trung tâm điều hành VIG"
+                : "VIG Operations Centre"}
+            </b>
+            <small>
+              {language === "vi"
+                ? "Quản trị dữ liệu và kết nối đầu tư"
+                : "Industrial data and connections"}
+            </small>
+          </div>
+          <div className="admin-mobile-actions">
+            <LanguageToggle compact />
+            <button
+              aria-label={
+                language === "vi" ? "Khôi phục dữ liệu demo" : "Reset demo"
+              }
+              onClick={resetDemo}
+            >
+              <RotateCcw />
+            </button>
+            <button
+              aria-label={
+                language === "vi" ? "Trang công khai" : "Public portal"
+              }
+              onClick={openPublicPortal}
+            >
+              <Globe2 />
+            </button>
+          </div>
+          <div className="admin-header-controls">
+            <LanguageToggle />
+            <div className="admin-user">
+              VA<span>VIG Admin</span>
+            </div>
+          </div>
+        </header>
+        <nav className="admin-mobile-nav">
+          {links.map(([path, I, label]) => {
+            const Icon = I as typeof Factory;
+            return (
+              <Link
+                className={
+                  location.pathname.startsWith(path as string) ? "active" : ""
+                }
+                to={path as string}
+                key={String(path)}
+              >
+                <Icon size={17} />
+                <span>{String(label)}</span>
+              </Link>
+            );
+          })}
+        </nav>
+        <main>{children}</main>
+      </div>
+    </div>
+  );
+}
+function Kpi({
+  label,
+  value,
+  icon: Icon,
+  tone = "blue",
+}: {
+  label: string;
+  value: number | string;
+  icon: typeof Activity;
+  tone?: string;
+}) {
+  return (
+    <article className={`kpi ${tone}`}>
+      <div>
+        <span>{label}</span>
+        <b>{value}</b>
+      </div>
+      <Icon />
+    </article>
+  );
+}
+function AdminDashboard() {
+  const { language, parks, requests } = useApp();
+  const overdue = requests.filter(
+    (r) => r.status === "submitted" || r.status === "under_review",
+  ).length;
+  return (
+    <AdminShell>
+      <div className="admin-page">
+        <div className="admin-title">
+          <div>
+            <span>VIG OPERATIONS</span>
+            <h1>
+              {language === "vi" ? "Tổng quan vận hành" : "Operations overview"}
+            </h1>
+          </div>
+          <Link className="button primary" to="/admin/requests">
+            <ClipboardCheck />{" "}
+            {language === "vi" ? "Xử lý yêu cầu" : "Process requests"}
+          </Link>
+        </div>
+        <div className="kpi-grid">
+          <Kpi
+            label={
+              language === "vi" ? "Hồ sơ khu công nghiệp" : "Park profiles"
+            }
+            value={parks.length}
+            icon={Factory}
+          />
+          <Kpi
+            label={language === "vi" ? "Hồ sơ đã công bố" : "Published"}
+            value={
+              parks.filter((p) => p.publicationStatus === "published").length
+            }
+            icon={ShieldCheck}
+            tone="green"
+          />
+          <Kpi
+            label={language === "vi" ? "Tổng số yêu cầu" : "Total requests"}
+            value={requests.length}
+            icon={ClipboardCheck}
+            tone="gold"
+          />
+          <Kpi
+            label={language === "vi" ? "Yêu cầu cần xử lý" : "SLA attention"}
+            value={overdue}
+            icon={Clock3}
+            tone="red"
+          />
+        </div>
+        <div className="admin-grid">
+          <section className="admin-panel">
+            <div className="panel-head">
+              <h2>
+                {language === "vi" ? "Yêu cầu mới nhất" : "Recent requests"}
+              </h2>
+              <Link to="/admin/requests">
+                {language === "vi" ? "Xem tất cả" : "View all"}
+              </Link>
+            </div>
+            <RequestTable requests={requests.slice(0, 5)} />
+          </section>
+          <section className="admin-panel">
+            <div className="panel-head">
+              <h2>
+                {language === "vi"
+                  ? "Đối chiếu bộ dữ liệu chuẩn"
+                  : "Dataset standard review"}
+              </h2>
+              <Link to="/admin/industrial-parks">
+                {language === "vi" ? "Quản lý hồ sơ" : "Manage"}
+              </Link>
+            </div>
+            <div className="quality-list">
+              {parks.slice(0, 6).map((p) => {
+                const missingRequired = getParkStandardChecklist(p).some(
+                  (item) => item.requiredForPublication && item.status === "missing",
+                );
+                return (
+                  <Link to={`/admin/industrial-parks/${p.id}`} key={p.id}>
+                    <div>
+                      <b>{tr(p.name, language)}</b>
+                      <small>{p.province}</small>
+                    </div>
+                    <span className={`standard-state ${missingRequired ? "missing" : "available"}`}>
+                      {missingRequired
+                        ? language === "vi"
+                          ? "Cần bổ sung"
+                          : "Needs data"
+                        : language === "vi"
+                          ? "Đủ nhóm bắt buộc"
+                          : "Required groups present"}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        </div>
+      </div>
+    </AdminShell>
+  );
+}
+function RequestTable({ requests }: { requests: IndustrialRequest[] }) {
+  const { language } = useApp();
+  return (
+    <div className="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>{language === "vi" ? "Loại" : "Funnel"}</th>
+            <th>{language === "vi" ? "Doanh nghiệp" : "Organisation"}</th>
+            <th>{language === "vi" ? "Tỉnh/thành, khu vực" : "Location"}</th>
+            <th>{language === "vi" ? "Trạng thái" : "Status"}</th>
+            <th>SLA</th>
+          </tr>
+        </thead>
+        <tbody>
+          {requests.map((r) => (
+            <tr key={r.id}>
+              <td>
+                <Link to={`/admin/requests/${r.id}`}>{r.id}</Link>
+              </td>
+              <td>
+                {r.kind === "find_supply" ? "Find Supply" : "Find Demand"}
+              </td>
+              <td>
+                <b>{r.organization}</b>
+                <small>{r.assetType}</small>
+              </td>
+              <td>{r.location}</td>
+              <td>
+                <Badge value={r.status} />
+              </td>
+              <td>
+                <span
+                  className={
+                    ["submitted", "under_review"].includes(r.status)
+                      ? "sla warn"
+                      : "sla"
+                  }
+                >
+                  {["submitted", "under_review"].includes(r.status)
+                    ? "4h"
+                    : "On track"}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+function AdminRequests() {
+  const { language, requests } = useApp();
+  const [q, setQ] = useState("");
+  const [status, setStatus] = useState("all");
+  const filtered = requests.filter(
+    (r) =>
+      (!q ||
+        `${r.id} ${r.organization}`.toLowerCase().includes(q.toLowerCase())) &&
+      (status === "all" || r.status === status),
+  );
+  return (
+    <AdminShell>
+      <div className="admin-page">
+        <div className="admin-title">
+          <div>
+            <span>REQUEST MANAGEMENT</span>
+            <h1>
+              {language === "vi"
+                ? "Quản lý yêu cầu Cung – Cầu"
+                : "Supply–Demand request management"}
+            </h1>
+            <p>
+              {language === "vi"
+                ? "Tiếp nhận, xác minh, ghép nối và điều phối kết nối."
+                : "Receive, verify, match and coordinate connections."}
+            </p>
+          </div>
+        </div>
+        <div className="admin-filter">
+          <label>
+            <Search />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder={
+                language === "vi"
+                  ? "Tìm mã hoặc doanh nghiệp"
+                  : "Search ID or organisation"
+              }
+            />
+          </label>
+          <select value={status} onChange={(e) => setStatus(e.target.value)}>
+            <option value="all">
+              {language === "vi" ? "Tất cả trạng thái" : "All statuses"}
+            </option>
+            {Object.keys(requestTransitions).map((x) => (
+              <option value={x} key={x}>
+                {x.replace("_", " ")}
+              </option>
+            ))}
+          </select>
+        </div>
+        <section className="admin-panel">
+          <RequestTable requests={filtered} />
+        </section>
+      </div>
+    </AdminShell>
+  );
+}
+function RequestDetail() {
+  const { id } = useParams();
+  const { language, requests, parks, transitionRequest } = useApp();
+  const r = requests.find((x) => x.id === id);
+  const [reason, setReason] = useState("");
+  if (!r) return <Navigate to="/admin/requests" />;
+  const matches = parks
+    .filter(
+      (p) =>
+        p.suitableIndustries.some((x) =>
+          x.toLowerCase().includes(r.industry.toLowerCase()),
+        ) || p.region === "North",
+    )
+    .slice(0, 3);
+  const next = requestTransitions[r.status];
+  return (
+    <AdminShell>
+      <div className="admin-page">
+        <div className="breadcrumbs">
+          <Link to="/admin/requests">Requests</Link>
+          <ChevronRight size={14} />
+          <span>{r.id}</span>
+        </div>
+        <div className="admin-title">
+          <div>
+            <span>
+              {r.kind === "find_supply"
+                ? "FUNNEL B · FIND SUPPLY"
+                : "FUNNEL A · FIND DEMAND"}
+            </span>
+            <h1>{r.organization}</h1>
+            <p>
+              {r.id} ·{" "}
+              {new Date(r.submittedAt).toLocaleString(
+                language === "vi" ? "vi-VN" : "en-US",
+              )}
+            </p>
+          </div>
+          <Badge value={r.status} tone="blue" />
+        </div>
+        <div className="request-detail-grid">
+          <div>
+            <section className="admin-panel request-summary">
+              <h2>
+                {language === "vi" ? "Chi tiết yêu cầu" : "Request details"}
+              </h2>
+              <div className="info-grid">
+                <div>
+                  <small>
+                    {language === "vi" ? "Người liên hệ" : "Contact"}
+                  </small>
+                  <b>{r.contactName}</b>
+                  <span>
+                    {r.email} · {r.phone}
+                  </span>
+                </div>
+                <div>
+                  <small>
+                    {language === "vi" ? "Loại hình bất động sản" : "Asset"}
+                  </small>
+                  <b>{r.assetType}</b>
+                  <span>{r.transaction}</span>
+                </div>
+                <div>
+                  <small>
+                    {language === "vi" ? "Vị trí/khu vực" : "Location"}
+                  </small>
+                  <b>{r.location}</b>
+                  <span>
+                    {r.areaMin.toLocaleString()}–{r.areaMax.toLocaleString()} m²
+                  </span>
+                </div>
+                <div>
+                  <small>
+                    {language === "vi" ? "Ngành nghề dự kiến" : "Industry"}
+                  </small>
+                  <b>{r.industry}</b>
+                  <span>{r.availabilityDate}</span>
+                </div>
+                <div>
+                  <small>
+                    {language === "vi" ? "Ngân sách / giá" : "Budget / price"}
+                  </small>
+                  <b>
+                    {r.budgetOrPrice ||
+                      (language === "vi" ? "Chưa xác định" : "Not specified")}
+                  </b>
+                </div>
+                <div>
+                  <small>{language === "vi" ? "Dịch vụ" : "Service"}</small>
+                  <b>{r.service}</b>
+                </div>
+              </div>
+              <h3>
+                {language === "vi" ? "Yêu cầu khác" : "Other requirements"}
+              </h3>
+              <p>{r.requirements || "—"}</p>
+            </section>
+            <section className="admin-panel">
+              <div className="panel-head">
+                <h2>
+                  <Sparkles />{" "}
+                  {language === "vi"
+                    ? "Đề xuất ghép nối"
+                    : "Match recommendations"}
+                </h2>
+                <span className="demo-label">
+                  {language === "vi"
+                    ? "ĐỀ XUẤT MÔ PHỎNG"
+                    : "DEMO RECOMMENDATION"}
+                </span>
+              </div>
+              {r.status === "submitted" || r.status === "under_review" ? (
+                <Empty
+                  title={
+                    language === "vi"
+                      ? "Chưa bắt đầu ghép nối"
+                      : "Matching not started"
+                  }
+                  text={
+                    language === "vi"
+                      ? "Xác minh yêu cầu trước khi tạo đề xuất."
+                      : "Verify the request before generating recommendations."
+                  }
+                />
+              ) : (
+                <div className="match-list">
+                  {matches.map((p, i) => (
+                    <article key={p.id}>
+                      <div className="match-score">
+                        {92 - i * 7}
+                        <small>/100</small>
+                      </div>
+                      <div>
+                        <Link to={`/admin/industrial-parks/${p.id}`}>
+                          {tr(p.name, language)}
+                        </Link>
+                        <p>
+                          {p.province} ·{" "}
+                          {p.suitableIndustries
+                            .slice(0, 2)
+                            .map((x) => industryLabel(x, language))
+                            .join(", ")}
+                        </p>
+                        <span>
+                          <Check />{" "}
+                          {language === "vi"
+                            ? "Khớp khu vực, ngành và loại tài sản"
+                            : "Region, industry and asset-type match"}
+                        </span>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+          </div>
+          <aside>
+            <section className="admin-panel status-action">
+              <h2>
+                {language === "vi" ? "Cập nhật trạng thái" : "Update status"}
+              </h2>
+              <Badge value={r.status} />
+              <div className="status-flow">
+                {[
+                  "submitted",
+                  "under_review",
+                  "verified",
+                  "matching",
+                  "connection_scheduled",
+                  "closed",
+                ].map((x, i) => (
+                  <span
+                    className={
+                      x === r.status
+                        ? "current"
+                        : requestTransitions[x as RequestStatus]
+                          ? ""
+                          : ""
+                    }
+                    key={x}
+                  >
+                    {i + 1} {tr(labels[x], language)}
+                  </span>
+                ))}
+              </div>
+              {next.map((x) =>
+                x === "rejected" ? (
+                  <div key={x} className="reject-box">
+                    <textarea
+                      placeholder={
+                        language === "vi"
+                          ? "Lý do từ chối (bắt buộc)"
+                          : "Rejection reason (required)"
+                      }
+                      value={reason}
+                      onChange={(e) => setReason(e.target.value)}
+                    />
+                    <button
+                      disabled={!reason.trim()}
+                      onClick={() => transitionRequest(r.id, x, reason)}
+                    >
+                      {language === "vi" ? "Từ chối yêu cầu" : "Reject"}
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    className="button primary full"
+                    key={x}
+                    onClick={() => transitionRequest(r.id, x)}
+                  >
+                    {language === "vi" ? "Chuyển trạng thái sang" : "Move to"}{" "}
+                    {tr(labels[x], language)}
+                    <ArrowRight />
+                  </button>
+                ),
+              )}
+            </section>
+            <section className="admin-panel">
+              <h2>
+                {language === "vi" ? "Lịch sử hoạt động" : "Activity timeline"}
+              </h2>
+              <div className="timeline">
+                {r.activities.map((a) => (
+                  <div key={a.id}>
+                    <i />
+                    <b>{tr(a.action, language)}</b>
+                    <span>{a.actor}</span>
+                    <small>
+                      {new Date(a.at).toLocaleString(
+                        language === "vi" ? "vi-VN" : "en-US",
+                      )}
+                    </small>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </aside>
+        </div>
+      </div>
+    </AdminShell>
+  );
+}
+function AdminParks() {
+  const { language, parks } = useApp();
+  const [q, setQ] = useState("");
+  const [quality, setQuality] = useState("all");
+  const filtered = parks.filter(
+    (p) =>
+      (!q ||
+        `${tr(p.name, language)} ${p.province}`
+          .toLowerCase()
+          .includes(q.toLowerCase())) &&
+      (quality === "all" ||
+        (quality === "missing"
+          ? getParkStandardChecklist(p).some((item) => item.status === "missing")
+          : p.conflicts?.length)),
+  );
+  return (
+    <AdminShell>
+      <div className="admin-page">
+        <div className="admin-title">
+          <div>
+            <span>INDUSTRIAL DATA LAYER</span>
+            <h1>
+              {language === "vi"
+                ? "Quản lý hồ sơ khu công nghiệp"
+                : "Industrial park data management"}
+            </h1>
+            <p>
+              {language === "vi"
+                ? "Đối chiếu từng nhóm dữ liệu của hồ sơ với bộ dữ liệu chuẩn khu công nghiệp."
+                : "Compare each profile data group with the industrial park dataset standard."}
+            </p>
+          </div>
+        </div>
+        <div className="admin-filter">
+          <label>
+            <Search />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder={language === "vi" ? "Tìm hồ sơ" : "Search profiles"}
+            />
+          </label>
+          <select value={quality} onChange={(e) => setQuality(e.target.value)}>
+            <option value="all">
+              {language === "vi" ? "Tất cả hồ sơ" : "All profiles"}
+            </option>
+            <option value="missing">
+              {language === "vi" ? "Thiếu nhóm dữ liệu chuẩn" : "Missing standard data"}
+            </option>
+            <option value="conflict">
+              {language === "vi" ? "Có dữ liệu xung đột" : "Conflicts"}
+            </option>
+          </select>
+        </div>
+        <section className="admin-panel">
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>
+                    {language === "vi" ? "Khu công nghiệp" : "Industrial park"}
+                  </th>
+                  <th>{language === "vi" ? "Tỉnh" : "Province"}</th>
+                  <th>{language === "vi" ? "Đối chiếu chuẩn" : "Standard review"}</th>
+                  <th>
+                    {language === "vi" ? "Xác minh gần nhất" : "Verified"}
+                  </th>
+                  <th>
+                    {language === "vi" ? "Trạng thái công bố" : "Publication"}
+                  </th>
+                  <th>{language === "vi" ? "Cảnh báo" : "Warnings"}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((p) => (
+                  <tr key={p.id}>
+                    <td>
+                      <Link to={`/admin/industrial-parks/${p.id}`}>
+                        <b>{tr(p.name, language)}</b>
+                      </Link>
+                      <small>
+                        {p.id.includes("demo")
+                          ? language === "vi"
+                            ? "DỮ LIỆU MINH HỌA"
+                            : "DEMO DATA"
+                          : language === "vi"
+                            ? "HỒ SƠ THAM CHIẾU"
+                            : "REFERENCE PROFILE"}
+                      </small>
+                    </td>
+                    <td>{p.province}</td>
+                    <td>
+                      {getParkStandardChecklist(p).some(
+                        (item) => item.requiredForPublication && item.status === "missing",
+                      ) ? (
+                        <span className="standard-state missing">
+                          {language === "vi" ? "Cần bổ sung" : "Needs data"}
+                        </span>
+                      ) : (
+                        <span className="standard-state available">
+                          {language === "vi" ? "Đủ nhóm bắt buộc" : "Required groups present"}
+                        </span>
+                      )}
+                    </td>
+                    <td>{p.lastVerifiedAt || "—"}</td>
+                    <td>
+                      <Badge value={p.publicationStatus} />
+                    </td>
+                    <td>
+                      {p.conflicts?.length ? (
+                        <span className="warning-count">
+                          {p.conflicts.length}{" "}
+                          {language === "vi" ? "xung đột" : "conflict"}
+                        </span>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </AdminShell>
+  );
+}
+function AdminParkDetail() {
+  const { id } = useParams();
+  const { language, parks, updateParkPublication } = useApp();
+  const p = parks.find((x) => x.id === id);
+  if (!p) return <Navigate to="/admin/industrial-parks" />;
+  return (
+    <AdminShell>
+      <div className="admin-page">
+        <div className="breadcrumbs">
+          <Link to="/admin/industrial-parks">
+            {language === "vi" ? "Hồ sơ khu công nghiệp" : "Industrial parks"}
+          </Link>
+          <ChevronRight size={14} />
+          <span>{tr(p.name, language)}</span>
+        </div>
+        <div className="admin-title">
+          <div>
+            <span>
+              {p.id.includes("demo")
+                ? language === "vi"
+                  ? "DỮ LIỆU MINH HỌA"
+                  : "DEMO DATA"
+                : language === "vi"
+                  ? "HỒ SƠ THAM CHIẾU"
+                  : "REFERENCE PROFILE"}
+            </span>
+            <h1>{tr(p.name, language)}</h1>
+            <p>
+              {p.province} · {p.dataOwner}
+            </p>
+          </div>
+          <Link className="button outline" to={`/industrial-parks/${p.slug}`}>
+            <ExternalLink />
+            {language === "vi" ? "Xem trang công khai" : "Public preview"}
+          </Link>
+        </div>
+        <div className="kpi-grid three">
+          <Kpi
+            label={language === "vi" ? "Nguồn tài liệu" : "Source documents"}
+            value={p.documents.length}
+            icon={FileText}
+          />
+          <Kpi
+            label={
+              language === "vi" ? "Hạng mục đã xác minh" : "Verified fields"
+            }
+            value={
+              p.utilities.filter(
+                (x) => x.capacity.verificationStatus === "verified",
+              ).length
+            }
+            icon={ShieldCheck}
+            tone="green"
+          />
+          <Kpi
+            label={language === "vi" ? "Dữ liệu xung đột" : "Conflicts"}
+            value={p.conflicts?.length || 0}
+            icon={Activity}
+            tone={p.conflicts?.length ? "red" : "blue"}
+          />
+        </div>
+        <div className="admin-grid">
+          <section className="admin-panel">
+            <div className="panel-head">
+              <h2>
+                {language === "vi"
+                  ? "Đối chiếu bộ dữ liệu chuẩn khu công nghiệp"
+                  : "Industrial park dataset standard checklist"}
+              </h2>
+              <Badge value={p.publicationStatus} />
+            </div>
+            <p className="panel-intro">
+              {language === "vi"
+                ? "Danh sách thể hiện nhóm dữ liệu hồ sơ đang có so với cấu trúc chuẩn; không sử dụng điểm số hoặc tỷ lệ phần trăm."
+                : "This checklist shows which profile data groups are present against the standard; no score or percentage is used."}
+            </p>
+            <StandardChecklist park={p} />
+            <div className="publication-actions">
+              <button
+                className="button outline"
+                onClick={() => updateParkPublication(p.id, "in_review")}
+              >
+                {language === "vi" ? "Gửi duyệt" : "Send to review"}
+              </button>
+              <button
+                className="button primary"
+                disabled={!canPublish(p)}
+                onClick={() => updateParkPublication(p.id, "published")}
+              >
+                <ShieldCheck />
+                {language === "vi" ? "Công bố hồ sơ" : "Publish profile"}
+              </button>
+            </div>
+          </section>
+          <section className="admin-panel">
+            <h2>
+              {language === "vi"
+                ? "Nguồn và quản trị dữ liệu"
+                : "Sources and governance"}
+            </h2>
+            <div className="governance">
+              <div>
+                <small>
+                  {language === "vi" ? "Đơn vị quản lý dữ liệu" : "Data owner"}
+                </small>
+                <b>{p.dataOwner}</b>
+              </div>
+              <div>
+                <small>
+                  {language === "vi" ? "Xác minh lần cuối" : "Last verified"}
+                </small>
+                <b>
+                  {p.lastVerifiedAt ||
+                    (language === "vi" ? "Chưa có dữ liệu" : "Not available")}
+                </b>
+              </div>
+              <div>
+                <small>
+                  {language === "vi" ? "Người xác minh" : "Verified by"}
+                </small>
+                <b>
+                  {p.verifiedBy ||
+                    (language === "vi" ? "Chưa có dữ liệu" : "Not available")}
+                </b>
+              </div>
+              <div>
+                <small>
+                  {language === "vi" ? "Ngôn ngữ nguồn" : "Source language"}
+                </small>
+                <b>{p.sourceLanguage.toUpperCase()}</b>
+              </div>
+            </div>
+            {p.conflicts?.map((c) => (
+              <div className="warning" key={c.field}>
+                <Activity />
+                <div>
+                  <b>{c.field}</b>
+                  <p>
+                    {c.primary} ↔ {c.secondary}
+                  </p>
+                  <small>{c.sources.join(", ")}</small>
+                </div>
+              </div>
+            ))}
+            <h3>{language === "vi" ? "Tài liệu" : "Documents"}</h3>
+            <div className="mini-docs">
+              {p.documents.map((d) => (
+                <div key={d.id}>
+                  <FileText />
+                  <span>
+                    <b>{tr(d.title, language)}</b>
+                    <small>
+                      {tr(
+                        labels[d.category] || tx(d.category, d.category),
+                        language,
+                      )}{" "}
+                      ·{" "}
+                      {tr(
+                        labels[d.visibility] || tx(d.visibility, d.visibility),
+                        language,
+                      )}
+                    </small>
+                  </span>
+                  <Badge value={d.verificationStatus} />
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      </div>
+    </AdminShell>
+  );
+}
+
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/" element={<Navigate to="/home" replace />} />
+      <Route path="/home" element={<HomePage />} />
+      <Route path="/industrial-parks" element={<ParksPage />} />
+      <Route path="/industrial-parks/:slug" element={<ParkDetailPage />} />
+      <Route path="/assets" element={<AssetsPage />} />
+      <Route path="/assets/:id" element={<AssetDetailPage />} />
+      <Route
+        path="/find-demand"
+        element={<RequestFormPage kind="find_demand" />}
+      />
+      <Route
+        path="/find-supply"
+        element={<RequestFormPage kind="find_supply" />}
+      />
+      <Route path="/request-confirmation/:id" element={<ConfirmationPage />} />
+      <Route path="/industrial-expo" element={<ExpoPage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/admin/dashboard"
+        element={
+          <AdminGuard>
+            <AdminDashboard />
+          </AdminGuard>
+        }
+      />
+      <Route
+        path="/admin/requests"
+        element={
+          <AdminGuard>
+            <AdminRequests />
+          </AdminGuard>
+        }
+      />
+      <Route
+        path="/admin/requests/:id"
+        element={
+          <AdminGuard>
+            <RequestDetail />
+          </AdminGuard>
+        }
+      />
+      <Route
+        path="/admin/industrial-parks"
+        element={
+          <AdminGuard>
+            <AdminParks />
+          </AdminGuard>
+        }
+      />
+      <Route
+        path="/admin/industrial-parks/:id"
+        element={
+          <AdminGuard>
+            <AdminParkDetail />
+          </AdminGuard>
+        }
+      />
+      <Route path="*" element={<Navigate to="/home" replace />} />
+    </Routes>
+  );
+}
+export default function App() {
+  return (
+    <AppProvider>
+      <HashRouter>
+        <AppRoutes />
+      </HashRouter>
+    </AppProvider>
+  );
+}

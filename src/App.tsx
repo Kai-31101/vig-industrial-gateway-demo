@@ -525,7 +525,7 @@ function HomePage() {
               <b>{completedConnections}</b>
               <span>
                 {language === "vi"
-                  ? "kết nối đã hoàn tất"
+                  ? "kết nối thành công"
                   : "completed connections"}
               </span>
             </div>

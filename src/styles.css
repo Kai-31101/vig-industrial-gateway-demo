@@ -2731,11 +2731,19 @@ footer {
 }
 .table-wrap {
   overflow: auto;
+  max-width: 100%;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
 }
 table {
   width: 100%;
   border-collapse: collapse;
   font-size: 12px;
+}
+.table-wrap th,
+.table-wrap td {
+  overflow-wrap: normal;
+  word-break: normal;
 }
 th {
   text-align: left;
@@ -3443,6 +3451,17 @@ td small {
     padding-left: 18px;
     padding-right: 18px;
   }
+  .section {
+    padding-top: 58px;
+    padding-bottom: 58px;
+  }
+  .section-title {
+    margin-bottom: 22px;
+  }
+  .section-title h2 {
+    font-size: 27px;
+    line-height: 1.25;
+  }
   .filter-tabs {
     width: 100%;
     flex-wrap: nowrap;
@@ -3470,22 +3489,54 @@ td small {
     display: none;
   }
   .hero {
-    height: 650px;
+    height: 680px;
   }
   .hero-content {
     padding-left: 18px;
     padding-right: 18px;
   }
   .hero h1 {
-    font-size: 42px;
+    font-size: clamp(35px, 10.5vw, 42px);
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+  .hero-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .hero-actions .button {
+    flex: 1 1 150px;
   }
   .hero-stats {
-    gap: 18px;
+    width: 100%;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .hero-stats div {
+    min-width: 0;
+    flex: 1;
+  }
+  .hero-stats span {
+    font-size: 9px;
+    line-height: 1.35;
+    overflow-wrap: normal;
+    word-break: normal;
   }
   .search-band {
     margin: -24px 15px 0;
+    gap: 8px;
+    padding: 9px;
+  }
+  .search-band div {
+    min-width: 0;
+    padding: 0 8px;
+  }
+  .search-band input {
+    min-width: 0;
+    font-size: 13px;
   }
   .search-band button {
+    flex: 0 0 auto;
     padding: 12px;
   }
   .park-grid,
@@ -3552,6 +3603,7 @@ td small {
     flex-direction: column;
     align-items: flex-start;
     gap: 24px;
+    padding: 26px 22px !important;
   }
   .contact-card > div:first-child {
     flex-basis: auto;
@@ -3572,10 +3624,36 @@ td small {
     gap: 8px;
   }
   .detail-hero h1 {
-    font-size: 34px;
+    font-size: 32px;
+    line-height: 1.22;
   }
   .detail-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .detail-actions .button {
+    min-width: 0;
+    padding: 11px 10px;
+    font-size: 12px;
+  }
+  .detail-actions .button:first-child {
+    grid-column: 1 / -1;
+  }
+  .detail-badges {
     flex-wrap: wrap;
+  }
+  .breadcrumbs,
+  .admin-breadcrumb {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .breadcrumbs > :last-child,
+  .admin-breadcrumb > :last-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .anchor-nav {
     top: 76px;
@@ -3610,6 +3688,7 @@ td small {
   .admin-title {
     align-items: flex-start;
     gap: 12px;
+    min-width: 0;
   }
   .expo-admin-page .admin-title,
   .expo-detail-title {
@@ -3630,6 +3709,9 @@ td small {
   }
   .admin-title h1 {
     font-size: 25px;
+    line-height: 1.25;
+    overflow-wrap: normal;
+    word-break: normal;
   }
   .admin-title > .button {
     display: none;
@@ -3644,6 +3726,7 @@ td small {
   .admin-filter select {
     width: 100%;
     min-width: 0;
+    text-overflow: ellipsis;
   }
   .request-form {
     padding: 18px;
@@ -3665,6 +3748,38 @@ td small {
   }
   .table-wrap {
     margin: 0 -12px;
+    padding: 0 12px 8px;
+    border-right: 1px solid #edf1f3;
+    border-left: 1px solid #edf1f3;
+    scrollbar-width: thin;
+    scrollbar-color: #9db0bb #edf2f4;
+  }
+  .table-wrap::-webkit-scrollbar {
+    height: 7px;
+  }
+  .table-wrap::-webkit-scrollbar-track {
+    background: #edf2f4;
+  }
+  .table-wrap::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: #9db0bb;
+  }
+  .table-wrap table {
+    min-width: 720px;
+  }
+  .expo-report-table table {
+    min-width: 900px;
+  }
+  .table-wrap th {
+    white-space: nowrap;
+  }
+  .table-wrap th,
+  .table-wrap td {
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+  .table-wrap td:first-child {
+    min-width: 130px;
   }
   .admin-sidebar {
     display: none;
@@ -3679,9 +3794,15 @@ td small {
   }
   .admin-main > header > div:first-child b {
     font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .admin-main > header > div:first-child small {
     font-size: 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .admin-header-controls {
     display: none;
@@ -3725,6 +3846,12 @@ td small {
     text-align: center;
     border-bottom: 3px solid transparent;
   }
+  .admin-mobile-nav a span {
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .admin-mobile-nav a.active {
     color: var(--navy);
     border-bottom-color: var(--gold);
@@ -3734,6 +3861,63 @@ td small {
     padding: 30px 24px;
   }
   .page-heading h1 {
-    font-size: 34px;
+    font-size: 32px;
+    line-height: 1.25;
+  }
+  .panel-head {
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .panel-head h2,
+  .admin-panel > h2 {
+    line-height: 1.35;
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+  .panel-head > .badge {
+    flex: 0 0 auto;
+  }
+  .title-badges {
+    flex-wrap: wrap;
+  }
+  .publication-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .publication-actions .button {
+    min-width: 0;
+    padding: 11px 9px;
+    font-size: 12px;
+  }
+  .governance {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .expo-hero {
+    padding: 62px 0;
+  }
+  .expo-hero h1 {
+    font-size: 35px;
+    line-height: 1.2;
+  }
+  .confirmation {
+    padding-top: 70px;
+    padding-bottom: 80px;
+  }
+  .confirmation h1 {
+    font-size: 30px;
+    line-height: 1.25;
+  }
+  .confirmation > div:last-child {
+    flex-wrap: wrap;
+  }
+  .asset-detail-actions .button {
+    width: 100%;
+  }
+  .asset-card-actions button,
+  .asset-card-actions a {
+    min-width: 0;
+    padding-right: 7px;
+    padding-left: 7px;
+    white-space: nowrap;
   }
 }

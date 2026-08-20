@@ -601,10 +601,16 @@ function HomePage() {
               ? "Dữ liệu chuẩn hóa · Kết nối đầu tư"
               : "Data-powered · Intelligently connected"}
           </span>
-          <h1>
-            {language === "vi"
-              ? "HẠ TẦNG XÚC TIẾN ĐẦU TƯ CÔNG NGHIỆP VIỆT NAM"
-              : "VIETNAM INDUSTRIAL DIGITAL INFRASTRUCTURE"}
+          <h1 className={language === "vi" ? "hero-title-vi" : undefined}>
+            {language === "vi" ? (
+              <>
+                <span>HẠ TẦNG XÚC TIẾN</span>
+                <span>ĐẦU TƯ CÔNG NGHIỆP</span>
+                <span>VIỆT NAM</span>
+              </>
+            ) : (
+              "VIETNAM INDUSTRIAL DIGITAL INFRASTRUCTURE"
+            )}
           </h1>
           <p>
             {language === "vi"

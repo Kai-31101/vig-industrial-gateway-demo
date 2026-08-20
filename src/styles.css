@@ -240,6 +240,15 @@ b {
   letter-spacing: -0.025em;
   text-wrap: balance;
 }
+.hero h1.hero-title-vi {
+  max-width: 780px;
+  font-size: clamp(44px, 4vw, 54px);
+  line-height: 1.12;
+}
+.hero-title-vi span {
+  display: block;
+  white-space: nowrap;
+}
 .hero p {
   max-width: 650px;
   margin: 0;
@@ -3503,6 +3512,12 @@ td small {
     letter-spacing: -0.02em;
     overflow-wrap: normal;
     word-break: normal;
+  }
+  .hero h1.hero-title-vi {
+    max-width: 100%;
+    font-size: clamp(27px, 7.7vw, 31px);
+    line-height: 1.16;
+    letter-spacing: -0.015em;
   }
   .hero p {
     max-width: 340px;

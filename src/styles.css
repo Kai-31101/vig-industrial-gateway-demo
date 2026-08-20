@@ -233,15 +233,18 @@ b {
   text-transform: uppercase;
 }
 .hero h1 {
-  font-size: 64px;
-  line-height: 1.06;
-  margin: 18px 0;
-  max-width: 720px;
+  max-width: 700px;
+  margin: 18px 0 12px;
+  font-size: clamp(52px, 4.7vw, 60px);
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
 }
 .hero p {
-  font-size: 19px;
-  line-height: 1.6;
   max-width: 650px;
+  margin: 0;
+  font-size: clamp(17px, 1.45vw, 19px);
+  line-height: 1.55;
   color: #e2e8f0;
 }
 .hero-actions {
@@ -1498,10 +1501,6 @@ b {
 .process-list small {
   font-size: 11px;
   color: #64748b;
-}
-.process-list > article > b {
-  color: var(--gold);
-  font-size: 18px;
 }
 .route-list > div {
   display: grid;
@@ -3496,16 +3495,31 @@ td small {
     padding-right: 18px;
   }
   .hero h1 {
-    font-size: clamp(35px, 10.5vw, 42px);
+    max-width: 345px;
+    margin-top: 15px;
+    margin-bottom: 14px;
+    font-size: clamp(34px, 9.5vw, 38px);
+    line-height: 1.12;
+    letter-spacing: -0.02em;
     overflow-wrap: normal;
     word-break: normal;
+  }
+  .hero p {
+    max-width: 340px;
+    font-size: 16px;
+    line-height: 1.5;
   }
   .hero-actions {
     width: 100%;
     flex-wrap: wrap;
   }
   .hero-actions .button {
-    flex: 1 1 150px;
+    width: 100%;
+    flex: 1 1 100%;
+    min-height: 44px;
+    padding: 11px 15px;
+    font-size: 13px;
+    white-space: nowrap;
   }
   .hero-stats {
     width: 100%;

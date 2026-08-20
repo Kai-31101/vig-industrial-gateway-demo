@@ -439,7 +439,7 @@ function Footer() {
         </div>
         <div className="arobid-partner">
           <span className="arobid-platform-badge">
-            <CheckCircle2 /> Vietname Industrial Gateway
+            <CheckCircle2 /> Vietnam Industrial Gateway
           </span>
           <div className="arobid-powered-row">
             <span>
@@ -603,12 +603,12 @@ function HomePage() {
           </span>
           <h1>
             {language === "vi"
-              ? "HẠ TẦNG SỐ CÔNG NGHIỆP VIỆT NAM"
+              ? "HẠ TẦNG XÚC TIẾN ĐẦU TƯ CÔNG NGHIỆP VIỆT NAM"
               : "VIETNAM INDUSTRIAL DIGITAL INFRASTRUCTURE"}
           </h1>
           <p>
             {language === "vi"
-              ? "Vận hành bởi dữ liệu và ghép nối bởi AI"
+              ? "Vận hành dựa trên dữ liệu, ghép nối giao dịch bởi AI"
               : "Powered by data and matched by AI"}
           </p>
           <div className="hero-actions">
@@ -1622,7 +1622,6 @@ function ParkDetailPage() {
                     {tr(p.output, language)}
                   </small>
                 </div>
-                {p.payment && <b>{p.payment}</b>}
               </article>
             ))}
           </div>

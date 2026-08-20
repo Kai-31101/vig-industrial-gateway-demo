@@ -83,13 +83,15 @@ describe("industrial park dataset", () => {
 });
 
 describe("expo reporting fixtures", () => {
-  it("provides traceable I/O RFQ and deal metrics for every Expo", () => {
+  it("provides consolidated I/O connection and deal metrics for every Expo", () => {
     for (const expo of expos) {
       const report = expo.analytics;
       expect(report.updatedAt).toBeTruthy();
       expect(report.trend.length).toBeGreaterThan(0);
-      expect(report.inboundRfqs).toBeGreaterThanOrEqual(0);
-      expect(report.outboundRfqs).toBeGreaterThanOrEqual(0);
+      expect(report.trend.every((point) => point.requests >= 0)).toBe(true);
+      expect(report.inboundRequests).toBeGreaterThanOrEqual(0);
+      expect(report.outboundRequests).toBeGreaterThanOrEqual(0);
+      expect("inboundRfqs" in report).toBe(false);
       expect(report.inboundDeals).toBeGreaterThanOrEqual(0);
       expect(report.outboundDeals).toBeGreaterThanOrEqual(0);
       expect(report.completedConnections).toBeLessThanOrEqual(report.activeConnections);

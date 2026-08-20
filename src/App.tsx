@@ -8,6 +8,7 @@ import {
   useLocation,
   useNavigate,
   useParams,
+  useSearchParams,
 } from "react-router-dom";
 import {
   Activity,
@@ -436,24 +437,131 @@ function Footer() {
             {language === "vi" ? "Ghép nối chuyên sâu" : "Premium Matching"}
           </span>
         </div>
-        <div>
-          <b>{language === "vi" ? "Minh bạch dữ liệu" : "Data transparency"}</b>
-          <span>
-            {language === "vi"
-              ? "Dữ liệu có nguồn và ngày xác minh"
-              : "Sourced and dated information"}
+        <div className="arobid-partner">
+          <span className="arobid-platform-badge">
+            <CheckCircle2 /> Vietname Industrial Gateway
           </span>
-          <span>
-            {language === "vi"
-              ? "Nội dung mẫu được gắn nhãn rõ ràng"
-              : "Demo records clearly identified"}
-          </span>
+          <div className="arobid-powered-row">
+            <span>
+              {language === "vi" ? "Được phát triển bởi" : "Powered by"}
+            </span>
+            <span className="arobid-logo-wrap">
+              <img
+                src="https://hcminvhub1-2.vercel.app/figma-homepage/arobid-logo.svg"
+                alt="arobid.com - A Road to Big Deals"
+              />
+            </span>
+          </div>
         </div>
       </div>
       <div className="copyright">
-        © 2026 Vietnam Industrial Gateway · Interactive demo
+        <span>© 2026 Vietnam Industrial Gateway · Interactive demo</span>
       </div>
     </footer>
+  );
+}
+function FloatingParkChat() {
+  const {
+    language,
+    parks,
+    chatParkId,
+    chatOpen,
+    chatThreads,
+    openParkChat,
+    closeParkChat,
+    toggleParkChat,
+    sendParkChatMessage,
+  } = useApp();
+  const [draft, setDraft] = useState("");
+  const activePark = parks.find((park) => park.id === chatParkId) || null;
+  const threadIds = Object.keys(chatThreads);
+  return (
+    <div className="floating-chat-root">
+      {chatOpen && activePark && (
+        <section className="floating-chat-panel" aria-label={language === "vi" ? "Trao đổi với khu công nghiệp" : "Industrial park chat"}>
+          <aside className="floating-chat-users">
+            <div>
+              <MessageCircle />
+              <b>{language === "vi" ? "Trao đổi" : "Chats"}</b>
+              <span>{threadIds.length}</span>
+            </div>
+            <nav>
+              {threadIds.map((parkId) => {
+                const park = parks.find((candidate) => candidate.id === parkId);
+                if (!park) return null;
+                return (
+                  <button
+                    type="button"
+                    className={parkId === chatParkId ? "active" : ""}
+                    onClick={() => openParkChat(parkId)}
+                    key={parkId}
+                  >
+                    <span>{park.logoText.slice(0, 3)}</span>
+                    <span>
+                      <b>{tr(park.name, language)}</b>
+                      <small>{language === "vi" ? "Khu công nghiệp" : "Industrial park"}</small>
+                    </span>
+                    <i />
+                  </button>
+                );
+              })}
+            </nav>
+          </aside>
+          <div className="floating-chat-screen">
+            <header>
+              <div>
+                <span>{activePark.logoText.slice(0, 3)}</span>
+                <div>
+                  <b>{tr(activePark.name, language)}</b>
+                  <small><i /> {language === "vi" ? "Đơn vị cung cấp · Trực tuyến" : "Supplier · Online"}</small>
+                </div>
+              </div>
+              <div>
+                <em>{language === "vi" ? "MÔ PHỎNG" : "DEMO"}</em>
+                <button type="button" onClick={closeParkChat} aria-label={language === "vi" ? "Thu nhỏ cửa sổ chat" : "Minimise chat"}>
+                  <X />
+                </button>
+              </div>
+            </header>
+            <div className="floating-chat-messages" aria-live="polite">
+              {(chatThreads[activePark.id] || []).map((message) => (
+                <div className={`chat-bubble ${message.sender}`} key={message.id}>
+                  {tr(message.text, language)}
+                </div>
+              ))}
+            </div>
+            <form
+              className="floating-chat-composer"
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (!draft.trim()) return;
+                sendParkChatMessage(draft);
+                setDraft("");
+              }}
+            >
+              <input
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                placeholder={language === "vi" ? "Nhập nội dung trao đổi..." : "Type your message..."}
+                aria-label={language === "vi" ? "Nội dung trao đổi" : "Chat message"}
+              />
+              <button type="submit" aria-label={language === "vi" ? "Gửi tin nhắn" : "Send message"}>
+                <Send />
+              </button>
+            </form>
+          </div>
+        </section>
+      )}
+      <button
+        type="button"
+        className={`floating-chat-launcher ${chatOpen ? "open" : ""}`}
+        onClick={toggleParkChat}
+        aria-label={language === "vi" ? "Mở trao đổi với khu công nghiệp" : "Open industrial park chat"}
+      >
+        {chatOpen ? <X /> : <MessageCircle />}
+        {threadIds.length > 0 && <span>{threadIds.length}</span>}
+      </button>
+    </div>
   );
 }
 function PublicShell({ children }: { children: ReactNode }) {
@@ -462,6 +570,7 @@ function PublicShell({ children }: { children: ReactNode }) {
       <Header />
       <main>{children}</main>
       <Footer />
+      <FloatingParkChat />
     </>
   );
 }
@@ -494,13 +603,13 @@ function HomePage() {
           </span>
           <h1>
             {language === "vi"
-              ? "Cửa ngõ đầu tư công nghiệp Việt Nam"
-              : "Vietnam’s industrial gateway"}
+              ? "HẠ TẦNG SỐ CÔNG NGHIỆP VIỆT NAM"
+              : "VIETNAM INDUSTRIAL DIGITAL INFRASTRUCTURE"}
           </h1>
           <p>
             {language === "vi"
-              ? "Tra cứu khu công nghiệp, quỹ đất, nhà xưởng và kho vận; gửi nhu cầu và kết nối trực tiếp với đơn vị phát triển dự án."
-              : "Discover industrial parks, assets and the right opportunities — from search to connection in one experience."}
+              ? "Vận hành bởi dữ liệu và ghép nối bởi AI"
+              : "Powered by data and matched by AI"}
           </p>
           <div className="hero-actions">
             <Link className="button gold" to="/industrial-parks">
@@ -897,7 +1006,6 @@ function ContactModal({
   const [sent, setSent] = useState(false);
   const modalTitle: Record<string, LocalizedText> = {
     Inquiry: tx("Yêu cầu tư vấn", "Inquiry"),
-    Chat: tx("Trao đổi trực tuyến", "Chat"),
     Meeting: tx("Yêu cầu cuộc hẹn", "Meeting request"),
   };
   if (sent)
@@ -965,8 +1073,12 @@ function ContactModal({
 
 function ParkDetailPage() {
   const { slug } = useParams();
-  const { language, parks, assets } = useApp();
+  const { language, parks, assets, openParkChat } = useApp();
   const [modal, setModal] = useState("");
+  const [activeParkTab, setActiveParkTab] = useState<"information" | "assets">(
+    "information",
+  );
+  const [activeSection, setActiveSection] = useState("overview");
   const park = parks.find((p) => p.slug === slug);
   if (!park)
     return (
@@ -987,11 +1099,22 @@ function ParkDetailPage() {
     );
   const linked = assets.filter((a) => a.parkId === park.id);
   const publicDocs = park.documents;
-  const scrollToSection = (id: string) =>
+  const scrollToSection = (id: string) => {
+    setActiveSection(id);
     document.getElementById(id)?.scrollIntoView({
       behavior: "smooth",
       block: "start",
     });
+  };
+  const sectionNavItems = [
+    ["overview", language === "vi" ? "Tổng quan" : "Overview"],
+    ["connectivity", language === "vi" ? "Kết nối" : "Connectivity"],
+    ["infrastructure", language === "vi" ? "Hạ tầng" : "Infrastructure"],
+    ["workforce", language === "vi" ? "Nhân lực" : "Workforce"],
+    ["incentives", language === "vi" ? "Ưu đãi" : "Incentives"],
+    ["media", language === "vi" ? "Hình ảnh" : "Media"],
+    ["documents", language === "vi" ? "Tài liệu" : "Documents"],
+  ];
   return (
     <PublicShell>
       <div className="detail-hero">
@@ -1022,7 +1145,7 @@ function ParkDetailPage() {
               <Send size={17} />
               {language === "vi" ? "Gửi yêu cầu" : "Send inquiry"}
             </button>
-            <button className="button ghost" onClick={() => setModal("Chat")}>
+            <button className="button ghost" onClick={() => openParkChat(park.id)}>
               <MessageCircle size={17} />
               {language === "vi" ? "Trao đổi" : "Chat"}
             </button>
@@ -1040,32 +1163,40 @@ function ParkDetailPage() {
           </div>
         </div>
       </div>
-      <nav className="anchor-nav">
+      <nav className="park-primary-tabs" aria-label={language === "vi" ? "Nội dung hồ sơ" : "Profile content"}>
         <div className="page">
-          <button type="button" onClick={() => scrollToSection("overview")}>
-            {language === "vi" ? "Tổng quan" : "Overview"}
+          <button
+            type="button"
+            className={activeParkTab === "information" ? "active" : ""}
+            onClick={() => setActiveParkTab("information")}
+          >
+            <FileText /> {language === "vi" ? "Thông tin" : "Information"}
           </button>
-          <button type="button" onClick={() => scrollToSection("connectivity")}>
-            {language === "vi" ? "Kết nối" : "Connectivity"}
-          </button>
-          <button type="button" onClick={() => scrollToSection("infrastructure")}>
-            {language === "vi" ? "Hạ tầng" : "Infrastructure"}
-          </button>
-          <button type="button" onClick={() => scrollToSection("workforce")}>
-            {language === "vi" ? "Nhân lực" : "Workforce"}
-          </button>
-          <button type="button" onClick={() => scrollToSection("incentives")}>
-            {language === "vi" ? "Ưu đãi" : "Incentives"}
-          </button>
-          <button type="button" onClick={() => scrollToSection("media")}>
-            {language === "vi" ? "Hình ảnh" : "Media"}
-          </button>
-          <button type="button" onClick={() => scrollToSection("documents")}>
-            {language === "vi" ? "Tài liệu" : "Documents"}
+          <button
+            type="button"
+            className={activeParkTab === "assets" ? "active" : ""}
+            onClick={() => setActiveParkTab("assets")}
+          >
+            <PackageSearch /> {language === "vi" ? "Tài sản" : "Assets"}
+            <span>{linked.length}</span>
           </button>
         </div>
       </nav>
-      <div className="page detail-page">
+      <div className={`page detail-page ${activeParkTab}`}>
+        <aside className="park-section-nav">
+          <b>{language === "vi" ? "Nội dung hồ sơ" : "Profile sections"}</b>
+          {sectionNavItems.map(([id, label], index) => (
+            <button
+              type="button"
+              className={activeSection === id ? "active" : ""}
+              onClick={() => scrollToSection(id)}
+              key={id}
+            >
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              {label}
+            </button>
+          ))}
+        </aside>
         <section className="key-facts">
           <div>
             <span>{language === "vi" ? "Tổng diện tích" : "Total area"}</span>
@@ -1147,7 +1278,7 @@ function ParkDetailPage() {
                 : "Developer track record"
             }
           />
-          <div>
+          <div className="profile-stat-grid">
             {park.operator.portfolioStats.map((x) => (
               <article key={x.label.en}>
                 <SourceValue value={x.value} compact />
@@ -1438,7 +1569,7 @@ function ParkDetailPage() {
             />
           )}
         </section>
-        <section>
+        <section className="park-assets-panel">
           <SectionTitle
             eyebrow="07 · AVAILABILITY"
             title={
@@ -1730,30 +1861,56 @@ function AssetCard({
 }: {
   asset: ReturnType<typeof useApp>["assets"][number];
 }) {
-  const { language, parks } = useApp();
+  const { language, parks, openParkChat } = useApp();
+  const navigate = useNavigate();
   const park = parks.find((p) => p.id === asset.parkId);
+  const requestUrl = `/find-supply?${new URLSearchParams({
+    parkId: asset.parkId,
+    assetId: asset.id,
+  }).toString()}`;
   return (
-    <article className="asset-card">
-      <Link to={`/assets/${asset.id}`}>
-        <img src={asset.image} alt={tr(asset.name, language)} />
-      </Link>
-      <div>
-        <Badge value={asset.type} tone="blue" />
-        <h3>
-          <Link to={`/assets/${asset.id}`}>{tr(asset.name, language)}</Link>
-        </h3>
-        <p>
-          <MapPin size={14} />
-          {park ? tr(park.name, language) : ""}
-        </p>
-        <div>
-          <b>
-            {asset.area.toLocaleString()} {asset.unit}
-          </b>
-          <SourceValue value={asset.price} compact />
+      <article
+        className="asset-card"
+        role="link"
+        tabIndex={0}
+        onClick={() => navigate(`/assets/${asset.id}`)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") navigate(`/assets/${asset.id}`);
+        }}
+      >
+        <div className="asset-card-image">
+          <img src={asset.image} alt={tr(asset.name, language)} />
         </div>
-      </div>
-    </article>
+        <div className="asset-card-body">
+          <Badge value={asset.type} tone="blue" />
+          <h3>{tr(asset.name, language)}</h3>
+          <p>
+            <MapPin size={14} />
+            {park ? tr(park.name, language) : ""}
+          </p>
+          <div className="asset-card-facts">
+            <b>
+              {asset.area.toLocaleString()} {asset.unit}
+            </b>
+            <SourceValue value={asset.price} compact />
+          </div>
+          <div className="asset-card-actions">
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                if (park) openParkChat(park.id);
+              }}
+              disabled={!park}
+            >
+              <MessageCircle /> {language === "vi" ? "Trao đổi" : "Chat"}
+            </button>
+            <Link to={requestUrl} onClick={(event) => event.stopPropagation()}>
+              <Send /> Direct Request
+            </Link>
+          </div>
+        </div>
+      </article>
   );
 }
 function AssetsPage() {
@@ -1828,10 +1985,11 @@ function AssetsPage() {
 }
 function AssetDetailPage() {
   const { id } = useParams();
-  const { assets, parks, language } = useApp();
+  const { assets, parks, language, openParkChat } = useApp();
   const asset = assets.find((a) => a.id === id);
   if (!asset) return <Navigate to="/assets" />;
   const park = parks.find((p) => p.id === asset.parkId)!;
+  const requestUrl = `/find-supply?${new URLSearchParams({ parkId: park.id, assetId: asset.id }).toString()}`;
   return (
     <PublicShell>
       <div className="page page-top">
@@ -1878,10 +2036,14 @@ function AssetDetailPage() {
                 <b>{asset.powerMva} MVA</b>
               </div>
             </div>
-            <Link className="button primary" to="/find-supply">
-              <Send />{" "}
-              {language === "vi" ? "Gửi yêu cầu tư vấn" : "Send requirement"}
-            </Link>
+            <div className="asset-detail-actions">
+              <button className="button outline" type="button" onClick={() => openParkChat(park.id)}>
+                <MessageCircle /> {language === "vi" ? "Trao đổi với KCN" : "Chat with park"}
+              </button>
+              <Link className="button primary" to={requestUrl}>
+                <Send /> {language === "vi" ? "Gửi yêu cầu tư vấn" : "Send requirement"}
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -1896,6 +2058,7 @@ const emptyForm = {
   phone: "",
   service: "Premium Matching",
   assetType: "",
+  industrialParkName: "",
   location: "",
   areaMin: "",
   areaMax: "",
@@ -1906,9 +2069,35 @@ const emptyForm = {
   requirements: "",
 };
 function RequestFormPage({ kind }: { kind: RequestKind }) {
-  const { language, createRequest } = useApp();
+  const { language, createRequest, parks, assets } = useApp();
   const navigate = useNavigate();
-  const [form, setForm] = useState(emptyForm);
+  const [searchParams] = useSearchParams();
+  const selectedAsset = assets.find((asset) => asset.id === searchParams.get("assetId"));
+  const selectedPark = parks.find(
+    (park) => park.id === (searchParams.get("parkId") || selectedAsset?.parkId),
+  );
+  const [form, setForm] = useState(() => ({
+    ...emptyForm,
+    assetType: selectedAsset
+      ? tr(labels[selectedAsset.type], language)
+      : "",
+    industrialParkName: selectedPark?.name.en || "",
+    location: selectedPark?.province || "",
+    areaMin: selectedAsset
+      ? String(selectedAsset.unit === "ha" ? selectedAsset.area * 10000 : selectedAsset.area)
+      : "",
+    areaMax: selectedAsset
+      ? String(selectedAsset.unit === "ha" ? selectedAsset.area * 10000 : selectedAsset.area)
+      : "",
+    transaction: selectedAsset?.transaction || "lease",
+    industry: selectedAsset?.industries[0] || "",
+    availabilityDate: selectedAsset?.availableFrom || "",
+    requirements: selectedAsset && selectedPark
+      ? language === "vi"
+        ? `Tôi quan tâm đến ${tr(selectedAsset.name, language)} tại ${tr(selectedPark.name, language)}.`
+        : `I am interested in ${tr(selectedAsset.name, language)} at ${tr(selectedPark.name, language)}.`
+      : "",
+  }));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const isSupply = kind === "find_supply";
   const update = (k: string, v: string) => setForm((x) => ({ ...x, [k]: v }));
@@ -2013,6 +2202,22 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
                 "assetType",
                 language === "vi" ? "Loại hình bất động sản" : "Asset type",
               )}
+              <label>
+                <span>{language === "vi" ? "Tên khu công nghiệp" : "Industrial park name"}</span>
+                <select
+                  value={form.industrialParkName}
+                  onChange={(e) => update("industrialParkName", e.target.value)}
+                >
+                  <option value="">
+                    {language === "vi" ? "Chưa xác định" : "Not specified"}
+                  </option>
+                  {parks.map((park) => (
+                    <option key={park.id} value={park.name.en}>
+                      {tr(park.name, language)}
+                    </option>
+                  ))}
+                </select>
+              </label>
               {field(
                 "location",
                 language === "vi"
@@ -2225,6 +2430,12 @@ function ConfirmationPage() {
               <small>{language === "vi" ? "Dịch vụ" : "Service"}</small>
               <b>{r.service}</b>
             </div>
+            {r.industrialParkName && (
+              <div>
+                <small>{language === "vi" ? "Khu công nghiệp" : "Industrial park"}</small>
+                <b>{r.industrialParkName}</b>
+              </div>
+            )}
             <div>
               <small>{language === "vi" ? "Trạng thái" : "Status"}</small>
               <Badge value={r.status} />
@@ -2534,9 +2745,18 @@ function AdminDashboard() {
             tone="green"
           />
           <Kpi
-            label={language === "vi" ? "Tổng số yêu cầu" : "Total requests"}
-            value={requests.length}
-            icon={ClipboardCheck}
+            label={language === "vi" ? "Kết nối" : "Connections"}
+            value={
+              requests.length +
+              expos.reduce(
+                (total, expo) =>
+                  total +
+                  expo.analytics.inboundRequests +
+                  expo.analytics.outboundRequests,
+                0,
+              )
+            }
+            icon={Handshake}
             tone="gold"
           />
           <Kpi
@@ -2618,26 +2838,26 @@ function ExpoTrendChart({ data }: { data: ExpoDailyMetric[] }) {
   const chartBottom = 174;
   const left = 28;
   const right = 642;
-  const max = Math.max(1, ...data.flatMap((item) => [item.rfqs, item.connections]));
+  const max = Math.max(1, ...data.flatMap((item) => [item.requests, item.connections]));
   const point = (value: number, index: number) => {
     const x = data.length === 1 ? left : left + (index / (data.length - 1)) * (right - left);
     const y = chartBottom - (value / max) * (chartBottom - chartTop);
     return `${x},${y}`;
   };
-  const rfqPoints = data.map((item, index) => point(item.rfqs, index)).join(" ");
+  const requestPoints = data.map((item, index) => point(item.requests, index)).join(" ");
   const connectionPoints = data.map((item, index) => point(item.connections, index)).join(" ");
   return (
     <div className="expo-trend-chart">
       <div className="chart-legend">
-        <span><i className="rfq" />RFQ</span>
-        <span><i className="connection" />{language === "vi" ? "Kết nối" : "Connections"}</span>
+        <span><i className="request" />{language === "vi" ? "Kết nối" : "Connections"}</span>
+        <span><i className="connection" />{language === "vi" ? "Thành công" : "Completed"}</span>
       </div>
-      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={language === "vi" ? "Biểu đồ xu hướng RFQ và kết nối" : "RFQ and connection trend chart"}>
+      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={language === "vi" ? "Biểu đồ xu hướng kết nối" : "Connection trend chart"}>
         {[0, 1, 2, 3].map((line) => {
           const y = chartTop + (line / 3) * (chartBottom - chartTop);
           return <line key={line} x1={left} x2={right} y1={y} y2={y} className="chart-grid-line" />;
         })}
-        <polyline points={rfqPoints} className="chart-line rfq-line" />
+        <polyline points={requestPoints} className="chart-line request-line" />
         <polyline points={connectionPoints} className="chart-line connection-line" />
         {data.map((item, index) => {
           const x = data.length === 1 ? left : left + (index / (data.length - 1)) * (right - left);
@@ -2663,18 +2883,18 @@ function AdminExpos() {
   const totals = expos.reduce(
     (sum, expo) => ({
       exhibitors: sum.exhibitors + expo.exhibitors,
-      rfqs: sum.rfqs + expo.analytics.inboundRfqs + expo.analytics.outboundRfqs,
+      connections: sum.connections + expo.analytics.inboundRequests + expo.analytics.outboundRequests,
       deals: sum.deals + expo.analytics.inboundDeals + expo.analytics.outboundDeals,
       completed: sum.completed + expo.analytics.completedConnections,
     }),
-    { exhibitors: 0, rfqs: 0, deals: 0, completed: 0 },
+    { exhibitors: 0, connections: 0, deals: 0, completed: 0 },
   );
   const trend = expos[0].analytics.trend.map((item, index) => ({
     date: item.date,
-    rfqs: expos.reduce((sum, expo) => sum + (expo.analytics.trend[index]?.rfqs || 0), 0),
+    requests: expos.reduce((sum, expo) => sum + (expo.analytics.trend[index]?.requests || 0), 0),
     connections: expos.reduce((sum, expo) => sum + (expo.analytics.trend[index]?.connections || 0), 0),
   }));
-  const allRfqs = totals.rfqs || 1;
+  const allConnections = totals.connections || 1;
   return (
     <AdminShell>
       <div className="admin-page expo-admin-page">
@@ -2682,14 +2902,14 @@ function AdminExpos() {
           <div>
             <span>EXPO OPERATIONS</span>
             <h1>{language === "vi" ? "Quản lý Expo" : "Expo Management"}</h1>
-            <p>{language === "vi" ? "Theo dõi RFQ, giao dịch và kết quả kết nối theo từng Expo." : "Track RFQs, deals, and connection outcomes for each Expo."}</p>
+            <p>{language === "vi" ? "Theo dõi yêu cầu, giao dịch và kết quả kết nối theo từng Expo." : "Track requests, deals, and connection outcomes for each Expo."}</p>
           </div>
           <span className="demo-data-label">{language === "vi" ? "Dữ liệu mô phỏng" : "Demo data"}</span>
         </div>
         <div className="kpi-grid">
           <Kpi label={language === "vi" ? "Expo đang quản lý" : "Managed Expos"} value={expos.length} icon={Globe2} />
           <Kpi label={language === "vi" ? "Đơn vị trưng bày" : "Exhibitors"} value={formatReportNumber(totals.exhibitors, language)} icon={Building2} tone="gold" />
-          <Kpi label={language === "vi" ? "Tổng RFQ hai chiều" : "Total I/O RFQs"} value={formatReportNumber(totals.rfqs, language)} icon={FileText} />
+          <Kpi label={language === "vi" ? "Kết nối" : "Connections"} value={formatReportNumber(totals.connections, language)} icon={Handshake} />
           <Kpi label={language === "vi" ? "Kết nối thành công" : "Completed connections"} value={formatReportNumber(totals.completed, language)} icon={Handshake} tone="green" />
         </div>
         <div className="expo-report-grid">
@@ -2704,8 +2924,8 @@ function AdminExpos() {
           </section>
           <section className="admin-panel connection-summary-panel">
             <div className="panel-head"><h2><Handshake /> {language === "vi" ? "Tổng quan chuyển đổi" : "Conversion overview"}</h2></div>
-            <div className="conversion-ring" style={{ "--progress": `${Math.round((totals.completed / allRfqs) * 100)}%` } as CSSProperties}>
-              <div><b>{Math.round((totals.completed / allRfqs) * 100)}%</b><span>RFQ → {language === "vi" ? "kết nối thành công" : "completed"}</span></div>
+            <div className="conversion-ring" style={{ "--progress": `${Math.round((totals.completed / allConnections) * 100)}%` } as CSSProperties}>
+              <div><b>{Math.round((totals.completed / allConnections) * 100)}%</b><span>{language === "vi" ? "Kết nối → thành công" : "Connection → completed"}</span></div>
             </div>
             <div className="connection-mini-stats">
               <div><span>{language === "vi" ? "Giao dịch I/O" : "I/O deals"}</span><b>{totals.deals}</b></div>
@@ -2731,13 +2951,13 @@ function AdminExpos() {
           <div className="table-wrap expo-report-table">
             <table>
               <thead><tr>
-                <th>Expo</th><th>{language === "vi" ? "Trạng thái" : "Status"}</th><th>{language === "vi" ? "Khách truy cập" : "Visitors"}</th><th>RFQ I / O</th><th>{language === "vi" ? "Giao dịch I / O" : "Deals I / O"}</th><th>{language === "vi" ? "Kết nối thành công" : "Completed"}</th><th></th>
+                <th>Expo</th><th>{language === "vi" ? "Trạng thái" : "Status"}</th><th>{language === "vi" ? "Khách truy cập" : "Visitors"}</th><th>{language === "vi" ? "Kết nối I / O" : "Connections I / O"}</th><th>{language === "vi" ? "Giao dịch I / O" : "Deals I / O"}</th><th>{language === "vi" ? "Kết nối thành công" : "Completed"}</th><th></th>
               </tr></thead>
               <tbody>{filtered.map((expo) => <tr key={expo.id}>
                 <td><b>{tr(expo.title, language)}</b><small>{expo.market} · {expo.date}</small></td>
                 <td><ExpoStatus expo={expo} /></td>
                 <td>{formatReportNumber(expo.analytics.visitors, language)}</td>
-                <td><span className="io-metric"><i>I</i>{expo.analytics.inboundRfqs}<i>O</i>{expo.analytics.outboundRfqs}</span></td>
+                <td><span className="io-metric"><i>I</i>{expo.analytics.inboundRequests}<i>O</i>{expo.analytics.outboundRequests}</span></td>
                 <td><span className="io-metric"><i>I</i>{expo.analytics.inboundDeals}<i>O</i>{expo.analytics.outboundDeals}</span></td>
                 <td><b className="success-value">{expo.analytics.completedConnections}</b></td>
                 <td><Link className="table-action" to={`/admin/expos/${expo.id}`}>{language === "vi" ? "Xem báo cáo" : "View report"}<ChevronRight /></Link></td>
@@ -2745,7 +2965,7 @@ function AdminExpos() {
             </table>
           </div>
         </section>
-        <p className="report-source-note">{language === "vi" ? "Mô hình báo cáo tham chiếu Partner Portal: chỉ số khách truy cập được cập nhật gần thời gian thực; đơn vị trưng bày và sản phẩm theo bản chụp; RFQ theo luồng hoạt động. Bản TSX này sử dụng dữ liệu mô phỏng tĩnh." : "Reporting model adapted from Partner Portal: near-real-time visitors, snapshot exhibitor/product counts, and activity-based RFQs. This TSX demo uses static fixture data."}</p>
+        <p className="report-source-note">{language === "vi" ? "Mô hình báo cáo tham chiếu Partner Portal: RFQ và Request được hợp nhất thành chỉ số Kết nối; khách truy cập được cập nhật gần thời gian thực; đơn vị trưng bày và sản phẩm theo bản chụp. Bản TSX này sử dụng dữ liệu mô phỏng tĩnh." : "Reporting model adapted from Partner Portal: RFQs and Requests are consolidated into the Connection metric; visitors are near real time, while exhibitor and product totals are snapshots. This TSX demo uses static fixture data."}</p>
       </div>
     </AdminShell>
   );
@@ -2757,8 +2977,8 @@ function AdminExpoDetail() {
   const expo = expos.find((item) => item.id === id);
   if (!expo) return <Navigate to="/admin/expos" replace />;
   const report = expo.analytics;
-  const totalRfqs = report.inboundRfqs + report.outboundRfqs;
-  const conversion = totalRfqs ? Math.round((report.completedConnections / totalRfqs) * 100) : 0;
+  const totalConnections = report.inboundRequests + report.outboundRequests;
+  const conversion = totalConnections ? Math.round((report.completedConnections / totalConnections) * 100) : 0;
   const maxMarket = Math.max(...report.topMarkets.map((item) => item.connections), 1);
   return (
     <AdminShell>
@@ -2776,28 +2996,28 @@ function AdminExpoDetail() {
         </div>
         <div className="expo-report-grid">
           <section className="admin-panel expo-chart-panel">
-            <div className="panel-head"><div><h2><BarChart3 /> {language === "vi" ? "RFQ và kết nối theo ngày" : "Daily RFQs and connections"}</h2><small>{language === "vi" ? "Hoạt động trong 7 ngày gần nhất" : "Activity over the last 7 days"}</small></div></div>
+            <div className="panel-head"><div><h2><BarChart3 /> {language === "vi" ? "Kết nối và kết quả theo ngày" : "Daily connections and outcomes"}</h2><small>{language === "vi" ? "Hoạt động trong 7 ngày gần nhất" : "Activity over the last 7 days"}</small></div></div>
             <ExpoTrendChart data={report.trend} />
           </section>
           <section className="admin-panel connection-summary-panel">
             <div className="panel-head"><h2><Activity /> {language === "vi" ? "Hiệu quả kết nối" : "Connection performance"}</h2></div>
-            <div className="conversion-ring" style={{ "--progress": `${conversion}%` } as CSSProperties}><div><b>{conversion}%</b><span>RFQ → {language === "vi" ? "kết nối thành công" : "completed"}</span></div></div>
+            <div className="conversion-ring" style={{ "--progress": `${conversion}%` } as CSSProperties}><div><b>{conversion}%</b><span>{language === "vi" ? "Kết nối → thành công" : "Connection → completed"}</span></div></div>
             <div className="connection-mini-stats"><div><span>{language === "vi" ? "Đang kết nối" : "Active"}</span><b>{report.activeConnections}</b></div><div><span>{language === "vi" ? "Giá trị giao dịch dự kiến" : "Est. deal value"}</span><b>{formatReportUsd(report.estimatedDealValueUsd, language)}</b></div></div>
           </section>
         </div>
         <section className="admin-panel">
           <div className="panel-head"><div><h2><Handshake /> {language === "vi" ? "Hoạt động kết nối hai chiều" : "Inbound / outbound connection activity"}</h2><small>{language === "vi" ? "I = tiếp nhận từ đối tác; O = chủ động gửi tới đối tác." : "I = received from partners; O = initiated toward partners."}</small></div></div>
           <div className="io-report-grid">
-            <article className="io-report-card inbound"><div><span>I</span><div><b>{language === "vi" ? "Luồng tiếp nhận" : "Inbound"}</b><small>{language === "vi" ? "Nhu cầu gửi đến đơn vị trưng bày" : "Demand received by exhibitors"}</small></div></div><dl><div><dt>RFQ</dt><dd>{report.inboundRfqs}</dd></div><div><dt>{language === "vi" ? "Giao dịch" : "Deals"}</dt><dd>{report.inboundDeals}</dd></div></dl></article>
-            <article className="io-report-card outbound"><div><span>O</span><div><b>{language === "vi" ? "Luồng chủ động" : "Outbound"}</b><small>{language === "vi" ? "Nhu cầu do đơn vị tham gia khởi tạo" : "Demand initiated by participants"}</small></div></div><dl><div><dt>RFQ</dt><dd>{report.outboundRfqs}</dd></div><div><dt>{language === "vi" ? "Giao dịch" : "Deals"}</dt><dd>{report.outboundDeals}</dd></div></dl></article>
+            <article className="io-report-card inbound"><div><span>I</span><div><b>{language === "vi" ? "Luồng tiếp nhận" : "Inbound"}</b><small>{language === "vi" ? "Nhu cầu gửi đến đơn vị trưng bày" : "Demand received by exhibitors"}</small></div></div><dl><div><dt>{language === "vi" ? "Kết nối" : "Connections"}</dt><dd>{report.inboundRequests}</dd></div><div><dt>{language === "vi" ? "Giao dịch" : "Deals"}</dt><dd>{report.inboundDeals}</dd></div></dl></article>
+            <article className="io-report-card outbound"><div><span>O</span><div><b>{language === "vi" ? "Luồng chủ động" : "Outbound"}</b><small>{language === "vi" ? "Nhu cầu do đơn vị tham gia khởi tạo" : "Demand initiated by participants"}</small></div></div><dl><div><dt>{language === "vi" ? "Kết nối" : "Connections"}</dt><dd>{report.outboundRequests}</dd></div><div><dt>{language === "vi" ? "Giao dịch" : "Deals"}</dt><dd>{report.outboundDeals}</dd></div></dl></article>
             <article className="io-report-card completed"><div><CheckCircle2 /><div><b>{language === "vi" ? "Kết nối thành công" : "Completed connections"}</b><small>{language === "vi" ? "Hai bên đã xác nhận kết quả kết nối" : "Outcome confirmed by both parties"}</small></div></div><strong>{report.completedConnections}</strong></article>
           </div>
         </section>
         <div className="expo-report-grid lower">
-          <section className="admin-panel"><div className="panel-head"><h2>{language === "vi" ? "Hiệu quả theo ngành" : "Performance by industry"}</h2></div><div className="industry-report-list">{report.topIndustries.map((item) => <div key={item.industry}><span><b>{industryLabel(item.industry, language)}</b><small>{item.rfqs} RFQ</small></span><strong>{item.connections}<small>{language === "vi" ? " kết nối" : " connections"}</small></strong></div>)}</div></section>
+          <section className="admin-panel"><div className="panel-head"><h2>{language === "vi" ? "Hiệu quả theo ngành" : "Performance by industry"}</h2></div><div className="industry-report-list">{report.topIndustries.map((item) => <div key={item.industry}><span><b>{industryLabel(item.industry, language)}</b><small>{item.requests} {language === "vi" ? "kết nối" : "connections"}</small></span><strong>{item.connections}<small>{language === "vi" ? " thành công" : " completed"}</small></strong></div>)}</div></section>
           <section className="admin-panel"><div className="panel-head"><h2>{language === "vi" ? "Kết nối theo thị trường" : "Connections by market"}</h2></div><div className="market-report-bars">{report.topMarkets.map((item) => <div key={item.market}><span><b>{item.market}</b><strong>{item.connections}</strong></span><i><em style={{ width: `${(item.connections / maxMarket) * 100}%` }} /></i></div>)}</div></section>
         </div>
-        <section className="admin-panel metric-definition-panel"><div className="panel-head"><h2>{language === "vi" ? "Định nghĩa chỉ số" : "Metric definitions"}</h2></div><div className="metric-definitions"><p><b>RFQ I/O</b>{language === "vi" ? "Yêu cầu báo giá tiếp nhận hoặc chủ động gửi trong Expo." : "Requests for quotation received or initiated within the Expo."}</p><p><b>{language === "vi" ? "Giao dịch I/O" : "Deals I/O"}</b>{language === "vi" ? "Cơ hội giao dịch được tạo từ luồng tiếp nhận hoặc chủ động." : "Deal opportunities created from inbound or outbound activity."}</p><p><b>{language === "vi" ? "Kết nối thành công" : "Completed connection"}</b>{language === "vi" ? "Kết nối được hai bên xác nhận; không đồng nghĩa giao dịch đã ký hoặc đã thanh toán." : "A connection confirmed by both parties; it does not mean a contract was signed or paid."}</p></div></section>
+        <section className="admin-panel metric-definition-panel"><div className="panel-head"><h2>{language === "vi" ? "Định nghĩa chỉ số" : "Metric definitions"}</h2></div><div className="metric-definitions"><p><b>{language === "vi" ? "Kết nối I/O" : "Connections I/O"}</b>{language === "vi" ? "Hợp nhất RFQ và Request được tiếp nhận hoặc chủ động gửi trong Expo." : "Consolidates RFQs and Requests received or initiated within the Expo."}</p><p><b>{language === "vi" ? "Giao dịch I/O" : "Deals I/O"}</b>{language === "vi" ? "Cơ hội giao dịch được tạo từ luồng tiếp nhận hoặc chủ động." : "Deal opportunities created from inbound or outbound activity."}</p><p><b>{language === "vi" ? "Kết nối thành công" : "Completed connection"}</b>{language === "vi" ? "Kết nối được hai bên xác nhận; không đồng nghĩa giao dịch đã ký hoặc đã thanh toán." : "A connection confirmed by both parties; it does not mean a contract was signed or paid."}</p></div></section>
       </div>
     </AdminShell>
   );
@@ -2985,6 +3205,15 @@ function RequestDetail() {
                   <span>
                     {r.areaMin.toLocaleString()}–{r.areaMax.toLocaleString()} m²
                   </span>
+                </div>
+                <div>
+                  <small>
+                    {language === "vi" ? "Tên khu công nghiệp" : "Industrial park name"}
+                  </small>
+                  <b>
+                    {r.industrialParkName ||
+                      (language === "vi" ? "Chưa xác định" : "Not specified")}
+                  </b>
                 </div>
                 <div>
                   <small>

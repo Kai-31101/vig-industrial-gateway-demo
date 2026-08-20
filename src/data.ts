@@ -197,27 +197,27 @@ export const expos: ExpoProgram[] = [
   {
     id: 'expo-cn', title: l('Triển lãm Công nghiệp Trung Quốc – Việt Nam', 'China–Vietnam Industrial Expo'), market: 'China–Vietnam', industries: ['Electronics', 'Supply chain'], date: '2026-10-15', status: 'upcoming', exhibitors: 86,
     analytics: {
-      visitors: 4280, products: 642, inboundRfqs: 118, outboundRfqs: 74, inboundDeals: 31, outboundDeals: 22, activeConnections: 96, completedConnections: 28, estimatedDealValueUsd: 6800000, updatedAt: '2026-08-20T09:30:00+07:00',
-      trend: [{ date: '14/08', rfqs: 18, connections: 7 }, { date: '15/08', rfqs: 22, connections: 9 }, { date: '16/08', rfqs: 27, connections: 12 }, { date: '17/08', rfqs: 25, connections: 11 }, { date: '18/08', rfqs: 31, connections: 16 }, { date: '19/08', rfqs: 34, connections: 19 }, { date: '20/08', rfqs: 35, connections: 22 }],
-      topIndustries: [{ industry: 'Electronics', rfqs: 68, connections: 34 }, { industry: 'Supply chain', rfqs: 51, connections: 25 }, { industry: 'Industrial machinery', rfqs: 39, connections: 21 }],
+      visitors: 4280, products: 642, inboundRequests: 118, outboundRequests: 74, inboundDeals: 31, outboundDeals: 22, activeConnections: 96, completedConnections: 28, estimatedDealValueUsd: 6800000, updatedAt: '2026-08-20T09:30:00+07:00',
+      trend: [{ date: '14/08', requests: 18, connections: 7 }, { date: '15/08', requests: 22, connections: 9 }, { date: '16/08', requests: 27, connections: 12 }, { date: '17/08', requests: 25, connections: 11 }, { date: '18/08', requests: 31, connections: 16 }, { date: '19/08', requests: 34, connections: 19 }, { date: '20/08', requests: 35, connections: 22 }],
+      topIndustries: [{ industry: 'Electronics', requests: 68, connections: 34 }, { industry: 'Supply chain', requests: 51, connections: 25 }, { industry: 'Industrial machinery', requests: 39, connections: 21 }],
       topMarkets: [{ market: 'China', connections: 42 }, { market: 'Vietnam', connections: 34 }, { market: 'Singapore', connections: 12 }, { market: 'Malaysia', connections: 8 }],
     },
   },
   {
     id: 'expo-kr', title: l('Triển lãm Công nghiệp Hàn Quốc – Việt Nam', 'Korea–Vietnam Industrial Expo'), market: 'Korea–Vietnam', industries: ['Semiconductors', 'Automotive'], date: '2026-11-08', status: 'upcoming', exhibitors: 64,
     analytics: {
-      visitors: 3160, products: 428, inboundRfqs: 92, outboundRfqs: 61, inboundDeals: 24, outboundDeals: 17, activeConnections: 78, completedConnections: 21, estimatedDealValueUsd: 5200000, updatedAt: '2026-08-20T09:25:00+07:00',
-      trend: [{ date: '14/08', rfqs: 14, connections: 6 }, { date: '15/08', rfqs: 18, connections: 8 }, { date: '16/08', rfqs: 19, connections: 9 }, { date: '17/08', rfqs: 21, connections: 10 }, { date: '18/08', rfqs: 25, connections: 13 }, { date: '19/08', rfqs: 27, connections: 15 }, { date: '20/08', rfqs: 29, connections: 17 }],
-      topIndustries: [{ industry: 'Semiconductors', rfqs: 57, connections: 30 }, { industry: 'Automotive', rfqs: 46, connections: 25 }, { industry: 'Electronic components', rfqs: 31, connections: 16 }],
+      visitors: 3160, products: 428, inboundRequests: 92, outboundRequests: 61, inboundDeals: 24, outboundDeals: 17, activeConnections: 78, completedConnections: 21, estimatedDealValueUsd: 5200000, updatedAt: '2026-08-20T09:25:00+07:00',
+      trend: [{ date: '14/08', requests: 14, connections: 6 }, { date: '15/08', requests: 18, connections: 8 }, { date: '16/08', requests: 19, connections: 9 }, { date: '17/08', requests: 21, connections: 10 }, { date: '18/08', requests: 25, connections: 13 }, { date: '19/08', requests: 27, connections: 15 }, { date: '20/08', requests: 29, connections: 17 }],
+      topIndustries: [{ industry: 'Semiconductors', requests: 57, connections: 30 }, { industry: 'Automotive', requests: 46, connections: 25 }, { industry: 'Electronic components', requests: 31, connections: 16 }],
       topMarkets: [{ market: 'Korea', connections: 35 }, { market: 'Vietnam', connections: 28 }, { market: 'Japan', connections: 9 }, { market: 'Thailand', connections: 6 }],
     },
   },
   {
     id: 'expo-global', title: l('Triển lãm Công nghiệp Toàn cầu – Việt Nam', 'Global–Vietnam Industrial Expo'), market: 'Global–Vietnam', industries: ['Industrial parks', 'Logistics'], date: '2026-09-20', status: 'live', exhibitors: 120,
     analytics: {
-      visitors: 7890, products: 984, inboundRfqs: 236, outboundRfqs: 148, inboundDeals: 67, outboundDeals: 43, activeConnections: 184, completedConnections: 56, estimatedDealValueUsd: 14800000, updatedAt: '2026-08-20T09:32:00+07:00',
-      trend: [{ date: '14/08', rfqs: 38, connections: 18 }, { date: '15/08', rfqs: 43, connections: 23 }, { date: '16/08', rfqs: 49, connections: 28 }, { date: '17/08', rfqs: 52, connections: 31 }, { date: '18/08', rfqs: 61, connections: 38 }, { date: '19/08', rfqs: 68, connections: 44 }, { date: '20/08', rfqs: 73, connections: 48 }],
-      topIndustries: [{ industry: 'Industrial parks', rfqs: 126, connections: 61 }, { industry: 'Logistics', rfqs: 104, connections: 54 }, { industry: 'Electronics', rfqs: 79, connections: 41 }, { industry: 'Food processing', rfqs: 48, connections: 28 }],
+      visitors: 7890, products: 984, inboundRequests: 236, outboundRequests: 148, inboundDeals: 67, outboundDeals: 43, activeConnections: 184, completedConnections: 56, estimatedDealValueUsd: 14800000, updatedAt: '2026-08-20T09:32:00+07:00',
+      trend: [{ date: '14/08', requests: 38, connections: 18 }, { date: '15/08', requests: 43, connections: 23 }, { date: '16/08', requests: 49, connections: 28 }, { date: '17/08', requests: 52, connections: 31 }, { date: '18/08', requests: 61, connections: 38 }, { date: '19/08', requests: 68, connections: 44 }, { date: '20/08', requests: 73, connections: 48 }],
+      topIndustries: [{ industry: 'Industrial parks', requests: 126, connections: 61 }, { industry: 'Logistics', requests: 104, connections: 54 }, { industry: 'Electronics', requests: 79, connections: 41 }, { industry: 'Food processing', requests: 48, connections: 28 }],
       topMarkets: [{ market: 'Vietnam', connections: 62 }, { market: 'Korea', connections: 41 }, { market: 'China', connections: 35 }, { market: 'Japan', connections: 27 }, { market: 'Singapore', connections: 19 }],
     },
   },

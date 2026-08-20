@@ -243,7 +243,7 @@ b {
 .hero h1.hero-title-vi {
   max-width: 780px;
   font-size: clamp(44px, 4vw, 54px);
-  line-height: 1.12;
+  line-height: 1.28;
 }
 .hero-title-vi span {
   display: block;
@@ -3516,7 +3516,7 @@ td small {
   .hero h1.hero-title-vi {
     max-width: 100%;
     font-size: clamp(27px, 7.7vw, 31px);
-    line-height: 1.16;
+    line-height: 1.25;
     letter-spacing: -0.015em;
   }
   .hero p {

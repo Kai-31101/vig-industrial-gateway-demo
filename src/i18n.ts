@@ -38,7 +38,7 @@ const zh: Record<string, string> = {
   "Premium Matching": "高级智能匹配",
   "Data-powered · Intelligently connected": "数据驱动 · 智能连接",
   "Powered by data and matched by AI": "以数据驱动，由人工智能匹配交易",
-  "Managed & Operated by VCBC": "由VCBC管理与运营",
+  "Managed & Operated by": "管理与运营方",
   "Featured industrial park profiles": "精选工业园区档案",
   "Standardised data with sources, units and verification dates.": "标准化数据，包含来源、单位和核验日期。",
   "View all 20 profiles": "查看全部20个园区档案",

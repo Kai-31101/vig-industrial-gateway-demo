@@ -492,7 +492,7 @@ function Footer() {
         <div className="arobid-partner">
           <div className="footer-operator">
             <span>
-              {ui(language, "Quản lý và vận hành bởi VCBC", "Managed & Operated by VCBC")}
+              {ui(language, "Quản lý và vận hành bởi", "Managed & Operated by")}
             </span>
             <img
               className="vcbc-logo"

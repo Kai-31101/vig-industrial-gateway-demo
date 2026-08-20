@@ -1,6 +1,7 @@
 import type { ExpoProgram, IndustrialAsset, IndustrialParkProfile, LocalizedText, SourcedValue } from './types';
+import { translateToChinese } from './i18n';
 
-const l = (vi: string, en: string): LocalizedText => ({ vi, en });
+const l = (vi: string, en: string, zh = translateToChinese(en)): LocalizedText => ({ vi, en, zh });
 const s = <T,>(value: T | null, unit?: string, sourceDocumentId = 'vsip-vi-2026', disclosureStatus: SourcedValue<T>['disclosureStatus'] = value === null ? 'not_available' : 'public'): SourcedValue<T> => ({ value, unit, asOf: '2026-06-02', sourceDocumentId, verificationStatus: 'verified', disclosureStatus });
 
 const hero = '/images/vig-industrial-hero.png';
@@ -151,10 +152,14 @@ const basePark = (index: number, definition: DemoParkDefinition): IndustrialPark
   const unavailable = <T,>(unit?: string): SourcedValue<T> => ({ value: null, unit, verificationStatus: 'unverified', disclosureStatus: 'not_available' });
   return {
     ...vsipThaiBinh, id, slug: id, logoText: 'VIG', name: definition.name,
-    summary: l(`${definition.focus.vi} Đây là dữ liệu mô phỏng, không đại diện cho một dự án thực tế.`, `${definition.focus.en} This is simulated data and does not represent a real project.`),
+    summary: l(
+      `${definition.focus.vi} Đây là dữ liệu mô phỏng, không đại diện cho một dự án thực tế.`,
+      `${definition.focus.en} This is simulated data and does not represent a real project.`,
+      `${definition.focus.zh || translateToChinese(definition.focus.en)} 此为模拟数据，不代表真实项目。`,
+    ),
     parkType: definition.parkType,
     province, region: index < 8 ? 'North' : index < 13 ? 'Central' : 'South', coordinates: { lat: 10.8 + index * .32, lng: 105.4 + (index % 5) * .48 },
-    address: l(`${province}, Việt Nam`, `${province}, Vietnam`), economicZone: l('Dữ liệu mẫu', 'Demo economic zone'), establishmentYear: 2026,
+    address: l(`${province}, Việt Nam`, `${province}, Vietnam`, `${province}, 越南`), economicZone: l('Dữ liệu mẫu', 'Demo economic zone'), establishmentYear: 2026,
     operator: { ...vsipThaiBinh.operator, name: `Demo Industrial Developer ${index}`, overview: l('Nhà phát triển mẫu – không phải dữ liệu doanh nghiệp thực.', 'Demonstration developer – not factual company data.'), portfolioStats: [] },
     provinceProfile: { ...vsipThaiBinh.provinceProfile, province: l(province, province), population: unavailable('people'), grdp: unavailable('USD billion'), growthRate: unavailable('%'), context: l('Chưa cung cấp dữ liệu kinh tế địa phương.', 'Provincial economic data has not been provided.') },
     workforce: { ...vsipThaiBinh.workforce, laborForce: unavailable('people'), skilledLabor: unavailable('people'), catchmentPopulation: unavailable('people'), salaryBenchmark: [] },
@@ -168,14 +173,14 @@ const basePark = (index: number, definition: DemoParkDefinition): IndustrialPark
     incentives: [], process: vsipThaiBinh.process.slice(0, 3), logistics: { shippingRoutes: [], indicativeCosts: [] }, community: [], sustainability: [l('Hạ tầng môi trường mẫu', 'Demo environmental infrastructure')], tenants: [],
     contact: {
       ...vsipThaiBinh.contact!,
-      office: l(`Văn phòng điều hành ${definition.name.vi}`, `${definition.name.en} Administration Office`),
-      address: l(`${province}, Việt Nam`, `${province}, Vietnam`),
+      office: l(`Văn phòng điều hành ${definition.name.vi}`, `${definition.name.en} Administration Office`, `${definition.name.zh || translateToChinese(definition.name.en)}管理办公室`),
+      address: l(`${province}, Việt Nam`, `${province}, Vietnam`, `${province}, 越南`),
       person: 'VIG Demo Desk',
       email: `demo${index}@vig.example`,
       website: 'vig.example',
     },
     media: [
-      { id: `media-${id}-hero`, type: 'hero', title: l(`Hình ảnh mô phỏng: ${definition.parkType.vi}`, `Simulated view: ${definition.parkType.en}`), url: parkImages[definition.image], capturedAt: '2026-08-19', approved: true },
+      { id: `media-${id}-hero`, type: 'hero', title: l(`Hình ảnh mô phỏng: ${definition.parkType.vi}`, `Simulated view: ${definition.parkType.en}`, `模拟图：${definition.parkType.zh || translateToChinese(definition.parkType.en)}`), url: parkImages[definition.image], capturedAt: '2026-08-19', approved: true },
       { id: `media-${id}-gallery`, type: 'gallery', title: l('Hạ tầng ngành mục tiêu (mô phỏng)', 'Target-industry infrastructure (simulated)'), url: parkImages[definition.galleryImage], capturedAt: '2026-08-19', approved: true },
     ],
     documents: [{ id: `doc-${id}`, title: l('Tài liệu mẫu', 'Demo reference'), category: 'legal_approval', issuer: l('VIG Demo', 'VIG Demo'), language: 'multi', visibility: 'public', verificationStatus: 'verified' }],
@@ -186,7 +191,11 @@ const basePark = (index: number, definition: DemoParkDefinition): IndustrialPark
 export const parks: IndustrialParkProfile[] = [vsipThaiBinh, ...demoParkDefinitions.map((definition, i) => basePark(i + 2, definition))];
 
 export const assets: IndustrialAsset[] = parks.slice(0, 10).map((park, index) => ({
-  id: `asset-${index + 1}`, parkId: park.id, name: l(index % 3 === 0 ? `Nhà xưởng xây sẵn ${index + 1}` : `Lô đất công nghiệp ${index + 1}`, index % 3 === 0 ? `Ready-built Factory ${index + 1}` : `Industrial Land Plot ${index + 1}`),
+  id: `asset-${index + 1}`, parkId: park.id, name: l(
+    index % 3 === 0 ? `Nhà xưởng xây sẵn ${index + 1}` : `Lô đất công nghiệp ${index + 1}`,
+    index % 3 === 0 ? `Ready-built Factory ${index + 1}` : `Industrial Land Plot ${index + 1}`,
+    index % 3 === 0 ? `现成厂房 ${index + 1}` : `工业用地地块 ${index + 1}`,
+  ),
   type: index % 3 === 0 ? 'ready_built_factory' : index % 4 === 0 ? 'build_to_suit' : 'industrial_land', area: index % 3 === 0 ? 12000 + index * 500 : 2.5 + index, unit: index % 3 === 0 ? 'm²' : 'ha',
   transaction: 'lease', price: index === 0 ? s<number>(null, 'USD/m²', 'vsip-vi-2026', 'not_disclosed') : s(78 + index * 3, 'USD/m²/term', 'vig-demo-fixture'), availableFrom: `2027-${String((index % 9) + 1).padStart(2, '0')}-01`, powerMva: 4 + index,
   industries: park.suitableIndustries.slice(0, 3), featured: index < 4, image: park.media[0]?.url || hero,

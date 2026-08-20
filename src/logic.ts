@@ -1,5 +1,5 @@
 import type { IndustrialParkProfile, Language, RequestStatus } from "./types";
-import { ui } from "./i18n";
+import { translateToChinese, ui } from "./i18n";
 
 export const requestTransitions: Record<RequestStatus, RequestStatus[]> = {
   submitted: ["under_review"],
@@ -88,10 +88,30 @@ export function displaySourced(
     "m³/day": "m³/ngày",
     "million tonnes/year": "triệu tấn/năm",
   };
+  const unitZh: Record<string, string> = {
+    ha: "公顷",
+    km: "公里",
+    "m²": "平方米",
+    people: "人",
+    "million people": "百万人",
+    "USD billion": "十亿美元",
+    "USD/month": "美元/月",
+    "m wide": "米宽",
+    "m³/day": "立方米/日",
+    "million tonnes/year": "百万吨/年",
+    "USD/m²": "美元/平方米",
+    "USD/m²/term": "美元/平方米/租期",
+  };
   const unit =
     value.unit && language === "vi"
       ? unitVi[value.unit] || value.unit
-      : value.unit;
+      : value.unit && language === "zh"
+        ? unitZh[value.unit] || value.unit
+        : value.unit;
   const locale = language === "vi" ? "vi-VN" : language === "zh" ? "zh-CN" : "en-US";
-  return `${typeof value.value === "number" ? value.value.toLocaleString(locale) : value.value}${unit ? ` ${unit}` : ""}`;
+  const displayedValue =
+    language === "zh" && typeof value.value === "string"
+      ? translateToChinese(value.value)
+      : value.value;
+  return `${typeof displayedValue === "number" ? displayedValue.toLocaleString(locale) : displayedValue}${unit ? ` ${unit}` : ""}`;
 }

@@ -75,6 +75,12 @@ import type {
 } from "./types";
 
 const tx = (vi: string, en: string, zh?: string): LocalizedText => ({ vi, en, zh });
+const dataText = (value: string, language: Language) =>
+  language === "zh" ? translateToChinese(value) : value;
+const documentLanguageLabel = (value: string, language: Language) => {
+  if (language !== "zh") return value.toUpperCase();
+  return value === "vi" ? "越南语" : value === "en" ? "英语" : "多语言";
+};
 const industryVi: Record<string, string> = {
   Electronics: "Điện tử",
   Semiconductors: "Bán dẫn",
@@ -458,6 +464,9 @@ function Footer() {
           <p>
             {ui(language, "Kết nối năng lực công nghiệp Việt Nam với nhu cầu đầu tư và sản xuất toàn cầu.", "Connecting Vietnam’s industrial capacity with global investment and manufacturing demand.")}
           </p>
+          <p className="footer-operator">
+            {ui(language, "Quản lý & Vận hành bởi VCBC", "Managed & Operated by VCBC")}
+          </p>
         </div>
         <div>
           <b>{ui(language, "Khám phá", "Discover")}</b>
@@ -501,7 +510,7 @@ function Footer() {
         </div>
       </div>
       <div className="copyright">
-        <span>© 2026 Vietnam Industrial Gateway · Interactive demo</span>
+        <span>© 2026 Vietnam Industrial Gateway · {ui(language, "Bản demo tương tác", "Interactive demo")}</span>
       </div>
     </footer>
   );
@@ -659,13 +668,17 @@ function HomePage() {
                 <span>VIỆT NAM</span>
               </>
             ) : language === "zh" ? (
-              "越南工业投资促进平台"
+              "越南工业投资促进数字基础设施"
             ) : (
-              "VIETNAM INDUSTRIAL DIGITAL INFRASTRUCTURE"
+              "VIETNAM INDUSTRIAL INVESTMENT PROMOTION INFRASTRUCTURE"
             )}
           </h1>
           <p>
-            {ui(language, "Vận hành dựa trên dữ liệu, ghép nối giao dịch bởi AI", "Powered by data and matched by AI")}
+            {language === "vi"
+              ? "Vận hành dựa trên dữ liệu, ghép nối giao dịch bởi AI"
+              : language === "zh"
+                ? "数据驱动 · AI智能匹配"
+                : "Powered by Data. Matched by AI."}
           </p>
           <div className="hero-actions">
             <Link className="button gold" to="/industrial-parks">
@@ -702,7 +715,7 @@ function HomePage() {
         <div>
           <Search />
           <input
-            aria-label="Industrial search"
+            aria-label={ui(language, "Tìm kiếm công nghiệp", "Industrial search")}
             placeholder={
               ui(language, "Tìm KCN, tỉnh, ngành hoặc loại tài sản...", "Search park, province, industry or asset type...")
             }
@@ -745,7 +758,7 @@ function HomePage() {
           <div className="funnel-grid">
             <div className="funnel-card">
               <Warehouse />
-              <span>FIND DEMAND</span>
+              <span>{ui(language, "TÌM KHÁCH THUÊ/MUA", "FIND DEMAND")}</span>
               <h3>
                 {ui(language, "Tôi có mặt bằng công nghiệp", "I have supply")}
               </h3>
@@ -759,7 +772,7 @@ function HomePage() {
             </div>
             <div className="funnel-card featured">
               <PackageSearch />
-              <span>FIND SUPPLY</span>
+              <span>{ui(language, "TÌM MẶT BẰNG", "FIND SUPPLY")}</span>
               <h3>
                 {ui(language, "Tôi cần tìm mặt bằng", "I need supply")}
               </h3>
@@ -1063,7 +1076,7 @@ function ContactModal({
           <input required />
         </label>
         <label>
-          Email
+          {ui(language, "Email", "Email")}
           <input type="email" required />
         </label>
         <label>
@@ -1238,7 +1251,7 @@ function ParkDetailPage() {
         <section id="overview" className="detail-grid">
           <div className="content-card wide">
             <SectionTitle
-              eyebrow="01 · PROFILE"
+              eyebrow={ui(language, "01 · HỒ SƠ", "01 · PROFILE")}
               title={
                 ui(language, "Tổng quan khu công nghiệp", "Industrial park overview")
               }
@@ -1269,7 +1282,7 @@ function ParkDetailPage() {
           </div>
           <aside className="content-card operator-card">
             <span>{park.logoText}</span>
-            <h3>{park.operator.name}</h3>
+            <h3>{dataText(park.operator.name, language)}</h3>
             <p>{tr(park.operator.overview, language)}</p>
             <a href={park.operator.website} target="_blank">
               {ui(language, "Website đơn vị phát triển", "Developer website")}
@@ -1279,7 +1292,7 @@ function ParkDetailPage() {
         </section>
         <section className="profile-stats">
           <SectionTitle
-            eyebrow="OPERATOR TRACK RECORD"
+            eyebrow={ui(language, "NĂNG LỰC ĐƠN VỊ PHÁT TRIỂN", "OPERATOR TRACK RECORD")}
             title={
               ui(language, "Năng lực đơn vị phát triển", "Developer track record")
             }
@@ -1309,7 +1322,7 @@ function ParkDetailPage() {
         </section>
         <section id="connectivity">
           <SectionTitle
-            eyebrow="02 · LOCATION"
+            eyebrow={ui(language, "02 · VỊ TRÍ", "02 · LOCATION")}
             title={
               ui(language, "Vị trí và kết nối chiến lược", "Location and strategic connectivity")
             }
@@ -1319,10 +1332,10 @@ function ParkDetailPage() {
               <div className="map-rings">
                 <span className="map-point park">VIG</span>
                 <span className="map-point port">
-                  <Ship /> Port
+                  <Ship /> {ui(language, "Cảng biển", "Port")}
                 </span>
                 <span className="map-point airport">
-                  <Plane /> Airport
+                  <Plane /> {ui(language, "Sân bay", "Airport")}
                 </span>
                 <span className="map-point city">Hanoi</span>
                 <i />
@@ -1373,7 +1386,7 @@ function ParkDetailPage() {
         </section>
         <section>
           <SectionTitle
-            eyebrow="03 · MASTERPLAN"
+            eyebrow={ui(language, "03 · QUY HOẠCH", "03 · MASTERPLAN")}
             title={
               ui(language, "Quy hoạch mặt bằng và hiện trạng quỹ đất", "Masterplan and land availability")
             }
@@ -1420,7 +1433,7 @@ function ParkDetailPage() {
         </section>
         <section id="infrastructure">
           <SectionTitle
-            eyebrow="04 · INFRASTRUCTURE"
+            eyebrow={ui(language, "04 · HẠ TẦNG", "04 · INFRASTRUCTURE")}
             title={
               ui(language, "Hạ tầng và tiện ích đồng bộ", "Integrated infrastructure and utilities")
             }
@@ -1456,7 +1469,7 @@ function ParkDetailPage() {
         <section id="workforce" className="detail-grid">
           <div className="content-card wide">
             <SectionTitle
-              eyebrow="05 · PROVINCIAL CONTEXT"
+              eyebrow={ui(language, "05 · BỐI CẢNH ĐỊA PHƯƠNG", "05 · PROVINCIAL CONTEXT")}
               title={
                 ui(language, "Kinh tế địa phương và nguồn nhân lực", "Provincial economy and workforce")
               }
@@ -1505,7 +1518,7 @@ function ParkDetailPage() {
               park.workforce.salaryBenchmark.map((x) => (
                 <div className="salary" key={x.role.en}>
                   <span>{tr(x.role, language)}</span>
-                  <b>{x.rangeUsd}</b>
+                  <b>{dataText(x.rangeUsd, language)}</b>
                 </div>
               ))
             ) : (
@@ -1515,7 +1528,7 @@ function ParkDetailPage() {
         </section>
         <section id="incentives">
           <SectionTitle
-            eyebrow="06 · INCENTIVES"
+            eyebrow={ui(language, "06 · ƯU ĐÃI", "06 · INCENTIVES")}
             title={
               ui(language, "Ưu đãi đầu tư", "Investment incentives")
             }
@@ -1528,7 +1541,7 @@ function ParkDetailPage() {
                   <p>{tr(x.eligibility, language)}</p>
                   <small>
                     {ui(language, "Hiệu lực", "Effective")}:{" "}
-                    {x.effectiveDate} · Source: {x.sourceDocumentId}
+                    {x.effectiveDate} · {ui(language, "Nguồn", "Source")}: {x.sourceDocumentId}
                   </small>
                 </div>
                 <div className="tax-timeline">
@@ -1536,7 +1549,7 @@ function ParkDetailPage() {
                     <article key={i}>
                       <b>{s.rate}</b>
                       <span>{tr(s.label, language)}</span>
-                      <small>{s.years}</small>
+                      <small>{dataText(s.years, language)}</small>
                     </article>
                   ))}
                 </div>
@@ -1555,7 +1568,7 @@ function ParkDetailPage() {
         </section>
         <section className="park-assets-panel">
           <SectionTitle
-            eyebrow="07 · AVAILABILITY"
+            eyebrow={ui(language, "07 · SẢN PHẨM SẴN CÓ", "07 · AVAILABILITY")}
             title={
               ui(language, "Quỹ đất và nhà xưởng đang chào thuê", "Available land and industrial assets")
             }
@@ -1579,7 +1592,7 @@ function ParkDetailPage() {
         </section>
         <section>
           <SectionTitle
-            eyebrow="08 · INVESTMENT PROCESS"
+            eyebrow={ui(language, "08 · QUY TRÌNH ĐẦU TƯ", "08 · INVESTMENT PROCESS")}
             title={
               ui(language, "Quy trình thuê đất và thực hiện thủ tục đầu tư", "Land lease and investment procedure")
             }
@@ -1605,7 +1618,7 @@ function ParkDetailPage() {
         <section className="detail-grid">
           <div className="content-card wide">
             <SectionTitle
-              eyebrow="09 · LOGISTICS"
+              eyebrow={ui(language, "09 · LOGISTICS", "09 · LOGISTICS")}
               title={
                 ui(language, "Năng lực kết nối logistics", "Logistics capability")
               }
@@ -1633,8 +1646,8 @@ function ParkDetailPage() {
                 <div key={r.destination}>
                   <Ship />
                   <b>{r.destination}</b>
-                  <span>{r.time}</span>
-                  <small>{r.frequency}</small>
+                  <span>{r.time ? dataText(r.time, language) : "—"}</span>
+                  <small>{r.frequency ? dataText(r.frequency, language) : "—"}</small>
                 </div>
               ))}
             </div>
@@ -1645,7 +1658,7 @@ function ParkDetailPage() {
             </h3>
             {park.logistics.indicativeCosts.map((c) => (
               <div className="salary" key={c.container}>
-                <span>Container {c.container}</span>
+                <span>{ui(language, "Container", "Container")} {c.container}</span>
                 <SourceValue value={c.usd} compact />
               </div>
             ))}
@@ -1695,7 +1708,7 @@ function ParkDetailPage() {
         {park.media.length ? (
           <section id="media">
             <SectionTitle
-              eyebrow="10 · MEDIA"
+              eyebrow={ui(language, "10 · TRUYỀN THÔNG", "10 · MEDIA")}
               title={
                 ui(language, "Hình ảnh và mặt bằng khu công nghiệp", "Industrial park media and masterplan")
               }
@@ -1726,7 +1739,7 @@ function ParkDetailPage() {
         ) : null}
         <section id="documents">
           <SectionTitle
-            eyebrow="11 · DOCUMENTS"
+            eyebrow={ui(language, "11 · TÀI LIỆU", "11 · DOCUMENTS")}
             title={
               ui(language, "Hồ sơ pháp lý và tài liệu dự án", "Legal evidence and verification")
             }
@@ -1744,7 +1757,7 @@ function ParkDetailPage() {
                   <p>
                     {tr(d.issuer, language)}{" "}
                     {d.issueDate ? `· ${d.issueDate}` : ""} ·{" "}
-                    {d.language.toUpperCase()}
+                    {documentLanguageLabel(d.language, language)}
                   </p>
                   <small>
                     {tr(
@@ -1857,7 +1870,7 @@ function AssetCard({
               <MessageCircle /> {ui(language, "Trao đổi", "Chat")}
             </button>
             <Link to={requestUrl} onClick={(event) => event.stopPropagation()}>
-              <Send /> Direct Request
+              <Send /> {ui(language, "Gửi yêu cầu trực tiếp", "Direct Request")}
             </Link>
           </div>
         </div>
@@ -2046,7 +2059,9 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
     requirements: selectedAsset && selectedPark
       ? language === "vi"
         ? `Tôi quan tâm đến ${tr(selectedAsset.name, language)} tại ${tr(selectedPark.name, language)}.`
-        : `I am interested in ${tr(selectedAsset.name, language)} at ${tr(selectedPark.name, language)}.`
+        : language === "zh"
+          ? `我对${tr(selectedPark.name, language)}的${tr(selectedAsset.name, language)}感兴趣。`
+          : `I am interested in ${tr(selectedAsset.name, language)} at ${tr(selectedPark.name, language)}.`
       : "",
   }));
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -2114,8 +2129,8 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
         <div className="page">
           <span>
             {isSupply
-              ? "FIND SUPPLY · TÌM MẶT BẰNG"
-              : "FIND DEMAND · TÌM KHÁCH THUÊ/MUA"}
+              ? ui(language, "TÌM MẶT BẰNG", "FIND SUPPLY")
+              : ui(language, "TÌM KHÁCH THUÊ/MUA", "FIND DEMAND")}
           </span>
           <h1>
             {isSupply
@@ -2132,11 +2147,9 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
           <div className="form-section">
             <h2>
               1.{" "}
-              {language === "vi"
-                ? isSupply
-                  ? "Nhu cầu mặt bằng công nghiệp"
-                  : "Thông tin mặt bằng chào thuê/chuyển nhượng"
-                : "Industrial requirement"}
+              {isSupply
+                ? ui(language, "Nhu cầu mặt bằng công nghiệp", "Industrial requirement")
+                : ui(language, "Thông tin mặt bằng chào thuê/chuyển nhượng", "Industrial asset offering")}
             </h2>
             <div className="form-grid">
               {field(
@@ -2161,11 +2174,9 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
               </label>
               {field(
                 "location",
-                language === "vi"
-                  ? isSupply
-                    ? "Tỉnh/thành hoặc khu vực mong muốn"
-                    : "Vị trí tài sản"
-                  : "Location",
+                isSupply
+                  ? ui(language, "Tỉnh/thành hoặc khu vực mong muốn", "Preferred location")
+                  : ui(language, "Vị trí tài sản", "Asset location"),
               )}{" "}
               {field(
                 "areaMin",
@@ -2186,11 +2197,9 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
                   onChange={(e) => update("transaction", e.target.value)}
                 >
                   <option value="lease">
-                    {language === "vi"
-                      ? isSupply
-                        ? "Thuê"
-                        : "Cho thuê"
-                      : "Lease"}
+                    {isSupply
+                      ? ui(language, "Thuê", "Lease")
+                      : ui(language, "Cho thuê", "For lease")}
                   </option>
                   <option value="sale">
                     {isSupply
@@ -2207,11 +2216,9 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
               )}
               {field(
                 "industry",
-                language === "vi"
-                  ? isSupply
-                    ? "Ngành nghề dự kiến"
-                    : "Ngành nghề tiếp nhận"
-                  : "Suitable industry",
+                isSupply
+                  ? ui(language, "Ngành nghề dự kiến", "Intended industry")
+                  : ui(language, "Ngành nghề tiếp nhận", "Suitable industry"),
               )}
               {field(
                 "availabilityDate",
@@ -2246,7 +2253,7 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
                 "contactName",
                 ui(language, "Họ tên người liên hệ", "Contact name"),
               )}
-              {field("email", "Email", "email")}
+              {field("email", ui(language, "Email", "Email"), "email")}
               {field("phone", ui(language, "Số điện thoại", "Phone"))}
             </div>
           </div>
@@ -2278,7 +2285,7 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
                     onChange={() => update("service", x)}
                   />
                   <CheckCircle2 />
-                  <span>{x}</span>
+                  <span>{dataText(x, language)}</span>
                 </label>
               ))}
             </div>
@@ -2343,7 +2350,7 @@ function ConfirmationPage() {
             </div>
             <div>
               <small>{ui(language, "Dịch vụ", "Service")}</small>
-              <b>{r.service}</b>
+              <b>{dataText(r.service, language)}</b>
             </div>
             {r.industrialParkName && (
               <div>
@@ -2365,7 +2372,7 @@ function ConfirmationPage() {
             {ui(language, "Tiếp tục khám phá", "Continue exploring")}
           </Link>
           <Link className="button outline" to="/home">
-            Home
+            {ui(language, "Trang chủ", "Home")}
           </Link>
         </div>
       </div>
@@ -2398,13 +2405,17 @@ function ExpoPage() {
               />
               <Globe2 />
               <h2>{tr(e.title, language)}</h2>
-              <p>{e.industries.join(" · ")}</p>
+              <p>
+                {e.industries
+                  .map((industry) => industryLabel(industry, language))
+                  .join(" · ")}
+              </p>
               <div>
                 <span>
                   <Clock3 /> {e.date}
                 </span>
                 <span>
-                  <Users /> {e.exhibitors} exhibitors
+                  <Users /> {e.exhibitors} {ui(language, "đơn vị trưng bày", "exhibitors")}
                 </span>
               </div>
               <button
@@ -2844,7 +2855,7 @@ function AdminExpos() {
           <div className="table-wrap expo-report-table">
             <table>
               <thead><tr>
-                <th>Expo</th><th>{ui(language, "Trạng thái", "Status")}</th><th>{ui(language, "Khách truy cập", "Visitors")}</th><th>{ui(language, "Kết nối I / O", "Connections I / O")}</th><th>{ui(language, "Giao dịch I / O", "Deals I / O")}</th><th>{ui(language, "Kết nối thành công", "Completed")}</th><th></th>
+                <th>{ui(language, "Expo", "Expo")}</th><th>{ui(language, "Trạng thái", "Status")}</th><th>{ui(language, "Khách truy cập", "Visitors")}</th><th>{ui(language, "Kết nối I / O", "Connections I / O")}</th><th>{ui(language, "Giao dịch I / O", "Deals I / O")}</th><th>{ui(language, "Kết nối thành công", "Completed")}</th><th></th>
               </tr></thead>
               <tbody>{filtered.map((expo) => <tr key={expo.id}>
                 <td><b>{tr(expo.title, language)}</b><small>{expo.market} · {expo.date}</small></td>
@@ -2944,7 +2955,7 @@ function RequestTable({ requests }: { requests: IndustrialRequest[] }) {
               </td>
               <td>
                 <b>{r.organization}</b>
-                <small>{r.assetType}</small>
+                <small>{dataText(r.assetType, language)}</small>
               </td>
               <td>{r.location}</td>
               <td>
@@ -3011,7 +3022,9 @@ function AdminRequests() {
             </option>
             {Object.keys(requestTransitions).map((x) => (
               <option value={x} key={x}>
-                {x.replace("_", " ")}
+                {labels[x]
+                  ? tr(labels[x], language)
+                  : dataText(x.replace("_", " "), language)}
               </option>
             ))}
           </select>
@@ -3042,7 +3055,7 @@ function RequestDetail() {
     <AdminShell>
       <div className="admin-page">
         <div className="breadcrumbs">
-          <Link to="/admin/requests">Requests</Link>
+          <Link to="/admin/requests">{ui(language, "Yêu cầu", "Requests")}</Link>
           <ChevronRight size={14} />
           <span>{r.id}</span>
         </div>
@@ -3050,8 +3063,8 @@ function RequestDetail() {
           <div>
             <span>
               {r.kind === "find_supply"
-                ? "FUNNEL B · FIND SUPPLY"
-                : "FUNNEL A · FIND DEMAND"}
+                ? ui(language, "LUỒNG B · TÌM MẶT BẰNG", "FUNNEL B · FIND SUPPLY")
+                : ui(language, "LUỒNG A · TÌM KHÁCH THUÊ/MUA", "FUNNEL A · FIND DEMAND")}
             </span>
             <h1>{r.organization}</h1>
             <p>
@@ -3083,8 +3096,8 @@ function RequestDetail() {
                   <small>
                     {ui(language, "Loại hình bất động sản", "Asset")}
                   </small>
-                  <b>{r.assetType}</b>
-                  <span>{r.transaction}</span>
+                  <b>{dataText(r.assetType, language)}</b>
+                  <span>{dataText(r.transaction, language)}</span>
                 </div>
                 <div>
                   <small>
@@ -3108,7 +3121,7 @@ function RequestDetail() {
                   <small>
                     {ui(language, "Ngành nghề dự kiến", "Industry")}
                   </small>
-                  <b>{r.industry}</b>
+                  <b>{industryLabel(r.industry, language)}</b>
                   <span>{r.availabilityDate}</span>
                 </div>
                 <div>
@@ -3116,19 +3129,20 @@ function RequestDetail() {
                     {ui(language, "Ngân sách / giá", "Budget / price")}
                   </small>
                   <b>
-                    {r.budgetOrPrice ||
-                      (ui(language, "Chưa xác định", "Not specified"))}
+                    {r.budgetOrPrice
+                      ? dataText(r.budgetOrPrice, language)
+                      : ui(language, "Chưa xác định", "Not specified")}
                   </b>
                 </div>
                 <div>
                   <small>{ui(language, "Dịch vụ", "Service")}</small>
-                  <b>{r.service}</b>
+                  <b>{dataText(r.service, language)}</b>
                 </div>
               </div>
               <h3>
                 {ui(language, "Yêu cầu khác", "Other requirements")}
               </h3>
-              <p>{r.requirements || "—"}</p>
+              <p>{r.requirements ? dataText(r.requirements, language) : "—"}</p>
             </section>
             <section className="admin-panel">
               <div className="panel-head">
@@ -3247,7 +3261,7 @@ function RequestDetail() {
                   <div key={a.id}>
                     <i />
                     <b>{tr(a.action, language)}</b>
-                    <span>{a.actor}</span>
+                    <span>{dataText(a.actor, language)}</span>
                     <small>
                       {new Date(a.at).toLocaleString(
                         ui(language, "vi-VN", "en-US"),
@@ -3283,7 +3297,7 @@ function AdminParks() {
       <div className="admin-page">
         <div className="admin-title">
           <div>
-            <span>INDUSTRIAL DATA LAYER</span>
+            <span>{ui(language, "LỚP DỮ LIỆU CÔNG NGHIỆP", "INDUSTRIAL DATA LAYER")}</span>
             <h1>
               {ui(language, "Quản lý hồ sơ khu công nghiệp", "Industrial park data management")}
             </h1>
@@ -3407,7 +3421,7 @@ function AdminParkDetail() {
             </span>
             <h1>{tr(p.name, language)}</h1>
             <p>
-              {p.province} · {p.dataOwner}
+              {p.province} · {dataText(p.dataOwner, language)}
             </p>
           </div>
           <Link className="button outline" to={`/industrial-parks/${p.slug}`}>
@@ -3478,7 +3492,7 @@ function AdminParkDetail() {
                 <small>
                   {ui(language, "Đơn vị quản lý dữ liệu", "Data owner")}
                 </small>
-                <b>{p.dataOwner}</b>
+                <b>{dataText(p.dataOwner, language)}</b>
               </div>
               <div>
                 <small>
@@ -3494,15 +3508,16 @@ function AdminParkDetail() {
                   {ui(language, "Người xác minh", "Verified by")}
                 </small>
                 <b>
-                  {p.verifiedBy ||
-                    (ui(language, "Chưa có dữ liệu", "Not available"))}
+                  {p.verifiedBy
+                    ? dataText(p.verifiedBy, language)
+                    : ui(language, "Chưa có dữ liệu", "Not available")}
                 </b>
               </div>
               <div>
                 <small>
                   {ui(language, "Ngôn ngữ nguồn", "Source language")}
                 </small>
-                <b>{p.sourceLanguage.toUpperCase()}</b>
+                <b>{documentLanguageLabel(p.sourceLanguage, language)}</b>
               </div>
             </div>
             {p.conflicts?.map((c) => (

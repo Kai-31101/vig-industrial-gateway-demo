@@ -2480,6 +2480,11 @@ footer {
   font-size: 13px;
   line-height: 1.6;
 }
+.footer-grid .footer-operator {
+  margin-top: 2px;
+  color: #f4c878;
+  font-weight: 700;
+}
 .footer-grid > div {
   display: flex;
   flex-direction: column;

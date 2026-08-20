@@ -1477,6 +1477,10 @@ b {
   flex: 1;
   flex-direction: column;
 }
+.asset-card-body > .badge {
+  align-self: flex-start;
+  max-width: 100%;
+}
 .asset-card p {
   display: flex;
   gap: 5px;

@@ -17,6 +17,7 @@ import {
   Building2,
   Check,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
   CircleDollarSign,
   ClipboardCheck,
@@ -54,6 +55,7 @@ import {
   Zap,
 } from "lucide-react";
 import { AppProvider, tr, useApp } from "./AppContext";
+import { translateToChinese, ui } from "./i18n";
 import {
   canPublish,
   displaySourced,
@@ -65,13 +67,14 @@ import type {
   ExpoProgram,
   IndustrialParkProfile,
   IndustrialRequest,
+  Language,
   LocalizedText,
   RequestKind,
   RequestStatus,
   SourcedValue,
 } from "./types";
 
-const tx = (vi: string, en: string): LocalizedText => ({ vi, en });
+const tx = (vi: string, en: string, zh?: string): LocalizedText => ({ vi, en, zh });
 const industryVi: Record<string, string> = {
   Electronics: "Điện tử",
   Semiconductors: "Bán dẫn",
@@ -128,8 +131,68 @@ const industryVi: Record<string, string> = {
   "Export logistics": "Logistics xuất khẩu",
   "Supply chain": "Chuỗi cung ứng",
 };
-const industryLabel = (value: string, language: "vi" | "en") =>
-  language === "vi" ? industryVi[value] || value : value;
+const industryZh: Record<string, string> = {
+  Electronics: "电子产业",
+  Semiconductors: "半导体",
+  Automotive: "汽车及零部件",
+  "Supporting industries": "配套产业",
+  "Food processing": "食品加工",
+  Logistics: "物流",
+  "Precision engineering": "精密工程",
+  "Data centers": "数据中心",
+  "Renewable energy equipment": "可再生能源设备",
+  "Electrical equipment": "电气设备",
+  "Battery systems": "电池与储能系统",
+  "Electronic components": "电子元件",
+  "Industrial automation": "工业自动化",
+  Pharmaceuticals: "制药",
+  "Medical devices": "医疗器械",
+  Biotechnology: "生物技术",
+  "Laboratory equipment": "实验室设备",
+  "Industrial machinery": "工业机械",
+  "Metal fabrication": "金属加工",
+  "Advanced materials": "先进材料",
+  "Industrial components": "工业零部件",
+  "Construction technology": "建筑技术",
+  Textiles: "纺织",
+  Garments: "服装",
+  Footwear: "鞋类",
+  Packaging: "包装",
+  "Smart electronics": "智能电子",
+  Beverages: "饮料",
+  "Cold-chain logistics": "冷链物流",
+  Furniture: "家具",
+  "Engineered wood": "工程木材",
+  "Agricultural machinery": "农业机械",
+  "Seafood processing": "水产品加工",
+  "Cold storage": "冷库",
+  "Marine logistics": "海运物流",
+  Robotics: "工业机器人",
+  "Consumer electronics": "消费电子",
+  "Aerospace components": "航空航天零部件",
+  "Engineered rubber": "工程橡胶",
+  Warehousing: "仓储",
+  "Solar equipment": "太阳能设备",
+  "Agricultural processing": "农产品加工",
+  "Port logistics": "港口物流",
+  "Offshore energy equipment": "海上能源设备",
+  "Steel fabrication": "钢结构加工",
+  "Rice processing": "稻米加工",
+  "Food biotechnology": "食品生物技术",
+  Biomaterials: "生物材料",
+  "Biomass energy": "生物质能源",
+  "Sustainable packaging": "可持续包装",
+  "Aquaculture processing": "水产养殖加工",
+  "Animal feed": "动物饲料",
+  "Export logistics": "出口物流",
+  "Supply chain": "供应链",
+};
+const industryLabel = (value: string, language: Language) =>
+  language === "vi"
+    ? industryVi[value] || value
+    : language === "zh"
+      ? industryZh[value] || value
+      : value;
 const standardGroupLabels: Record<string, LocalizedText> = {
   identity: tx("Thông tin nhận diện", "Identity"),
   operator: tx("Đơn vị phát triển/vận hành", "Developer and operator"),
@@ -238,21 +301,15 @@ function StandardChecklist({ park }: { park: IndustrialParkProfile }) {
           <span>{tr(standardGroupLabels[item.key], language)}</span>
           {item.requiredForPublication ? (
             <small>
-              {language === "vi" ? "Bắt buộc công bố" : "Required to publish"}
+              {ui(language, "Bắt buộc công bố", "Required to publish")}
             </small>
           ) : null}
           <b>
             {item.status === "available"
-              ? language === "vi"
-                ? "Có dữ liệu"
-                : "Available"
+              ? ui(language, "Có dữ liệu", "Available")
               : item.status === "partial"
-                ? language === "vi"
-                  ? "Chưa đầy đủ"
-                  : "Partial"
-                : language === "vi"
-                  ? "Chưa có"
-                  : "Missing"}
+                ? ui(language, "Chưa đầy đủ", "Partial")
+                : ui(language, "Chưa có", "Missing")}
           </b>
         </div>
       ))}
@@ -273,11 +330,9 @@ function SourceValue({
       {!compact && (
         <small>
           {value.calculated
-            ? language === "vi"
-              ? "Được tính toán"
-              : "Calculated"
+            ? ui(language, "Được tính toán", "Calculated")
             : value.asOf
-              ? `${language === "vi" ? "Cập nhật" : "As of"} ${value.asOf}`
+              ? `${ui(language, "Cập nhật", "As of")} ${value.asOf}`
               : ""}{" "}
           ·{" "}
           {tr(
@@ -294,28 +349,27 @@ function SourceValue({
 function LanguageToggle({ compact = false }: { compact?: boolean }) {
   const { language, setLanguage } = useApp();
   return (
-    <div
-      className={`language-toggle${compact ? " compact" : ""}`}
-      role="group"
-      aria-label={language === "vi" ? "Chọn ngôn ngữ" : "Select language"}
-    >
-      <button
-        type="button"
-        className={language === "vi" ? "active" : ""}
-        aria-pressed={language === "vi"}
-        onClick={() => setLanguage("vi")}
+    <label className={`language-select${compact ? " compact" : ""}`}>
+      <span className="language-flag" aria-hidden="true">
+        {language === "vi" ? (
+          <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#da251d" /><path d="m16 7 2.1 6.3h6.7l-5.4 3.9 2 6.3-5.4-3.9-5.4 3.9 2-6.3-5.4-3.9h6.7z" fill="#ffeb3b" /></svg>
+        ) : language === "zh" ? (
+          <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#de2910" /><path d="m9 5 1.5 4.5h4.7l-3.8 2.8 1.5 4.5L9 14l-3.9 2.8 1.5-4.5-3.8-2.8h4.7z" fill="#ffde00" /><circle cx="20" cy="7" r="1.4" fill="#ffde00" /><circle cx="23" cy="11" r="1.4" fill="#ffde00" /><circle cx="23" cy="17" r="1.4" fill="#ffde00" /><circle cx="19" cy="20" r="1.4" fill="#ffde00" /></svg>
+        ) : (
+          <svg viewBox="0 0 32 32"><rect width="32" height="32" fill="#21468b" /><path d="M0 0 32 32M32 0 0 32" stroke="#fff" strokeWidth="7" /><path d="M0 0 32 32M32 0 0 32" stroke="#cf142b" strokeWidth="3" /><path d="M16 0v32M0 16h32" stroke="#fff" strokeWidth="10" /><path d="M16 0v32M0 16h32" stroke="#cf142b" strokeWidth="5" /></svg>
+        )}
+      </span>
+      <select
+        value={language}
+        onChange={(event) => setLanguage(event.target.value as Language)}
+        aria-label={ui(language, "Chọn ngôn ngữ", "Select language")}
       >
-        VI
-      </button>
-      <button
-        type="button"
-        className={language === "en" ? "active" : ""}
-        aria-pressed={language === "en"}
-        onClick={() => setLanguage("en")}
-      >
-        EN
-      </button>
-    </div>
+        <option value="vi">Tiếng Việt</option>
+        <option value="en">English</option>
+        <option value="zh">中文</option>
+      </select>
+      <ChevronDown aria-hidden="true" />
+    </label>
   );
 }
 
@@ -326,12 +380,12 @@ function Header() {
   const nav = [
     [
       "/industrial-parks",
-      language === "vi" ? "Khu công nghiệp" : "Industrial parks",
+      ui(language, "Khu công nghiệp", "Industrial parks"),
     ],
-    ["/assets", language === "vi" ? "BĐS công nghiệp" : "Assets"],
-    ["/find-supply", language === "vi" ? "Tìm mặt bằng" : "Find supply"],
-    ["/find-demand", language === "vi" ? "Tìm khách thuê/mua" : "Find demand"],
-    ["/industrial-expo", "Industrial Expo"],
+    ["/assets", ui(language, "BĐS công nghiệp", "Assets")],
+    ["/find-supply", ui(language, "Tìm mặt bằng", "Find supply")],
+    ["/find-demand", ui(language, "Tìm khách thuê/mua", "Find demand")],
+    ["/industrial-expo", ui(language, "Triển lãm công nghiệp", "Industrial Expo")],
   ];
   return (
     <header className="header">
@@ -341,22 +395,16 @@ function Header() {
           <span>
             <b>Vietnam Industrial Gateway</b>
             <small>
-              {language === "vi"
-                ? "Hạ tầng số công nghiệp Việt Nam"
-                : "Vietnam industrial digital infrastructure"}
+              {ui(language, "Hạ tầng số công nghiệp Việt Nam", "Vietnam industrial digital infrastructure")}
             </small>
           </span>
         </Link>
         <button
           className="mobile-menu"
           aria-label={
-            language === "vi"
-              ? open
-                ? "Đóng trình đơn"
-                : "Mở trình đơn"
-              : open
-                ? "Close menu"
-                : "Open menu"
+            open
+              ? ui(language, "Đóng trình đơn", "Close menu")
+              : ui(language, "Mở trình đơn", "Open menu")
           }
           onClick={() => setOpen(!open)}
         >
@@ -381,12 +429,12 @@ function Header() {
           <LanguageToggle />
           {role === "admin" ? (
             <Link className="admin-chip" to="/admin/dashboard">
-              <ShieldCheck size={16} /> Admin
+              <ShieldCheck size={16} /> {ui(language, "Quản trị", "Admin")}
             </Link>
           ) : (
             <Link className="login-link" to="/login">
               <LogIn size={16} />
-              {language === "vi" ? "Quản trị" : "Admin"}
+              {ui(language, "Quản trị", "Admin")}
             </Link>
           )}
         </div>
@@ -408,33 +456,31 @@ function Footer() {
             </span>
           </div>
           <p>
-            {language === "vi"
-              ? "Kết nối năng lực công nghiệp Việt Nam với nhu cầu đầu tư và sản xuất toàn cầu."
-              : "Connecting Vietnam’s industrial capacity with global investment and manufacturing demand."}
+            {ui(language, "Kết nối năng lực công nghiệp Việt Nam với nhu cầu đầu tư và sản xuất toàn cầu.", "Connecting Vietnam’s industrial capacity with global investment and manufacturing demand.")}
           </p>
         </div>
         <div>
-          <b>{language === "vi" ? "Khám phá" : "Discover"}</b>
+          <b>{ui(language, "Khám phá", "Discover")}</b>
           <Link to="/industrial-parks">
-            {language === "vi" ? "Khu công nghiệp" : "Industrial Parks"}
+            {ui(language, "Khu công nghiệp", "Industrial Parks")}
           </Link>
           <Link to="/assets">
-            {language === "vi"
-              ? "Bất động sản công nghiệp"
-              : "Industrial Assets"}
+            {ui(language, "Bất động sản công nghiệp", "Industrial Assets")}
           </Link>
-          <Link to="/industrial-expo">Industrial Expo</Link>
+          <Link to="/industrial-expo">
+            {ui(language, "Triển lãm công nghiệp", "Industrial Expo")}
+          </Link>
         </div>
         <div>
-          <b>{language === "vi" ? "Kết nối" : "Connect"}</b>
+          <b>{ui(language, "Kết nối", "Connect")}</b>
           <Link to="/find-supply">
-            {language === "vi" ? "Tìm mặt bằng" : "Find Supply"}
+            {ui(language, "Tìm mặt bằng", "Find Supply")}
           </Link>
           <Link to="/find-demand">
-            {language === "vi" ? "Tìm khách thuê/mua" : "Find Demand"}
+            {ui(language, "Tìm khách thuê/mua", "Find Demand")}
           </Link>
           <span>
-            {language === "vi" ? "Ghép nối chuyên sâu" : "Premium Matching"}
+            {ui(language, "Ghép nối chuyên sâu", "Premium Matching")}
           </span>
         </div>
         <div className="arobid-partner">
@@ -443,7 +489,7 @@ function Footer() {
           </span>
           <div className="arobid-powered-row">
             <span>
-              {language === "vi" ? "Được phát triển bởi" : "Powered by"}
+              {ui(language, "Được phát triển bởi", "Powered by")}
             </span>
             <span className="arobid-logo-wrap">
               <img
@@ -478,11 +524,11 @@ function FloatingParkChat() {
   return (
     <div className="floating-chat-root">
       {chatOpen && activePark && (
-        <section className="floating-chat-panel" aria-label={language === "vi" ? "Trao đổi với khu công nghiệp" : "Industrial park chat"}>
+        <section className="floating-chat-panel" aria-label={ui(language, "Trao đổi với khu công nghiệp", "Industrial park chat")}>
           <aside className="floating-chat-users">
             <div>
               <MessageCircle />
-              <b>{language === "vi" ? "Trao đổi" : "Chats"}</b>
+              <b>{ui(language, "Trao đổi", "Chats")}</b>
               <span>{threadIds.length}</span>
             </div>
             <nav>
@@ -499,7 +545,7 @@ function FloatingParkChat() {
                     <span>{park.logoText.slice(0, 3)}</span>
                     <span>
                       <b>{tr(park.name, language)}</b>
-                      <small>{language === "vi" ? "Khu công nghiệp" : "Industrial park"}</small>
+                      <small>{ui(language, "Khu công nghiệp", "Industrial park")}</small>
                     </span>
                     <i />
                   </button>
@@ -513,12 +559,12 @@ function FloatingParkChat() {
                 <span>{activePark.logoText.slice(0, 3)}</span>
                 <div>
                   <b>{tr(activePark.name, language)}</b>
-                  <small><i /> {language === "vi" ? "Đơn vị cung cấp · Trực tuyến" : "Supplier · Online"}</small>
+                  <small><i /> {ui(language, "Đơn vị cung cấp · Trực tuyến", "Supplier · Online")}</small>
                 </div>
               </div>
               <div>
-                <em>{language === "vi" ? "MÔ PHỎNG" : "DEMO"}</em>
-                <button type="button" onClick={closeParkChat} aria-label={language === "vi" ? "Thu nhỏ cửa sổ chat" : "Minimise chat"}>
+                <em>{ui(language, "MÔ PHỎNG", "DEMO")}</em>
+                <button type="button" onClick={closeParkChat} aria-label={ui(language, "Thu nhỏ cửa sổ chat", "Minimise chat")}>
                   <X />
                 </button>
               </div>
@@ -542,10 +588,10 @@ function FloatingParkChat() {
               <input
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
-                placeholder={language === "vi" ? "Nhập nội dung trao đổi..." : "Type your message..."}
-                aria-label={language === "vi" ? "Nội dung trao đổi" : "Chat message"}
+                placeholder={ui(language, "Nhập nội dung trao đổi...", "Type your message...")}
+                aria-label={ui(language, "Nội dung trao đổi", "Chat message")}
               />
-              <button type="submit" aria-label={language === "vi" ? "Gửi tin nhắn" : "Send message"}>
+              <button type="submit" aria-label={ui(language, "Gửi tin nhắn", "Send message")}>
                 <Send />
               </button>
             </form>
@@ -556,7 +602,7 @@ function FloatingParkChat() {
         type="button"
         className={`floating-chat-launcher ${chatOpen ? "open" : ""}`}
         onClick={toggleParkChat}
-        aria-label={language === "vi" ? "Mở trao đổi với khu công nghiệp" : "Open industrial park chat"}
+        aria-label={ui(language, "Mở trao đổi với khu công nghiệp", "Open industrial park chat")}
       >
         {chatOpen ? <X /> : <MessageCircle />}
         {threadIds.length > 0 && <span>{threadIds.length}</span>}
@@ -588,65 +634,65 @@ function HomePage() {
         <img
           src="/images/vig-industrial-hero.png"
           alt={
-            language === "vi"
-              ? "Toàn cảnh khu công nghiệp và cảng biển"
-              : "Industrial park and seaport panorama"
+            ui(language, "Toàn cảnh khu công nghiệp và cảng biển", "Industrial park and seaport panorama")
           }
         />
         <div className="hero-overlay" />
         <div className="hero-content">
           <span className="hero-kicker">
             <Sparkles size={16} />
-            {language === "vi"
-              ? "Dữ liệu chuẩn hóa · Kết nối đầu tư"
-              : "Data-powered · Intelligently connected"}
+            {ui(language, "Dữ liệu chuẩn hóa · Kết nối đầu tư", "Data-powered · Intelligently connected")}
           </span>
-          <h1 className={language === "vi" ? "hero-title-vi" : undefined}>
+          <h1
+            className={
+              language === "vi"
+                ? "hero-title-vi"
+                : language === "zh"
+                  ? "hero-title-zh"
+                  : undefined
+            }
+          >
             {language === "vi" ? (
               <>
                 <span>HẠ TẦNG XÚC TIẾN</span>
                 <span>ĐẦU TƯ CÔNG NGHIỆP</span>
                 <span>VIỆT NAM</span>
               </>
+            ) : language === "zh" ? (
+              "越南工业投资促进平台"
             ) : (
               "VIETNAM INDUSTRIAL DIGITAL INFRASTRUCTURE"
             )}
           </h1>
           <p>
-            {language === "vi"
-              ? "Vận hành dựa trên dữ liệu, ghép nối giao dịch bởi AI"
-              : "Powered by data and matched by AI"}
+            {ui(language, "Vận hành dựa trên dữ liệu, ghép nối giao dịch bởi AI", "Powered by data and matched by AI")}
           </p>
           <div className="hero-actions">
             <Link className="button gold" to="/industrial-parks">
-              {language === "vi" ? "Tra cứu khu công nghiệp" : "Explore supply"}
+              {ui(language, "Tra cứu khu công nghiệp", "Explore supply")}
               <ArrowRight size={18} />
             </Link>
             <Link className="button ghost" to="/find-supply">
-              {language === "vi"
-                ? "Gửi yêu cầu tìm mặt bằng"
-                : "Submit requirement"}
+              {ui(language, "Gửi yêu cầu tìm mặt bằng", "Submit requirement")}
             </Link>
           </div>
           <div className="hero-stats">
             <div>
               <b>20</b>
               <span>
-                {language === "vi" ? "hồ sơ khu công nghiệp" : "park profiles"}
+                {ui(language, "hồ sơ khu công nghiệp", "park profiles")}
               </span>
             </div>
             <div>
               <b>{assets.length}</b>
               <span>
-                {language === "vi" ? "BĐS công nghiệp mẫu" : "demo assets"}
+                {ui(language, "BĐS công nghiệp mẫu", "demo assets")}
               </span>
             </div>
             <div>
               <b>{completedConnections}</b>
               <span>
-                {language === "vi"
-                  ? "kết nối thành công"
-                  : "completed connections"}
+                {ui(language, "kết nối thành công", "completed connections")}
               </span>
             </div>
           </div>
@@ -658,28 +704,22 @@ function HomePage() {
           <input
             aria-label="Industrial search"
             placeholder={
-              language === "vi"
-                ? "Tìm KCN, tỉnh, ngành hoặc loại tài sản..."
-                : "Search park, province, industry or asset type..."
+              ui(language, "Tìm KCN, tỉnh, ngành hoặc loại tài sản...", "Search park, province, industry or asset type...")
             }
           />
         </div>
         <button onClick={() => navigate("/industrial-parks")}>
-          {language === "vi" ? "Tìm kiếm" : "Search"}
+          {ui(language, "Tìm kiếm", "Search")}
         </button>
       </section>
       <section className="page section">
         <SectionTitle
-          eyebrow="INDUSTRIAL DATA LAYER"
+          eyebrow={ui(language, "LỚP DỮ LIỆU CÔNG NGHIỆP", "INDUSTRIAL DATA LAYER")}
           title={
-            language === "vi"
-              ? "Hồ sơ khu công nghiệp nổi bật"
-              : "Featured industrial park profiles"
+            ui(language, "Hồ sơ khu công nghiệp nổi bật", "Featured industrial park profiles")
           }
           description={
-            language === "vi"
-              ? "Dữ liệu được chuẩn hóa, có nguồn, đơn vị và thời điểm xác minh."
-              : "Standardised data with sources, units and verification dates."
+            ui(language, "Dữ liệu được chuẩn hóa, có nguồn, đơn vị và thời điểm xác minh.", "Standardised data with sources, units and verification dates.")
           }
         />
         <div className="park-grid">
@@ -689,7 +729,7 @@ function HomePage() {
         </div>
         <div className="center">
           <Link className="text-link" to="/industrial-parks">
-            {language === "vi" ? "Xem tất cả 20 hồ sơ" : "View all 20 profiles"}
+            {ui(language, "Xem tất cả 20 hồ sơ", "View all 20 profiles")}
             <ArrowRight size={17} />
           </Link>
         </div>
@@ -697,11 +737,9 @@ function HomePage() {
       <section className="dark-section">
         <div className="page">
           <SectionTitle
-            eyebrow="TWO-WAY REQUEST"
+            eyebrow={ui(language, "KẾT NỐI HAI CHIỀU", "TWO-WAY REQUEST")}
             title={
-              language === "vi"
-                ? "Kết nối nhu cầu thuê, mua và chào thuê"
-                : "Two connection directions, one gateway"
+              ui(language, "Kết nối nhu cầu thuê, mua và chào thuê", "Two connection directions, one gateway")
             }
           />
           <div className="funnel-grid">
@@ -709,17 +747,13 @@ function HomePage() {
               <Warehouse />
               <span>FIND DEMAND</span>
               <h3>
-                {language === "vi"
-                  ? "Tôi có mặt bằng công nghiệp"
-                  : "I have supply"}
+                {ui(language, "Tôi có mặt bằng công nghiệp", "I have supply")}
               </h3>
               <p>
-                {language === "vi"
-                  ? "Tìm khách thuê hoặc bên nhận chuyển nhượng đất, nhà xưởng và kho."
-                  : "Find tenants or buyers for land, factories and warehouses."}
+                {ui(language, "Tìm khách thuê hoặc bên nhận chuyển nhượng đất, nhà xưởng và kho.", "Find tenants or buyers for land, factories and warehouses.")}
               </p>
               <Link to="/find-demand">
-                {language === "vi" ? "Tìm khách thuê/mua" : "Find Demand"}{" "}
+                {ui(language, "Tìm khách thuê/mua", "Find Demand")}{" "}
                 <ArrowRight size={16} />
               </Link>
             </div>
@@ -727,15 +761,13 @@ function HomePage() {
               <PackageSearch />
               <span>FIND SUPPLY</span>
               <h3>
-                {language === "vi" ? "Tôi cần tìm mặt bằng" : "I need supply"}
+                {ui(language, "Tôi cần tìm mặt bằng", "I need supply")}
               </h3>
               <p>
-                {language === "vi"
-                  ? "Tìm khu công nghiệp, quỹ đất, nhà xưởng hoặc kho phù hợp với dự án."
-                  : "Find the right park, land, factory or warehouse."}
+                {ui(language, "Tìm khu công nghiệp, quỹ đất, nhà xưởng hoặc kho phù hợp với dự án.", "Find the right park, land, factory or warehouse.")}
               </p>
               <Link to="/find-supply">
-                {language === "vi" ? "Tìm mặt bằng phù hợp" : "Find Supply"}{" "}
+                {ui(language, "Tìm mặt bằng phù hợp", "Find Supply")}{" "}
                 <ArrowRight size={16} />
               </Link>
             </div>
@@ -744,20 +776,18 @@ function HomePage() {
       </section>
       <section className="page section">
         <SectionTitle
-          eyebrow="HOW VIG WORKS"
+          eyebrow={ui(language, "QUY TRÌNH VIG", "HOW VIG WORKS")}
           title={
-            language === "vi"
-              ? "Từ yêu cầu đầu tư đến kết nối dự án"
-              : "From requirement to opportunity"
+            ui(language, "Từ yêu cầu đầu tư đến kết nối dự án", "From requirement to opportunity")
           }
         />
         <div className="steps">
           {[
-            [Search, language === "vi" ? "Tra cứu" : "Search"],
-            [FileText, language === "vi" ? "Gửi yêu cầu" : "Request"],
-            [Sparkles, language === "vi" ? "Đề xuất" : "Matching"],
-            [Handshake, language === "vi" ? "Kết nối" : "Connect"],
-            [Users, language === "vi" ? "Trao đổi" : "Meeting"],
+            [Search, ui(language, "Tra cứu", "Search")],
+            [FileText, ui(language, "Gửi yêu cầu", "Request")],
+            [Sparkles, ui(language, "Đề xuất", "Matching")],
+            [Handshake, ui(language, "Kết nối", "Connect")],
+            [Users, ui(language, "Trao đổi", "Meeting")],
           ].map(([Icon, label], i) => {
             const C = Icon as typeof Search;
             return (
@@ -772,15 +802,13 @@ function HomePage() {
       </section>
       <section className="page section expo-banner">
         <div>
-          <span>DIGITAL INDUSTRIAL EXPO</span>
+          <span>{ui(language, "TRIỂN LÃM CÔNG NGHIỆP SỐ", "DIGITAL INDUSTRIAL EXPO")}</span>
           <h2>
-            {language === "vi"
-              ? "Mở rộng tiếp cận thị trường toàn cầu"
-              : "Expand global market reach"}
+            {ui(language, "Mở rộng tiếp cận thị trường toàn cầu", "Expand global market reach")}
           </h2>
-          <p>China · Korea · Japan · Singapore · Global–Vietnam</p>
+          <p>{ui(language, "Trung Quốc · Hàn Quốc · Nhật Bản · Singapore · Toàn cầu–Việt Nam", "China · Korea · Japan · Singapore · Global–Vietnam")}</p>
           <Link className="button gold" to="/industrial-expo">
-            {language === "vi" ? "Khám phá Expo" : "Explore Expo"}
+            {ui(language, "Khám phá Expo", "Explore Expo")}
           </Link>
         </div>
         <Globe2 size={150} />
@@ -798,12 +826,8 @@ function ParkCard({ park }: { park: IndustrialParkProfile }) {
         <img src={park.media[0]?.url} alt={tr(park.name, language)} />
         <span className="demo-label">
           {park.id.includes("demo")
-            ? language === "vi"
-              ? "DỮ LIỆU MINH HỌA"
-              : "DEMO DATA"
-            : language === "vi"
-              ? "HỒ SƠ THAM CHIẾU"
-              : "REFERENCE PROFILE"}
+            ? ui(language, "DỮ LIỆU MINH HỌA", "DEMO DATA")
+            : ui(language, "HỒ SƠ THAM CHIẾU", "REFERENCE PROFILE")}
         </span>
       </Link>
       <div className="park-body">
@@ -822,12 +846,12 @@ function ParkCard({ park }: { park: IndustrialParkProfile }) {
         <p>{tr(park.summary, language)}</p>
         <div className="park-facts">
           <div>
-            <small>{language === "vi" ? "Tổng diện tích" : "Total area"}</small>
+            <small>{ui(language, "Tổng diện tích", "Total area")}</small>
             <SourceValue value={park.totalArea} compact />
           </div>
           <div>
             <small>
-              {language === "vi" ? "Diện tích còn trống" : "Available"}
+              {ui(language, "Diện tích còn trống", "Available")}
             </small>
             {available ? <SourceValue value={available} compact /> : "—"}
           </div>
@@ -854,7 +878,7 @@ function ParksPage() {
         (a, b) =>
           industryLabel(a, language).localeCompare(
             industryLabel(b, language),
-            language === "vi" ? "vi" : "en",
+            language === "vi" ? "vi" : language === "zh" ? "zh-CN" : "en",
           ),
       ),
     [parks, language],
@@ -873,16 +897,12 @@ function ParksPage() {
     <PublicShell>
       <div className="page page-top">
         <div className="page-heading">
-          <span>INDUSTRIAL DATA LAYER</span>
+          <span>{ui(language, "LỚP DỮ LIỆU CÔNG NGHIỆP", "INDUSTRIAL DATA LAYER")}</span>
           <h1>
-            {language === "vi"
-              ? "Danh mục khu công nghiệp"
-              : "Industrial park directory"}
+            {ui(language, "Danh mục khu công nghiệp", "Industrial park directory")}
           </h1>
           <p>
-            {language === "vi"
-              ? "Tra cứu vị trí, quỹ đất, hạ tầng kỹ thuật, khả năng kết nối và hồ sơ pháp lý của từng khu công nghiệp."
-              : "Explore industrial supply through standardised, source-aware profiles."}
+            {ui(language, "Tra cứu vị trí, quỹ đất, hạ tầng kỹ thuật, khả năng kết nối và hồ sơ pháp lý của từng khu công nghiệp.", "Explore industrial supply through standardised, source-aware profiles.")}
           </p>
         </div>
         <div className="filter-panel">
@@ -892,33 +912,31 @@ function ParksPage() {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder={
-                language === "vi"
-                  ? "Tìm theo tên khu công nghiệp, tỉnh/thành hoặc ngành nghề..."
-                  : "Search name, province, industry..."
+                ui(language, "Tìm theo tên khu công nghiệp, tỉnh/thành hoặc ngành nghề...", "Search name, province, industry...")
               }
             />
           </label>
           <select value={region} onChange={(e) => setRegion(e.target.value)}>
             <option value="all">
-              {language === "vi" ? "Tất cả vùng miền" : "All regions"}
+              {ui(language, "Tất cả vùng miền", "All regions")}
             </option>
             <option value="North">
-              {language === "vi" ? "Miền Bắc" : "North"}
+              {ui(language, "Miền Bắc", "North")}
             </option>
             <option value="Central">
-              {language === "vi" ? "Miền Trung" : "Central"}
+              {ui(language, "Miền Trung", "Central")}
             </option>
             <option value="South">
-              {language === "vi" ? "Miền Nam" : "South"}
+              {ui(language, "Miền Nam", "South")}
             </option>
           </select>
           <select
             value={industry}
             onChange={(e) => setIndustry(e.target.value)}
-            aria-label={language === "vi" ? "Lọc theo ngành" : "Filter by industry"}
+            aria-label={ui(language, "Lọc theo ngành", "Filter by industry")}
           >
             <option value="all">
-              {language === "vi" ? "Tất cả ngành nghề" : "All industries"}
+              {ui(language, "Tất cả ngành nghề", "All industries")}
             </option>
             {industryOptions.map((item) => (
               <option value={item} key={item}>
@@ -928,7 +946,7 @@ function ParksPage() {
           </select>
           <select value={status} onChange={(e) => setStatus(e.target.value)}>
             <option value="all">
-              {language === "vi" ? "Tất cả trạng thái" : "All statuses"}
+              {ui(language, "Tất cả trạng thái", "All statuses")}
             </option>
             <option value="operational">
               {tr(labels.operational, language)}
@@ -942,13 +960,11 @@ function ParksPage() {
         <div className="result-bar">
           <b>
             {filtered.length}{" "}
-            {language === "vi" ? "khu công nghiệp" : "industrial parks"}
+            {ui(language, "khu công nghiệp", "industrial parks")}
           </b>
           <span>
             <ShieldCheck size={16} />
-            {language === "vi"
-              ? "Dữ liệu có nguồn đối chiếu"
-              : "Source-aware fields"}
+            {ui(language, "Dữ liệu có nguồn đối chiếu", "Source-aware fields")}
           </span>
         </div>
         {filtered.length ? (
@@ -960,14 +976,10 @@ function ParksPage() {
         ) : (
           <Empty
             title={
-              language === "vi"
-                ? "Không tìm thấy khu công nghiệp phù hợp"
-                : "No results"
+              ui(language, "Không tìm thấy khu công nghiệp phù hợp", "No results")
             }
             text={
-              language === "vi"
-                ? "Vui lòng điều chỉnh từ khóa hoặc bộ lọc."
-                : "Try changing your filters."
+              ui(language, "Vui lòng điều chỉnh từ khóa hoặc bộ lọc.", "Try changing your filters.")
             }
           />
         )}
@@ -1017,23 +1029,19 @@ function ContactModal({
   if (sent)
     return (
       <Modal
-        title={language === "vi" ? "Đã ghi nhận" : "Request recorded"}
+        title={ui(language, "Đã ghi nhận", "Request recorded")}
         close={close}
       >
         <div className="success-state">
           <CheckCircle2 />
           <h3>
-            {language === "vi"
-              ? "VIG đã tiếp nhận yêu cầu"
-              : "VIG received your request"}
+            {ui(language, "VIG đã tiếp nhận yêu cầu", "VIG received your request")}
           </h3>
           <p>
-            {language === "vi"
-              ? "Yêu cầu đã được ghi nhận trong phiên bản demo. Bộ phận quản trị VIG sẽ tiếp tục xử lý ở bước tiếp theo."
-              : "This is a simulation. VIG Admin would be notified to coordinate the next step."}
+            {ui(language, "Yêu cầu đã được ghi nhận trong phiên bản demo. Bộ phận quản trị VIG sẽ tiếp tục xử lý ở bước tiếp theo.", "This is a simulation. VIG Admin would be notified to coordinate the next step.")}
           </p>
           <button className="button primary" onClick={close}>
-            {language === "vi" ? "Hoàn tất" : "Done"}
+            {ui(language, "Hoàn tất", "Done")}
           </button>
         </div>
       </Modal>
@@ -1051,7 +1059,7 @@ function ContactModal({
         }}
       >
         <label>
-          {language === "vi" ? "Họ tên" : "Name"}
+          {ui(language, "Họ tên", "Name")}
           <input required />
         </label>
         <label>
@@ -1059,7 +1067,7 @@ function ContactModal({
           <input type="email" required />
         </label>
         <label>
-          {language === "vi" ? "Nội dung" : "Message"}
+          {ui(language, "Nội dung", "Message")}
           <textarea
             defaultValue={
               language === "vi"
@@ -1070,7 +1078,7 @@ function ContactModal({
         </label>
         <button className="button primary">
           <Send size={16} />
-          {language === "vi" ? "Gửi yêu cầu" : "Send demo request"}
+          {ui(language, "Gửi yêu cầu", "Send demo request")}
         </button>
       </form>
     </Modal>
@@ -1092,12 +1100,10 @@ function ParkDetailPage() {
         <div className="page page-top">
           <Empty
             title={
-              language === "vi" ? "Không tìm thấy hồ sơ" : "Profile not found"
+              ui(language, "Không tìm thấy hồ sơ", "Profile not found")
             }
             text={
-              language === "vi"
-                ? "Hồ sơ khu công nghiệp này không tồn tại."
-                : "This industrial park profile does not exist."
+              ui(language, "Hồ sơ khu công nghiệp này không tồn tại.", "This industrial park profile does not exist.")
             }
           />
         </div>
@@ -1113,13 +1119,13 @@ function ParkDetailPage() {
     });
   };
   const sectionNavItems = [
-    ["overview", language === "vi" ? "Tổng quan" : "Overview"],
-    ["connectivity", language === "vi" ? "Kết nối" : "Connectivity"],
-    ["infrastructure", language === "vi" ? "Hạ tầng" : "Infrastructure"],
-    ["workforce", language === "vi" ? "Nhân lực" : "Workforce"],
-    ["incentives", language === "vi" ? "Ưu đãi" : "Incentives"],
-    ["media", language === "vi" ? "Hình ảnh" : "Media"],
-    ["documents", language === "vi" ? "Tài liệu" : "Documents"],
+    ["overview", ui(language, "Tổng quan", "Overview")],
+    ["connectivity", ui(language, "Kết nối", "Connectivity")],
+    ["infrastructure", ui(language, "Hạ tầng", "Infrastructure")],
+    ["workforce", ui(language, "Nhân lực", "Workforce")],
+    ["incentives", ui(language, "Ưu đãi", "Incentives")],
+    ["media", ui(language, "Hình ảnh", "Media")],
+    ["documents", ui(language, "Tài liệu", "Documents")],
   ];
   return (
     <PublicShell>
@@ -1129,7 +1135,7 @@ function ParkDetailPage() {
         <div className="page detail-hero-content">
           <div className="breadcrumbs">
             <Link to="/industrial-parks">
-              {language === "vi" ? "Khu công nghiệp" : "Industrial parks"}
+              {ui(language, "Khu công nghiệp", "Industrial parks")}
             </Link>
             <ChevronRight size={14} />
             <span>{tr(park.name, language)}</span>
@@ -1138,7 +1144,7 @@ function ParkDetailPage() {
             <Badge value={park.status} tone="green" />
             <span className="verified">
               <ShieldCheck size={15} />
-              {language === "vi" ? "Hồ sơ đã xác minh" : "Verified profile"}
+              {ui(language, "Hồ sơ đã xác minh", "Verified profile")}
             </span>
           </div>
           <h1>{tr(park.name, language)}</h1>
@@ -1149,48 +1155,48 @@ function ParkDetailPage() {
           <div className="detail-actions">
             <button className="button gold" onClick={() => setModal("Inquiry")}>
               <Send size={17} />
-              {language === "vi" ? "Gửi yêu cầu" : "Send inquiry"}
+              {ui(language, "Gửi yêu cầu", "Send inquiry")}
             </button>
             <button className="button ghost" onClick={() => openParkChat(park.id)}>
               <MessageCircle size={17} />
-              {language === "vi" ? "Trao đổi" : "Chat"}
+              {ui(language, "Trao đổi", "Chat")}
             </button>
             <button
               className="button ghost"
               onClick={() =>
                 setModal(
-                  language === "vi" ? "Yêu cầu cuộc hẹn" : "Request meeting",
+                  ui(language, "Yêu cầu cuộc hẹn", "Request meeting"),
                 )
               }
             >
               <Users size={17} />
-              {language === "vi" ? "Đặt lịch kết nối" : "Request meeting"}
+              {ui(language, "Đặt lịch kết nối", "Request meeting")}
             </button>
           </div>
         </div>
       </div>
-      <nav className="park-primary-tabs" aria-label={language === "vi" ? "Nội dung hồ sơ" : "Profile content"}>
+      <nav className="park-primary-tabs" aria-label={ui(language, "Nội dung hồ sơ", "Profile content")}>
         <div className="page">
           <button
             type="button"
             className={activeParkTab === "information" ? "active" : ""}
             onClick={() => setActiveParkTab("information")}
           >
-            <FileText /> {language === "vi" ? "Thông tin" : "Information"}
+            <FileText /> {ui(language, "Thông tin", "Information")}
           </button>
           <button
             type="button"
             className={activeParkTab === "assets" ? "active" : ""}
             onClick={() => setActiveParkTab("assets")}
           >
-            <PackageSearch /> {language === "vi" ? "Tài sản" : "Assets"}
+            <PackageSearch /> {ui(language, "Tài sản", "Assets")}
             <span>{linked.length}</span>
           </button>
         </div>
       </nav>
       <div className={`page detail-page ${activeParkTab}`}>
         <aside className="park-section-nav">
-          <b>{language === "vi" ? "Nội dung hồ sơ" : "Profile sections"}</b>
+          <b>{ui(language, "Nội dung hồ sơ", "Profile sections")}</b>
           {sectionNavItems.map(([id, label], index) => (
             <button
               type="button"
@@ -1205,23 +1211,23 @@ function ParkDetailPage() {
         </aside>
         <section className="key-facts">
           <div>
-            <span>{language === "vi" ? "Tổng diện tích" : "Total area"}</span>
+            <span>{ui(language, "Tổng diện tích", "Total area")}</span>
             <SourceValue value={park.totalArea} />
           </div>
           <div>
             <span>
-              {language === "vi" ? "Đất công nghiệp" : "Industrial land"}
+              {ui(language, "Đất công nghiệp", "Industrial land")}
             </span>
             <SourceValue value={park.industrialLandArea} />
           </div>
           <div>
             <span>
-              {language === "vi" ? "Diện tích sẵn sàng" : "Available area"}
+              {ui(language, "Diện tích sẵn sàng", "Available area")}
             </span>
             <SourceValue value={park.availability[0].available} />
           </div>
           <div>
-            <span>{language === "vi" ? "Lô tối thiểu" : "Minimum plot"}</span>
+            <span>{ui(language, "Lô tối thiểu", "Minimum plot")}</span>
             {park.availability[0].minimumPlot ? (
               <SourceValue value={park.availability[0].minimumPlot} />
             ) : (
@@ -1234,31 +1240,29 @@ function ParkDetailPage() {
             <SectionTitle
               eyebrow="01 · PROFILE"
               title={
-                language === "vi"
-                  ? "Tổng quan khu công nghiệp"
-                  : "Industrial park overview"
+                ui(language, "Tổng quan khu công nghiệp", "Industrial park overview")
               }
             />
             <p className="lead">{tr(park.summary, language)}</p>
             <div className="info-grid">
               <div>
-                <small>{language === "vi" ? "Loại hình" : "Park type"}</small>
+                <small>{ui(language, "Loại hình", "Park type")}</small>
                 <b>{tr(park.parkType, language)}</b>
               </div>
               <div>
                 <small>
-                  {language === "vi" ? "Khu kinh tế" : "Economic zone"}
+                  {ui(language, "Khu kinh tế", "Economic zone")}
                 </small>
                 <b>{tr(park.economicZone, language)}</b>
               </div>
               <div>
                 <small>
-                  {language === "vi" ? "Năm thành lập" : "Established"}
+                  {ui(language, "Năm thành lập", "Established")}
                 </small>
                 <b>{park.establishmentYear}</b>
               </div>
               <div>
-                <small>{language === "vi" ? "Giai đoạn" : "Phase"}</small>
+                <small>{ui(language, "Giai đoạn", "Phase")}</small>
                 <b>{tr(park.phases[0].name, language)}</b>
               </div>
             </div>
@@ -1268,9 +1272,7 @@ function ParkDetailPage() {
             <h3>{park.operator.name}</h3>
             <p>{tr(park.operator.overview, language)}</p>
             <a href={park.operator.website} target="_blank">
-              {language === "vi"
-                ? "Website đơn vị phát triển"
-                : "Developer website"}
+              {ui(language, "Website đơn vị phát triển", "Developer website")}
               <ExternalLink size={14} />
             </a>
           </aside>
@@ -1279,9 +1281,7 @@ function ParkDetailPage() {
           <SectionTitle
             eyebrow="OPERATOR TRACK RECORD"
             title={
-              language === "vi"
-                ? "Năng lực đơn vị phát triển"
-                : "Developer track record"
+              ui(language, "Năng lực đơn vị phát triển", "Developer track record")
             }
           />
           <div className="profile-stat-grid">
@@ -1297,9 +1297,7 @@ function ParkDetailPage() {
               <Activity />
               <div>
                 <b>
-                  {language === "vi"
-                    ? "Có dữ liệu cần đối soát"
-                    : "Source conflict requires review"}
+                  {ui(language, "Có dữ liệu cần đối soát", "Source conflict requires review")}
                 </b>
                 <p>
                   {park.conflicts[0].field}: {park.conflicts[0].primary} ↔{" "}
@@ -1313,9 +1311,7 @@ function ParkDetailPage() {
           <SectionTitle
             eyebrow="02 · LOCATION"
             title={
-              language === "vi"
-                ? "Vị trí và kết nối chiến lược"
-                : "Location and strategic connectivity"
+              ui(language, "Vị trí và kết nối chiến lược", "Location and strategic connectivity")
             }
           />
           <div className="connect-grid">
@@ -1361,9 +1357,7 @@ function ParkDetailPage() {
                     </span>
                     {c.completionYear && (
                       <small>
-                        {language === "vi"
-                          ? "Dự kiến hoàn thành"
-                          : "Expected completion"}{" "}
+                        {ui(language, "Dự kiến hoàn thành", "Expected completion")}{" "}
                         {c.completionYear}
                       </small>
                     )}
@@ -1381,9 +1375,7 @@ function ParkDetailPage() {
           <SectionTitle
             eyebrow="03 · MASTERPLAN"
             title={
-              language === "vi"
-                ? "Quy hoạch mặt bằng và hiện trạng quỹ đất"
-                : "Masterplan and land availability"
+              ui(language, "Quy hoạch mặt bằng và hiện trạng quỹ đất", "Masterplan and land availability")
             }
           />
           <div className="masterplan-card">
@@ -1399,31 +1391,29 @@ function ParkDetailPage() {
               <div className="road vertical" />
             </div>
             <div className="legend">
-              <b>{language === "vi" ? "Chú giải" : "Legend"}</b>
+              <b>{ui(language, "Chú giải", "Legend")}</b>
               <span>
                 <i className="available" />
-                {language === "vi" ? "Sẵn sàng bàn giao" : "Available"}
+                {ui(language, "Sẵn sàng bàn giao", "Available")}
               </span>
               <span>
                 <i className="reserved" />
-                {language === "vi" ? "Đã giữ chỗ" : "Reserved"}
+                {ui(language, "Đã giữ chỗ", "Reserved")}
               </span>
               <span>
                 <i className="occupied" />
-                {language === "vi" ? "Đã lấp đầy" : "Occupied"}
+                {ui(language, "Đã lấp đầy", "Occupied")}
               </span>
               <span>
                 <i className="utility" />
-                {language === "vi" ? "Hạ tầng kỹ thuật" : "Utility"}
+                {ui(language, "Hạ tầng kỹ thuật", "Utility")}
               </span>
               <span>
                 <i className="future" />
-                {language === "vi" ? "Khu mở rộng" : "Future"}
+                {ui(language, "Khu mở rộng", "Future")}
               </span>
               <small>
-                {language === "vi"
-                  ? "Sơ đồ quy hoạch minh họa trong phiên bản demo"
-                  : "Interactive schematic for demonstration"}
+                {ui(language, "Sơ đồ quy hoạch minh họa trong phiên bản demo", "Interactive schematic for demonstration")}
               </small>
             </div>
           </div>
@@ -1432,9 +1422,7 @@ function ParkDetailPage() {
           <SectionTitle
             eyebrow="04 · INFRASTRUCTURE"
             title={
-              language === "vi"
-                ? "Hạ tầng và tiện ích đồng bộ"
-                : "Integrated infrastructure and utilities"
+              ui(language, "Hạ tầng và tiện ích đồng bộ", "Integrated infrastructure and utilities")
             }
           />
           <div className="utility-grid">
@@ -1470,14 +1458,12 @@ function ParkDetailPage() {
             <SectionTitle
               eyebrow="05 · PROVINCIAL CONTEXT"
               title={
-                language === "vi"
-                  ? "Kinh tế địa phương và nguồn nhân lực"
-                  : "Provincial economy and workforce"
+                ui(language, "Kinh tế địa phương và nguồn nhân lực", "Provincial economy and workforce")
               }
             />
             <div className="metric-grid">
               <div>
-                <small>{language === "vi" ? "Dân số" : "Population"}</small>
+                <small>{ui(language, "Dân số", "Population")}</small>
                 <SourceValue value={park.provinceProfile.population} />
               </div>
               <div>
@@ -1486,29 +1472,25 @@ function ParkDetailPage() {
               </div>
               <div>
                 <small>
-                  {language === "vi" ? "Tốc độ tăng trưởng" : "Growth"}
+                  {ui(language, "Tốc độ tăng trưởng", "Growth")}
                 </small>
                 <SourceValue value={park.provinceProfile.growthRate} />
               </div>
               <div>
                 <small>
-                  {language === "vi" ? "Lực lượng lao động" : "Labour force"}
+                  {ui(language, "Lực lượng lao động", "Labour force")}
                 </small>
                 <SourceValue value={park.workforce.laborForce} />
               </div>
               <div>
                 <small>
-                  {language === "vi"
-                    ? "Lao động qua đào tạo"
-                    : "Skilled labour"}
+                  {ui(language, "Lao động qua đào tạo", "Skilled labour")}
                 </small>
                 <SourceValue value={park.workforce.skilledLabor} />
               </div>
               <div>
                 <small>
-                  {language === "vi"
-                    ? "Nguồn lao động trong bán kính 20 km"
-                    : "20 km catchment"}
+                  {ui(language, "Nguồn lao động trong bán kính 20 km", "20 km catchment")}
                 </small>
                 <SourceValue value={park.workforce.catchmentPopulation} />
               </div>
@@ -1517,7 +1499,7 @@ function ParkDetailPage() {
           </div>
           <aside className="content-card">
             <h3>
-              {language === "vi" ? "Mức lương tham khảo" : "Salary benchmark"}
+              {ui(language, "Mức lương tham khảo", "Salary benchmark")}
             </h3>
             {park.workforce.salaryBenchmark.length ? (
               park.workforce.salaryBenchmark.map((x) => (
@@ -1527,7 +1509,7 @@ function ParkDetailPage() {
                 </div>
               ))
             ) : (
-              <p>{language === "vi" ? "Chưa có dữ liệu" : "Not available"}</p>
+              <p>{ui(language, "Chưa có dữ liệu", "Not available")}</p>
             )}
           </aside>
         </section>
@@ -1535,7 +1517,7 @@ function ParkDetailPage() {
           <SectionTitle
             eyebrow="06 · INCENTIVES"
             title={
-              language === "vi" ? "Ưu đãi đầu tư" : "Investment incentives"
+              ui(language, "Ưu đãi đầu tư", "Investment incentives")
             }
           />
           {park.incentives.length ? (
@@ -1545,7 +1527,7 @@ function ParkDetailPage() {
                   <h3>{tr(x.name, language)}</h3>
                   <p>{tr(x.eligibility, language)}</p>
                   <small>
-                    {language === "vi" ? "Hiệu lực" : "Effective"}:{" "}
+                    {ui(language, "Hiệu lực", "Effective")}:{" "}
                     {x.effectiveDate} · Source: {x.sourceDocumentId}
                   </small>
                 </div>
@@ -1563,14 +1545,10 @@ function ParkDetailPage() {
           ) : (
             <Empty
               title={
-                language === "vi"
-                  ? "Chưa có thông tin ưu đãi"
-                  : "No incentive information"
+                ui(language, "Chưa có thông tin ưu đãi", "No incentive information")
               }
               text={
-                language === "vi"
-                  ? "Dữ liệu chưa được cung cấp."
-                  : "This information has not been provided."
+                ui(language, "Dữ liệu chưa được cung cấp.", "This information has not been provided.")
               }
             />
           )}
@@ -1579,9 +1557,7 @@ function ParkDetailPage() {
           <SectionTitle
             eyebrow="07 · AVAILABILITY"
             title={
-              language === "vi"
-                ? "Quỹ đất và nhà xưởng đang chào thuê"
-                : "Available land and industrial assets"
+              ui(language, "Quỹ đất và nhà xưởng đang chào thuê", "Available land and industrial assets")
             }
           />
           {linked.length ? (
@@ -1593,14 +1569,10 @@ function ParkDetailPage() {
           ) : (
             <Empty
               title={
-                language === "vi"
-                  ? "Chưa có sản phẩm được công bố"
-                  : "No published assets"
+                ui(language, "Chưa có sản phẩm được công bố", "No published assets")
               }
               text={
-                language === "vi"
-                  ? "Liên hệ VIG để được hỗ trợ tìm mặt bằng phù hợp."
-                  : "Contact VIG for supply sourcing support."
+                ui(language, "Liên hệ VIG để được hỗ trợ tìm mặt bằng phù hợp.", "Contact VIG for supply sourcing support.")
               }
             />
           )}
@@ -1609,9 +1581,7 @@ function ParkDetailPage() {
           <SectionTitle
             eyebrow="08 · INVESTMENT PROCESS"
             title={
-              language === "vi"
-                ? "Quy trình thuê đất và thực hiện thủ tục đầu tư"
-                : "Land lease and investment procedure"
+              ui(language, "Quy trình thuê đất và thực hiện thủ tục đầu tư", "Land lease and investment procedure")
             }
           />
           <div className="process-list">
@@ -1624,7 +1594,7 @@ function ParkDetailPage() {
                     {tr(p.authority, language)} · {tr(p.duration, language)}
                   </p>
                   <small>
-                    {language === "vi" ? "Kết quả hồ sơ" : "Output"}:{" "}
+                    {ui(language, "Kết quả hồ sơ", "Output")}:{" "}
                     {tr(p.output, language)}
                   </small>
                 </div>
@@ -1637,18 +1607,14 @@ function ParkDetailPage() {
             <SectionTitle
               eyebrow="09 · LOGISTICS"
               title={
-                language === "vi"
-                  ? "Năng lực kết nối logistics"
-                  : "Logistics capability"
+                ui(language, "Năng lực kết nối logistics", "Logistics capability")
               }
             />
             <div className="metric-grid">
               {park.logistics.portCapacityDwt && (
                 <div>
                   <small>
-                    {language === "vi"
-                      ? "Cỡ tàu tiếp nhận tối đa"
-                      : "Maximum vessel"}
+                    {ui(language, "Cỡ tàu tiếp nhận tối đa", "Maximum vessel")}
                   </small>
                   <SourceValue value={park.logistics.portCapacityDwt} />
                 </div>
@@ -1656,9 +1622,7 @@ function ParkDetailPage() {
               {park.logistics.cargoThroughput && (
                 <div>
                   <small>
-                    {language === "vi"
-                      ? "Sản lượng hàng hóa qua cảng"
-                      : "Port throughput"}
+                    {ui(language, "Sản lượng hàng hóa qua cảng", "Port throughput")}
                   </small>
                   <SourceValue value={park.logistics.cargoThroughput} />
                 </div>
@@ -1677,9 +1641,7 @@ function ParkDetailPage() {
           </div>
           <aside className="content-card">
             <h3>
-              {language === "vi"
-                ? "Chi phí vận chuyển tham khảo"
-                : "Indicative costs"}
+              {ui(language, "Chi phí vận chuyển tham khảo", "Indicative costs")}
             </h3>
             {park.logistics.indicativeCosts.map((c) => (
               <div className="salary" key={c.container}>
@@ -1688,16 +1650,14 @@ function ParkDetailPage() {
               </div>
             ))}
             <small>
-              {language === "vi"
-                ? "Chi phí mang tính tham khảo tại thời điểm của tài liệu nguồn."
-                : "Indicative only, based on the source profile."}
+              {ui(language, "Chi phí mang tính tham khảo tại thời điểm của tài liệu nguồn.", "Indicative only, based on the source profile.")}
             </small>
           </aside>
         </section>
         <section className="triple">
           <div className="content-card">
             <h3>
-              {language === "vi" ? "Ngành phù hợp" : "Suitable industries"}
+              {ui(language, "Ngành phù hợp", "Suitable industries")}
             </h3>
             <div className="pill-list">
               {park.suitableIndustries.map((x) => (
@@ -1709,7 +1669,7 @@ function ParkDetailPage() {
           </div>
           <div className="content-card">
             <h3>
-              {language === "vi" ? "Phát triển bền vững" : "Sustainability"}
+              {ui(language, "Phát triển bền vững", "Sustainability")}
             </h3>
             {park.sustainability.map((x) => (
               <p className="checkline" key={x.en}>
@@ -1719,7 +1679,7 @@ function ParkDetailPage() {
             ))}
           </div>
           <div className="content-card">
-            <h3>{language === "vi" ? "Cộng đồng" : "Community"}</h3>
+            <h3>{ui(language, "Cộng đồng", "Community")}</h3>
             {park.community.length ? (
               park.community.map((x) => (
                 <p className="checkline" key={x.en}>
@@ -1728,7 +1688,7 @@ function ParkDetailPage() {
                 </p>
               ))
             ) : (
-              <p>{language === "vi" ? "Chưa có dữ liệu" : "Not available"}</p>
+              <p>{ui(language, "Chưa có dữ liệu", "Not available")}</p>
             )}
           </div>
         </section>
@@ -1737,9 +1697,7 @@ function ParkDetailPage() {
             <SectionTitle
               eyebrow="10 · MEDIA"
               title={
-                language === "vi"
-                  ? "Hình ảnh và mặt bằng khu công nghiệp"
-                  : "Industrial park media and masterplan"
+                ui(language, "Hình ảnh và mặt bằng khu công nghiệp", "Industrial park media and masterplan")
               }
             />
             <div className="media-gallery">
@@ -1752,10 +1710,8 @@ function ParkDetailPage() {
                       <b>{tr(item.title, language)}</b>
                       <span>
                         {item.capturedAt
-                          ? `${language === "vi" ? "Ngày cập nhật" : "Updated"}: ${item.capturedAt}`
-                          : language === "vi"
-                            ? "Hình ảnh minh họa"
-                            : "Illustrative media"}
+                          ? `${ui(language, "Ngày cập nhật", "Updated")}: ${item.capturedAt}`
+                          : ui(language, "Hình ảnh minh họa", "Illustrative media")}
                       </span>
                     </figcaption>
                   </figure>
@@ -1763,9 +1719,7 @@ function ParkDetailPage() {
             </div>
             {park.id.includes("demo") ? (
               <p className="media-disclaimer">
-                {language === "vi"
-                  ? "Hình ảnh được tạo cho mục đích mô phỏng giao diện và không phản ánh một dự án thực tế."
-                  : "Images were created for interface demonstration and do not depict a real project."}
+                {ui(language, "Hình ảnh được tạo cho mục đích mô phỏng giao diện và không phản ánh một dự án thực tế.", "Images were created for interface demonstration and do not depict a real project.")}
               </p>
             ) : null}
           </section>
@@ -1774,9 +1728,7 @@ function ParkDetailPage() {
           <SectionTitle
             eyebrow="11 · DOCUMENTS"
             title={
-              language === "vi"
-                ? "Hồ sơ pháp lý và tài liệu dự án"
-                : "Legal evidence and verification"
+              ui(language, "Hồ sơ pháp lý và tài liệu dự án", "Legal evidence and verification")
             }
           />
           <div className="doc-list">
@@ -1802,23 +1754,19 @@ function ParkDetailPage() {
                     )}{" "}
                     ·{" "}
                     {d.visibility === "admin_only"
-                      ? language === "vi"
-                        ? "chỉ quản trị viên"
-                        : "admin only"
-                      : language === "vi"
-                        ? "công khai"
-                        : "public"}
+                      ? ui(language, "chỉ quản trị viên", "admin only")
+                      : ui(language, "công khai", "public")}
                   </small>
                 </div>
                 {d.visibility === "admin_only" ? (
                   <button disabled>
                     <Lock size={15} />
-                    {language === "vi" ? "Chỉ quản trị viên" : "Admin only"}
+                    {ui(language, "Chỉ quản trị viên", "Admin only")}
                   </button>
                 ) : (
                   <a href={d.sourceUrl} target="_blank" rel="noreferrer">
                     <Download size={15} />
-                    {language === "vi" ? "Xem tài liệu" : "View source"}
+                    {ui(language, "Xem tài liệu", "View source")}
                   </a>
                 )}
               </article>
@@ -1827,11 +1775,9 @@ function ParkDetailPage() {
         </section>
         <section className="contact-card">
           <div>
-            <span>CONTACT VIG</span>
+            <span>{ui(language, "LIÊN HỆ VIG", "CONTACT VIG")}</span>
             <h2>
-              {language === "vi"
-                ? "Quan tâm đến cơ hội đầu tư tại khu công nghiệp này?"
-                : "Ready to explore this opportunity?"}
+              {ui(language, "Quan tâm đến cơ hội đầu tư tại khu công nghiệp này?", "Ready to explore this opportunity?")}
             </h2>
             <p>
               {park.contact
@@ -1845,11 +1791,11 @@ function ParkDetailPage() {
               onClick={() => setModal("Inquiry")}
             >
               <Send size={17} />
-              {language === "vi" ? "Gửi yêu cầu tư vấn" : "Send inquiry"}
+              {ui(language, "Gửi yêu cầu tư vấn", "Send inquiry")}
             </button>
             <Link className="button outline" to="/find-supply">
               <PackageSearch size={17} />
-              {language === "vi" ? "Tìm mặt bằng tương tự" : "Find Supply"}
+              {ui(language, "Tìm mặt bằng tương tự", "Find Supply")}
             </Link>
           </div>
         </section>
@@ -1908,7 +1854,7 @@ function AssetCard({
               }}
               disabled={!park}
             >
-              <MessageCircle /> {language === "vi" ? "Trao đổi" : "Chat"}
+              <MessageCircle /> {ui(language, "Trao đổi", "Chat")}
             </button>
             <Link to={requestUrl} onClick={(event) => event.stopPropagation()}>
               <Send /> Direct Request
@@ -1933,22 +1879,18 @@ function AssetsPage() {
     <PublicShell>
       <div className="page page-top">
         <div className="page-heading">
-          <span>INDUSTRIAL ASSETS</span>
+          <span>{ui(language, "BẤT ĐỘNG SẢN CÔNG NGHIỆP", "INDUSTRIAL ASSETS")}</span>
           <h1>
-            {language === "vi"
-              ? "Bất động sản công nghiệp"
-              : "Industrial supply"}
+            {ui(language, "Bất động sản công nghiệp", "Industrial supply")}
           </h1>
           <p>
-            {language === "vi"
-              ? "Quỹ đất công nghiệp, nhà xưởng xây sẵn, kho vận và giải pháp xây theo yêu cầu."
-              : "Land, factories, warehouses and build-to-suit solutions."}
+            {ui(language, "Quỹ đất công nghiệp, nhà xưởng xây sẵn, kho vận và giải pháp xây theo yêu cầu.", "Land, factories, warehouses and build-to-suit solutions.")}
           </p>
         </div>
         <div
           className="filter-tabs"
           role="group"
-          aria-label={language === "vi" ? "Lọc loại hình bất động sản" : "Filter asset type"}
+          aria-label={ui(language, "Lọc loại hình bất động sản", "Filter asset type")}
         >
           {assetTypeFilters.map((option) => {
             const FilterIcon = option.icon;
@@ -1961,16 +1903,20 @@ function AssetsPage() {
                 key={option.value}
               >
                 <FilterIcon size={16} />
-                {language === "vi" ? option.vi : option.en}
+                {language === "vi"
+                  ? option.vi
+                  : language === "zh"
+                    ? translateToChinese(option.en)
+                    : option.en}
               </button>
             );
           })}
         </div>
         <div className="asset-result-bar">
           <b>
-            {filtered.length} {language === "vi" ? "bất động sản công nghiệp" : "industrial assets"}
+            {filtered.length} {ui(language, "bất động sản công nghiệp", "industrial assets")}
           </b>
-          <span>{language === "vi" ? "Dữ liệu minh họa" : "Demo inventory"}</span>
+          <span>{ui(language, "Dữ liệu minh họa", "Demo inventory")}</span>
         </div>
         {filtered.length ? (
           <div className="asset-grid">
@@ -1980,8 +1926,8 @@ function AssetsPage() {
           </div>
         ) : (
           <Empty
-            title={language === "vi" ? "Chưa có tài sản phù hợp" : "No matching assets"}
-            text={language === "vi" ? "Vui lòng chọn loại hình khác hoặc gửi yêu cầu tìm mặt bằng." : "Choose another asset type or submit a supply request."}
+            title={ui(language, "Chưa có tài sản phù hợp", "No matching assets")}
+            text={ui(language, "Vui lòng chọn loại hình khác hoặc gửi yêu cầu tìm mặt bằng.", "Choose another asset type or submit a supply request.")}
           />
         )}
       </div>
@@ -2000,7 +1946,7 @@ function AssetDetailPage() {
       <div className="page page-top">
         <div className="breadcrumbs">
           <Link to="/assets">
-            {language === "vi" ? "Bất động sản công nghiệp" : "Assets"}
+            {ui(language, "Bất động sản công nghiệp", "Assets")}
           </Link>
           <ChevronRight size={14} />
           <span>{tr(asset.name, language)}</span>
@@ -2020,33 +1966,33 @@ function AssetDetailPage() {
             <div className="key-facts stacked">
               <div>
                 <span>
-                  {language === "vi" ? "Diện tích chào thuê" : "Area"}
+                  {ui(language, "Diện tích chào thuê", "Area")}
                 </span>
                 <b>
                   {asset.area.toLocaleString()} {asset.unit}
                 </b>
               </div>
               <div>
-                <span>{language === "vi" ? "Đơn giá tham khảo" : "Price"}</span>
+                <span>{ui(language, "Đơn giá tham khảo", "Price")}</span>
                 <SourceValue value={asset.price} />
               </div>
               <div>
                 <span>
-                  {language === "vi" ? "Thời điểm bàn giao" : "Available from"}
+                  {ui(language, "Thời điểm bàn giao", "Available from")}
                 </span>
                 <b>{asset.availableFrom}</b>
               </div>
               <div>
-                <span>{language === "vi" ? "Công suất điện" : "Power"}</span>
+                <span>{ui(language, "Công suất điện", "Power")}</span>
                 <b>{asset.powerMva} MVA</b>
               </div>
             </div>
             <div className="asset-detail-actions">
               <button className="button outline" type="button" onClick={() => openParkChat(park.id)}>
-                <MessageCircle /> {language === "vi" ? "Trao đổi với KCN" : "Chat with park"}
+                <MessageCircle /> {ui(language, "Trao đổi với KCN", "Chat with park")}
               </button>
               <Link className="button primary" to={requestUrl}>
-                <Send /> {language === "vi" ? "Gửi yêu cầu tư vấn" : "Send requirement"}
+                <Send /> {ui(language, "Gửi yêu cầu tư vấn", "Send requirement")}
               </Link>
             </div>
           </div>
@@ -2122,28 +2068,24 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
       "availabilityDate",
     ].forEach((k) => {
       if (!String(form[k as keyof typeof form]).trim())
-        er[k] = language === "vi" ? "Vui lòng nhập thông tin" : "Required";
+        er[k] = ui(language, "Vui lòng nhập thông tin", "Required");
     });
     if (form.email && !/^\S+@\S+\.\S+$/.test(form.email))
       er.email =
-        language === "vi" ? "Địa chỉ email không hợp lệ" : "Invalid email";
+        ui(language, "Địa chỉ email không hợp lệ", "Invalid email");
     if (
       +form.areaMin <= 0 ||
       +form.areaMax <= 0 ||
       +form.areaMin > +form.areaMax
     )
       er.areaMin =
-        language === "vi"
-          ? "Khoảng diện tích không hợp lệ"
-          : "Invalid area range";
+        ui(language, "Khoảng diện tích không hợp lệ", "Invalid area range");
     if (
       form.availabilityDate &&
       new Date(form.availabilityDate) < new Date(new Date().toDateString())
     )
       er.availabilityDate =
-        language === "vi"
-          ? "Thời điểm bàn giao phải từ hôm nay trở đi"
-          : "Date must be in the future";
+        ui(language, "Thời điểm bàn giao phải từ hôm nay trở đi", "Date must be in the future");
     setErrors(er);
     if (Object.keys(er).length) return;
     const id = createRequest({
@@ -2177,17 +2119,11 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
           </span>
           <h1>
             {isSupply
-              ? language === "vi"
-                ? "Tìm khu công nghiệp, đất, nhà xưởng hoặc kho phù hợp"
-                : "Find an industrial park, land, factory or warehouse"
-              : language === "vi"
-                ? "Tìm khách thuê hoặc bên nhận chuyển nhượng phù hợp"
-                : "Find the right tenant or buyer"}
+              ? ui(language, "Tìm khu công nghiệp, đất, nhà xưởng hoặc kho phù hợp", "Find an industrial park, land, factory or warehouse")
+              : ui(language, "Tìm khách thuê hoặc bên nhận chuyển nhượng phù hợp", "Find the right tenant or buyer")}
           </h1>
           <p>
-            {language === "vi"
-              ? "Đội ngũ VIG sẽ tiếp nhận, rà soát nhu cầu và hỗ trợ kết nối với các bên phù hợp."
-              : "VIG Admin will receive, verify and coordinate the connection."}
+            {ui(language, "Đội ngũ VIG sẽ tiếp nhận, rà soát nhu cầu và hỗ trợ kết nối với các bên phù hợp.", "VIG Admin will receive, verify and coordinate the connection.")}
           </p>
         </div>
       </div>
@@ -2205,16 +2141,16 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
             <div className="form-grid">
               {field(
                 "assetType",
-                language === "vi" ? "Loại hình bất động sản" : "Asset type",
+                ui(language, "Loại hình bất động sản", "Asset type"),
               )}
               <label>
-                <span>{language === "vi" ? "Tên khu công nghiệp" : "Industrial park name"}</span>
+                <span>{ui(language, "Tên khu công nghiệp", "Industrial park name")}</span>
                 <select
                   value={form.industrialParkName}
                   onChange={(e) => update("industrialParkName", e.target.value)}
                 >
                   <option value="">
-                    {language === "vi" ? "Chưa xác định" : "Not specified"}
+                    {ui(language, "Chưa xác định", "Not specified")}
                   </option>
                   {parks.map((park) => (
                     <option key={park.id} value={park.name.en}>
@@ -2233,17 +2169,17 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
               )}{" "}
               {field(
                 "areaMin",
-                language === "vi" ? "Diện tích từ (m²)" : "Minimum area",
+                ui(language, "Diện tích từ (m²)", "Minimum area"),
                 "number",
               )}
               {field(
                 "areaMax",
-                language === "vi" ? "Diện tích đến (m²)" : "Maximum area",
+                ui(language, "Diện tích đến (m²)", "Maximum area"),
                 "number",
               )}
               <label>
                 <span>
-                  {language === "vi" ? "Hình thức giao dịch" : "Transaction"} *
+                  {ui(language, "Hình thức giao dịch", "Transaction")} *
                 </span>
                 <select
                   value={form.transaction}
@@ -2258,24 +2194,16 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
                   </option>
                   <option value="sale">
                     {isSupply
-                      ? language === "vi"
-                        ? "Nhận chuyển nhượng"
-                        : "Purchase"
-                      : language === "vi"
-                        ? "Chuyển nhượng"
-                        : "Sale"}
+                      ? ui(language, "Nhận chuyển nhượng", "Purchase")
+                      : ui(language, "Chuyển nhượng", "Sale")}
                   </option>
                 </select>
               </label>
               {field(
                 "budgetOrPrice",
                 isSupply
-                  ? language === "vi"
-                    ? "Ngân sách dự kiến / Chưa xác định"
-                    : "Budget / Not specified"
-                  : language === "vi"
-                    ? "Đơn giá chào / Thỏa thuận"
-                    : "Asking price / Negotiable",
+                  ? ui(language, "Ngân sách dự kiến / Chưa xác định", "Budget / Not specified")
+                  : ui(language, "Đơn giá chào / Thỏa thuận", "Asking price / Negotiable"),
               )}
               {field(
                 "industry",
@@ -2288,20 +2216,14 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
               {field(
                 "availabilityDate",
                 isSupply
-                  ? language === "vi"
-                    ? "Thời điểm cần bàn giao"
-                    : "Required date"
-                  : language === "vi"
-                    ? "Thời điểm sẵn sàng bàn giao"
-                    : "Available from",
+                  ? ui(language, "Thời điểm cần bàn giao", "Required date")
+                  : ui(language, "Thời điểm sẵn sàng bàn giao", "Available from"),
                 "date",
               )}
             </div>
             <label>
               <span>
-                {language === "vi"
-                  ? "Yêu cầu về điện, hạ tầng kỹ thuật, môi trường và điều kiện khác"
-                  : "Technical, infrastructure and other requirements"}
+                {ui(language, "Yêu cầu về điện, hạ tầng kỹ thuật, môi trường và điều kiện khác", "Technical, infrastructure and other requirements")}
               </span>
               <textarea
                 value={form.requirements}
@@ -2313,27 +2235,25 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
           <div className="form-section">
             <h2>
               2.{" "}
-              {language === "vi"
-                ? "Thông tin doanh nghiệp và đầu mối liên hệ"
-                : "Organisation and contact"}
+              {ui(language, "Thông tin doanh nghiệp và đầu mối liên hệ", "Organisation and contact")}
             </h2>
             <div className="form-grid">
               {field(
                 "organization",
-                language === "vi" ? "Tên doanh nghiệp" : "Organisation",
+                ui(language, "Tên doanh nghiệp", "Organisation"),
               )}
               {field(
                 "contactName",
-                language === "vi" ? "Họ tên người liên hệ" : "Contact name",
+                ui(language, "Họ tên người liên hệ", "Contact name"),
               )}
               {field("email", "Email", "email")}
-              {field("phone", language === "vi" ? "Số điện thoại" : "Phone")}
+              {field("phone", ui(language, "Số điện thoại", "Phone"))}
             </div>
           </div>
           <div className="form-section">
             <h2>
               3.{" "}
-              {language === "vi" ? "Gói hỗ trợ mong muốn" : "Preferred service"}
+              {ui(language, "Gói hỗ trợ mong muốn", "Preferred service")}
             </h2>
             <div className="service-options">
               {(isSupply
@@ -2365,29 +2285,23 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
           </div>
           <label className="consent">
             <input type="checkbox" required />
-            {language === "vi"
-              ? "Tôi đồng ý để VIG sử dụng thông tin đã cung cấp nhằm hỗ trợ tìm kiếm và kết nối đối tác."
-              : "I agree that VIG may use this information to coordinate the connection."}
+            {ui(language, "Tôi đồng ý để VIG sử dụng thông tin đã cung cấp nhằm hỗ trợ tìm kiếm và kết nối đối tác.", "I agree that VIG may use this information to coordinate the connection.")}
           </label>
           <button className="button primary submit">
             <Send />
-            {language === "vi" ? "Gửi yêu cầu cho VIG" : "Submit request"}
+            {ui(language, "Gửi yêu cầu cho VIG", "Submit request")}
           </button>
         </form>
         <aside className="request-aside">
           <ShieldCheck />
           <h3>
-            {language === "vi"
-              ? "Quy trình hỗ trợ của VIG"
-              : "Admin-assisted workflow"}
+            {ui(language, "Quy trình hỗ trợ của VIG", "Admin-assisted workflow")}
           </h3>
           {[
-            language === "vi" ? "Tiếp nhận yêu cầu" : "Receive request",
-            language === "vi" ? "Rà soát và xác minh" : "Verify information",
-            language === "vi"
-              ? "Đề xuất phương án phù hợp"
-              : "Match candidates",
-            language === "vi" ? "Kết nối các bên" : "Coordinate connection",
+            ui(language, "Tiếp nhận yêu cầu", "Receive request"),
+            ui(language, "Rà soát và xác minh", "Verify information"),
+            ui(language, "Đề xuất phương án phù hợp", "Match candidates"),
+            ui(language, "Kết nối các bên", "Coordinate connection"),
           ].map((x, i) => (
             <div key={x}>
               <span>{i + 1}</span>
@@ -2395,9 +2309,7 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
             </div>
           ))}
           <small>
-            {language === "vi"
-              ? "Phiên bản demo chỉ mô phỏng quy trình tiếp nhận và kết nối; không thực hiện giao dịch, thanh toán hoặc tổ chức cuộc họp."
-              : "The demo does not execute transactions, payments or live meetings."}
+            {ui(language, "Phiên bản demo chỉ mô phỏng quy trình tiếp nhận và kết nối; không thực hiện giao dịch, thanh toán hoặc tổ chức cuộc họp.", "The demo does not execute transactions, payments or live meetings.")}
           </small>
         </aside>
       </div>
@@ -2413,48 +2325,44 @@ function ConfirmationPage() {
       <div className="page confirmation">
         <CheckCircle2 />
         <span>
-          {language === "vi" ? "GỬI YÊU CẦU THÀNH CÔNG" : "SUBMITTED"}
+          {ui(language, "GỬI YÊU CẦU THÀNH CÔNG", "SUBMITTED")}
         </span>
         <h1>
-          {language === "vi"
-            ? "VIG đã tiếp nhận yêu cầu"
-            : "VIG received your request"}
+          {ui(language, "VIG đã tiếp nhận yêu cầu", "VIG received your request")}
         </h1>
         <p>
-          {language === "vi" ? "Mã tham chiếu" : "Reference"}: <b>{id}</b>
+          {ui(language, "Mã tham chiếu", "Reference")}: <b>{id}</b>
         </p>
         {r && (
           <div className="confirmation-card">
             <div>
               <small>
-                {language === "vi" ? "Doanh nghiệp" : "Organisation"}
+                {ui(language, "Doanh nghiệp", "Organisation")}
               </small>
               <b>{r.organization}</b>
             </div>
             <div>
-              <small>{language === "vi" ? "Dịch vụ" : "Service"}</small>
+              <small>{ui(language, "Dịch vụ", "Service")}</small>
               <b>{r.service}</b>
             </div>
             {r.industrialParkName && (
               <div>
-                <small>{language === "vi" ? "Khu công nghiệp" : "Industrial park"}</small>
+                <small>{ui(language, "Khu công nghiệp", "Industrial park")}</small>
                 <b>{r.industrialParkName}</b>
               </div>
             )}
             <div>
-              <small>{language === "vi" ? "Trạng thái" : "Status"}</small>
+              <small>{ui(language, "Trạng thái", "Status")}</small>
               <Badge value={r.status} />
             </div>
           </div>
         )}
         <p>
-          {language === "vi"
-            ? "VIG Admin đã được thông báo. Đây là luồng mô phỏng và không gửi dữ liệu ra bên ngoài."
-            : "VIG Admin has been notified. This is a simulation and no data was transmitted externally."}
+          {ui(language, "VIG Admin đã được thông báo. Đây là luồng mô phỏng và không gửi dữ liệu ra bên ngoài.", "VIG Admin has been notified. This is a simulation and no data was transmitted externally.")}
         </p>
         <div>
           <Link className="button primary" to="/industrial-parks">
-            {language === "vi" ? "Tiếp tục khám phá" : "Continue exploring"}
+            {ui(language, "Tiếp tục khám phá", "Continue exploring")}
           </Link>
           <Link className="button outline" to="/home">
             Home
@@ -2471,16 +2379,12 @@ function ExpoPage() {
       <div className="expo-hero">
         <div className="page">
           <Globe2 />
-          <span>DIGITAL TRADEXPO</span>
+          <span>{ui(language, "TRIỂN LÃM CÔNG NGHIỆP SỐ", "DIGITAL TRADEXPO")}</span>
           <h1>
-            {language === "vi"
-              ? "Triển lãm Công nghiệp số"
-              : "Digital Industrial Expo"}
+            {ui(language, "Triển lãm Công nghiệp số", "Digital Industrial Expo")}
           </h1>
           <p>
-            {language === "vi"
-              ? "Kết nối doanh nghiệp Việt Nam với thị trường quốc tế qua gian hàng số và phiên kết nối trực tuyến."
-              : "Connect Vietnamese enterprises with global markets through digital booths and online sessions."}
+            {ui(language, "Kết nối doanh nghiệp Việt Nam với thị trường quốc tế qua gian hàng số và phiên kết nối trực tuyến.", "Connect Vietnamese enterprises with global markets through digital booths and online sessions.")}
           </p>
         </div>
       </div>
@@ -2507,13 +2411,11 @@ function ExpoPage() {
                 className="button primary"
                 onClick={() =>
                   alert(
-                    language === "vi"
-                      ? "Mô phỏng: mở trang chi tiết Expo"
-                      : "Demo: open Expo detail",
+                    ui(language, "Mô phỏng: mở trang chi tiết Expo", "Demo: open Expo detail"),
                   )
                 }
               >
-                {language === "vi" ? "Khám phá Expo" : "Explore Expo"}
+                {ui(language, "Khám phá Expo", "Explore Expo")}
               </button>
             </article>
           ))}
@@ -2531,14 +2433,10 @@ function LoginPage() {
         <div className="login-card">
           <span className="brand-mark">VIG</span>
           <h1>
-            {language === "vi"
-              ? "Truy cập hệ thống quản trị VIG"
-              : "Access VIG Admin"}
+            {ui(language, "Truy cập hệ thống quản trị VIG", "Access VIG Admin")}
           </h1>
           <p>
-            {language === "vi"
-              ? "Phiên bản demo cho phép truy cập trực tiếp, không yêu cầu tài khoản."
-              : "Demo mode does not require real credentials."}
+            {ui(language, "Phiên bản demo cho phép truy cập trực tiếp, không yêu cầu tài khoản.", "Demo mode does not require real credentials.")}
           </p>
           <button
             className="button primary"
@@ -2548,12 +2446,10 @@ function LoginPage() {
             }}
           >
             <ShieldCheck />{" "}
-            {language === "vi" ? "Vào trang quản trị" : "Enter admin console"}
+            {ui(language, "Vào trang quản trị", "Enter admin console")}
           </button>
           <Link to="/home">
-            {language === "vi"
-              ? "Quay lại trang công khai"
-              : "Return to public portal"}
+            {ui(language, "Quay lại trang công khai", "Return to public portal")}
           </Link>
         </div>
       </div>
@@ -2577,22 +2473,22 @@ function AdminShell({ children }: { children: ReactNode }) {
     [
       "/admin/dashboard",
       LayoutDashboard,
-      language === "vi" ? "Tổng quan" : "Overview",
+      ui(language, "Tổng quan", "Overview"),
     ],
     [
       "/admin/industrial-parks",
       Factory,
-      language === "vi" ? "Dữ liệu KCN" : "Park data",
+      ui(language, "Dữ liệu KCN", "Park data"),
     ],
     [
       "/admin/expos",
       BarChart3,
-      language === "vi" ? "Quản lý Expo" : "Expo management",
+      ui(language, "Quản lý Expo", "Expo management"),
     ],
     [
       "/admin/requests",
       ClipboardCheck,
-      language === "vi" ? "Quản lý yêu cầu" : "Request management",
+      ui(language, "Quản lý yêu cầu", "Request management"),
     ],
   ];
   return (
@@ -2602,7 +2498,7 @@ function AdminShell({ children }: { children: ReactNode }) {
           <span>VIG</span>
           <div>
             <b>VIG Admin</b>
-            <small>Operations Console</small>
+            <small>{ui(language, "Trung tâm vận hành", "Operations Console")}</small>
           </div>
         </Link>
         <nav>
@@ -2625,11 +2521,11 @@ function AdminShell({ children }: { children: ReactNode }) {
         <div className="sidebar-bottom">
           <button onClick={resetDemo}>
             <RotateCcw />
-            {language === "vi" ? "Khôi phục dữ liệu demo" : "Reset demo"}
+            {ui(language, "Khôi phục dữ liệu demo", "Reset demo")}
           </button>
           <button onClick={openPublicPortal}>
             <Globe2 />
-            {language === "vi" ? "Trang công khai" : "Public portal"}
+            {ui(language, "Trang công khai", "Public portal")}
           </button>
         </div>
       </aside>
@@ -2637,21 +2533,17 @@ function AdminShell({ children }: { children: ReactNode }) {
         <header>
           <div>
             <b>
-              {language === "vi"
-                ? "Trung tâm điều hành VIG"
-                : "VIG Operations Centre"}
+              {ui(language, "Trung tâm điều hành VIG", "VIG Operations Centre")}
             </b>
             <small>
-              {language === "vi"
-                ? "Quản trị dữ liệu và kết nối đầu tư"
-                : "Industrial data and connections"}
+              {ui(language, "Quản trị dữ liệu và kết nối đầu tư", "Industrial data and connections")}
             </small>
           </div>
           <div className="admin-mobile-actions">
             <LanguageToggle compact />
             <button
               aria-label={
-                language === "vi" ? "Khôi phục dữ liệu demo" : "Reset demo"
+                ui(language, "Khôi phục dữ liệu demo", "Reset demo")
               }
               onClick={resetDemo}
             >
@@ -2659,7 +2551,7 @@ function AdminShell({ children }: { children: ReactNode }) {
             </button>
             <button
               aria-label={
-                language === "vi" ? "Trang công khai" : "Public portal"
+                ui(language, "Trang công khai", "Public portal")
               }
               onClick={openPublicPortal}
             >
@@ -2723,26 +2615,26 @@ function AdminDashboard() {
       <div className="admin-page">
         <div className="admin-title">
           <div>
-            <span>VIG OPERATIONS</span>
+            <span>{ui(language, "VẬN HÀNH VIG", "VIG OPERATIONS")}</span>
             <h1>
-              {language === "vi" ? "Tổng quan vận hành" : "Operations overview"}
+              {ui(language, "Tổng quan vận hành", "Operations overview")}
             </h1>
           </div>
           <Link className="button primary" to="/admin/requests">
             <ClipboardCheck />{" "}
-            {language === "vi" ? "Xử lý yêu cầu" : "Process requests"}
+            {ui(language, "Xử lý yêu cầu", "Process requests")}
           </Link>
         </div>
         <div className="kpi-grid">
           <Kpi
             label={
-              language === "vi" ? "Hồ sơ khu công nghiệp" : "Park profiles"
+              ui(language, "Hồ sơ khu công nghiệp", "Park profiles")
             }
             value={parks.length}
             icon={Factory}
           />
           <Kpi
-            label={language === "vi" ? "Hồ sơ đã công bố" : "Published"}
+            label={ui(language, "Hồ sơ đã công bố", "Published")}
             value={
               parks.filter((p) => p.publicationStatus === "published").length
             }
@@ -2750,7 +2642,7 @@ function AdminDashboard() {
             tone="green"
           />
           <Kpi
-            label={language === "vi" ? "Kết nối" : "Connections"}
+            label={ui(language, "Kết nối", "Connections")}
             value={
               requests.length +
               expos.reduce(
@@ -2765,7 +2657,7 @@ function AdminDashboard() {
             tone="gold"
           />
           <Kpi
-            label={language === "vi" ? "Kết nối thành công" : "Completed connections"}
+            label={ui(language, "Kết nối thành công", "Completed connections")}
             value={expos.reduce((total, expo) => total + expo.analytics.completedConnections, 0)}
             icon={Handshake}
             tone="green"
@@ -2775,10 +2667,10 @@ function AdminDashboard() {
           <section className="admin-panel">
             <div className="panel-head">
               <h2>
-                {language === "vi" ? "Yêu cầu mới nhất" : "Recent requests"}
+                {ui(language, "Yêu cầu mới nhất", "Recent requests")}
               </h2>
               <Link to="/admin/requests">
-                {language === "vi" ? "Xem tất cả" : "View all"}
+                {ui(language, "Xem tất cả", "View all")}
               </Link>
             </div>
             <RequestTable requests={requests.slice(0, 5)} />
@@ -2786,12 +2678,10 @@ function AdminDashboard() {
           <section className="admin-panel">
             <div className="panel-head">
               <h2>
-                {language === "vi"
-                  ? "Đối chiếu bộ dữ liệu chuẩn"
-                  : "Dataset standard review"}
+                {ui(language, "Đối chiếu bộ dữ liệu chuẩn", "Dataset standard review")}
               </h2>
               <Link to="/admin/industrial-parks">
-                {language === "vi" ? "Quản lý hồ sơ" : "Manage"}
+                {ui(language, "Quản lý hồ sơ", "Manage")}
               </Link>
             </div>
             <div className="quality-list">
@@ -2807,12 +2697,8 @@ function AdminDashboard() {
                     </div>
                     <span className={`standard-state ${missingRequired ? "missing" : "available"}`}>
                       {missingRequired
-                        ? language === "vi"
-                          ? "Cần bổ sung"
-                          : "Needs data"
-                        : language === "vi"
-                          ? "Đủ nhóm bắt buộc"
-                          : "Required groups present"}
+                        ? ui(language, "Cần bổ sung", "Needs data")
+                        : ui(language, "Đủ nhóm bắt buộc", "Required groups present")}
                     </span>
                   </Link>
                 );
@@ -2825,14 +2711,16 @@ function AdminDashboard() {
   );
 }
 
-const formatReportNumber = (value: number, language: "vi" | "en") =>
-  new Intl.NumberFormat(language === "vi" ? "vi-VN" : "en-US", {
+const formatReportNumber = (value: number, language: Language) =>
+  new Intl.NumberFormat(ui(language, "vi-VN", "en-US"), {
     notation: value >= 10000 ? "compact" : "standard",
     maximumFractionDigits: 1,
   }).format(value);
-const formatReportUsd = (value: number, language: "vi" | "en") =>
+const formatReportUsd = (value: number, language: Language) =>
   language === "vi"
     ? `${new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 1 }).format(value / 1_000_000)} triệu USD`
+    : language === "zh"
+      ? `${new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 1 }).format(value / 1_000_000)}百万美元`
     : `$${new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 }).format(value / 1_000_000)}M`;
 
 function ExpoTrendChart({ data }: { data: ExpoDailyMetric[] }) {
@@ -2854,10 +2742,10 @@ function ExpoTrendChart({ data }: { data: ExpoDailyMetric[] }) {
   return (
     <div className="expo-trend-chart">
       <div className="chart-legend">
-        <span><i className="request" />{language === "vi" ? "Kết nối" : "Connections"}</span>
-        <span><i className="connection" />{language === "vi" ? "Thành công" : "Completed"}</span>
+        <span><i className="request" />{ui(language, "Kết nối", "Connections")}</span>
+        <span><i className="connection" />{ui(language, "Thành công", "Completed")}</span>
       </div>
-      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={language === "vi" ? "Biểu đồ xu hướng kết nối" : "Connection trend chart"}>
+      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={ui(language, "Biểu đồ xu hướng kết nối", "Connection trend chart")}>
         {[0, 1, 2, 3].map((line) => {
           const y = chartTop + (line / 3) * (chartBottom - chartTop);
           return <line key={line} x1={left} x2={right} y1={y} y2={y} className="chart-grid-line" />;
@@ -2905,58 +2793,58 @@ function AdminExpos() {
       <div className="admin-page expo-admin-page">
         <div className="admin-title">
           <div>
-            <span>EXPO OPERATIONS</span>
-            <h1>{language === "vi" ? "Quản lý Expo" : "Expo Management"}</h1>
-            <p>{language === "vi" ? "Theo dõi yêu cầu, giao dịch và kết quả kết nối theo từng Expo." : "Track requests, deals, and connection outcomes for each Expo."}</p>
+            <span>{ui(language, "VẬN HÀNH EXPO", "EXPO OPERATIONS")}</span>
+            <h1>{ui(language, "Quản lý Expo", "Expo Management")}</h1>
+            <p>{ui(language, "Theo dõi yêu cầu, giao dịch và kết quả kết nối theo từng Expo.", "Track requests, deals, and connection outcomes for each Expo.")}</p>
           </div>
-          <span className="demo-data-label">{language === "vi" ? "Dữ liệu mô phỏng" : "Demo data"}</span>
+          <span className="demo-data-label">{ui(language, "Dữ liệu mô phỏng", "Demo data")}</span>
         </div>
         <div className="kpi-grid">
-          <Kpi label={language === "vi" ? "Expo đang quản lý" : "Managed Expos"} value={expos.length} icon={Globe2} />
-          <Kpi label={language === "vi" ? "Đơn vị trưng bày" : "Exhibitors"} value={formatReportNumber(totals.exhibitors, language)} icon={Building2} tone="gold" />
-          <Kpi label={language === "vi" ? "Kết nối" : "Connections"} value={formatReportNumber(totals.connections, language)} icon={Handshake} />
-          <Kpi label={language === "vi" ? "Kết nối thành công" : "Completed connections"} value={formatReportNumber(totals.completed, language)} icon={Handshake} tone="green" />
+          <Kpi label={ui(language, "Expo đang quản lý", "Managed Expos")} value={expos.length} icon={Globe2} />
+          <Kpi label={ui(language, "Đơn vị trưng bày", "Exhibitors")} value={formatReportNumber(totals.exhibitors, language)} icon={Building2} tone="gold" />
+          <Kpi label={ui(language, "Kết nối", "Connections")} value={formatReportNumber(totals.connections, language)} icon={Handshake} />
+          <Kpi label={ui(language, "Kết nối thành công", "Completed connections")} value={formatReportNumber(totals.completed, language)} icon={Handshake} tone="green" />
         </div>
         <div className="expo-report-grid">
           <section className="admin-panel expo-chart-panel">
             <div className="panel-head">
               <div>
-                <h2><BarChart3 /> {language === "vi" ? "Xu hướng hoạt động kết nối" : "Connection activity trend"}</h2>
-                <small>{language === "vi" ? "Tổng hợp 7 ngày gần nhất từ tất cả Expo" : "Combined last 7 days across all Expos"}</small>
+                <h2><BarChart3 /> {ui(language, "Xu hướng hoạt động kết nối", "Connection activity trend")}</h2>
+                <small>{ui(language, "Tổng hợp 7 ngày gần nhất từ tất cả Expo", "Combined last 7 days across all Expos")}</small>
               </div>
             </div>
             <ExpoTrendChart data={trend} />
           </section>
           <section className="admin-panel connection-summary-panel">
-            <div className="panel-head"><h2><Handshake /> {language === "vi" ? "Tổng quan chuyển đổi" : "Conversion overview"}</h2></div>
+            <div className="panel-head"><h2><Handshake /> {ui(language, "Tổng quan chuyển đổi", "Conversion overview")}</h2></div>
             <div className="conversion-ring" style={{ "--progress": `${Math.round((totals.completed / allConnections) * 100)}%` } as CSSProperties}>
-              <div><b>{Math.round((totals.completed / allConnections) * 100)}%</b><span>{language === "vi" ? "Kết nối → thành công" : "Connection → completed"}</span></div>
+              <div><b>{Math.round((totals.completed / allConnections) * 100)}%</b><span>{ui(language, "Kết nối → thành công", "Connection → completed")}</span></div>
             </div>
             <div className="connection-mini-stats">
-              <div><span>{language === "vi" ? "Giao dịch I/O" : "I/O deals"}</span><b>{totals.deals}</b></div>
-              <div><span>{language === "vi" ? "Expo đang diễn ra" : "Live Expos"}</span><b>{expos.filter((expo) => expo.status === "live").length}</b></div>
+              <div><span>{ui(language, "Giao dịch I/O", "I/O deals")}</span><b>{totals.deals}</b></div>
+              <div><span>{ui(language, "Expo đang diễn ra", "Live Expos")}</span><b>{expos.filter((expo) => expo.status === "live").length}</b></div>
             </div>
           </section>
         </div>
         <section className="admin-panel">
           <div className="panel-head">
             <div>
-              <h2>{language === "vi" ? "Báo cáo theo Expo" : "Reports by Expo"}</h2>
-              <small>{language === "vi" ? "Chọn một Expo để xem báo cáo kết nối chi tiết." : "Select an Expo to review its detailed connection report."}</small>
+              <h2>{ui(language, "Báo cáo theo Expo", "Reports by Expo")}</h2>
+              <small>{ui(language, "Chọn một Expo để xem báo cáo kết nối chi tiết.", "Select an Expo to review its detailed connection report.")}</small>
             </div>
           </div>
           <div className="admin-filter expo-report-filter">
-            <label><Search /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={language === "vi" ? "Tìm theo tên hoặc thị trường" : "Search name or market"} /></label>
+            <label><Search /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={ui(language, "Tìm theo tên hoặc thị trường", "Search name or market")} /></label>
             <select value={status} onChange={(event) => setStatus(event.target.value)}>
-              <option value="all">{language === "vi" ? "Tất cả trạng thái" : "All statuses"}</option>
-              <option value="live">{language === "vi" ? "Đang diễn ra" : "Live"}</option>
-              <option value="upcoming">{language === "vi" ? "Sắp diễn ra" : "Upcoming"}</option>
+              <option value="all">{ui(language, "Tất cả trạng thái", "All statuses")}</option>
+              <option value="live">{ui(language, "Đang diễn ra", "Live")}</option>
+              <option value="upcoming">{ui(language, "Sắp diễn ra", "Upcoming")}</option>
             </select>
           </div>
           <div className="table-wrap expo-report-table">
             <table>
               <thead><tr>
-                <th>Expo</th><th>{language === "vi" ? "Trạng thái" : "Status"}</th><th>{language === "vi" ? "Khách truy cập" : "Visitors"}</th><th>{language === "vi" ? "Kết nối I / O" : "Connections I / O"}</th><th>{language === "vi" ? "Giao dịch I / O" : "Deals I / O"}</th><th>{language === "vi" ? "Kết nối thành công" : "Completed"}</th><th></th>
+                <th>Expo</th><th>{ui(language, "Trạng thái", "Status")}</th><th>{ui(language, "Khách truy cập", "Visitors")}</th><th>{ui(language, "Kết nối I / O", "Connections I / O")}</th><th>{ui(language, "Giao dịch I / O", "Deals I / O")}</th><th>{ui(language, "Kết nối thành công", "Completed")}</th><th></th>
               </tr></thead>
               <tbody>{filtered.map((expo) => <tr key={expo.id}>
                 <td><b>{tr(expo.title, language)}</b><small>{expo.market} · {expo.date}</small></td>
@@ -2965,12 +2853,12 @@ function AdminExpos() {
                 <td><span className="io-metric"><i>I</i>{expo.analytics.inboundRequests}<i>O</i>{expo.analytics.outboundRequests}</span></td>
                 <td><span className="io-metric"><i>I</i>{expo.analytics.inboundDeals}<i>O</i>{expo.analytics.outboundDeals}</span></td>
                 <td><b className="success-value">{expo.analytics.completedConnections}</b></td>
-                <td><Link className="table-action" to={`/admin/expos/${expo.id}`}>{language === "vi" ? "Xem báo cáo" : "View report"}<ChevronRight /></Link></td>
+                <td><Link className="table-action" to={`/admin/expos/${expo.id}`}>{ui(language, "Xem báo cáo", "View report")}<ChevronRight /></Link></td>
               </tr>)}</tbody>
             </table>
           </div>
         </section>
-        <p className="report-source-note">{language === "vi" ? "Mô hình báo cáo tham chiếu Partner Portal: RFQ và Request được hợp nhất thành chỉ số Kết nối; khách truy cập được cập nhật gần thời gian thực; đơn vị trưng bày và sản phẩm theo bản chụp. Bản TSX này sử dụng dữ liệu mô phỏng tĩnh." : "Reporting model adapted from Partner Portal: RFQs and Requests are consolidated into the Connection metric; visitors are near real time, while exhibitor and product totals are snapshots. This TSX demo uses static fixture data."}</p>
+        <p className="report-source-note">{ui(language, "Mô hình báo cáo tham chiếu Partner Portal: RFQ và Request được hợp nhất thành chỉ số Kết nối; khách truy cập được cập nhật gần thời gian thực; đơn vị trưng bày và sản phẩm theo bản chụp. Bản TSX này sử dụng dữ liệu mô phỏng tĩnh.", "Reporting model adapted from Partner Portal: RFQs and Requests are consolidated into the Connection metric; visitors are near real time, while exhibitor and product totals are snapshots. This TSX demo uses static fixture data.")}</p>
       </div>
     </AdminShell>
   );
@@ -2988,41 +2876,41 @@ function AdminExpoDetail() {
   return (
     <AdminShell>
       <div className="admin-page expo-admin-page">
-        <div className="admin-breadcrumb"><Link to="/admin/expos">{language === "vi" ? "Quản lý Expo" : "Expo Management"}</Link><ChevronRight />{tr(expo.title, language)}</div>
+        <div className="admin-breadcrumb"><Link to="/admin/expos">{ui(language, "Quản lý Expo", "Expo Management")}</Link><ChevronRight />{tr(expo.title, language)}</div>
         <div className="admin-title expo-detail-title">
-          <div><div className="title-badges"><ExpoStatus expo={expo} /><span className="demo-data-label">{language === "vi" ? "Dữ liệu mô phỏng" : "Demo data"}</span></div><h1>{tr(expo.title, language)}</h1><p>{expo.market} · {expo.date} · {expo.industries.map((industry) => industryLabel(industry, language)).join(" · ")}</p></div>
-          <div className="report-updated"><Clock3 /><span>{language === "vi" ? "Cập nhật lúc" : "Updated"}<b>{new Date(report.updatedAt).toLocaleString(language === "vi" ? "vi-VN" : "en-US")}</b></span></div>
+          <div><div className="title-badges"><ExpoStatus expo={expo} /><span className="demo-data-label">{ui(language, "Dữ liệu mô phỏng", "Demo data")}</span></div><h1>{tr(expo.title, language)}</h1><p>{expo.market} · {expo.date} · {expo.industries.map((industry) => industryLabel(industry, language)).join(" · ")}</p></div>
+          <div className="report-updated"><Clock3 /><span>{ui(language, "Cập nhật lúc", "Updated")}<b>{new Date(report.updatedAt).toLocaleString(ui(language, "vi-VN", "en-US"))}</b></span></div>
         </div>
         <div className="kpi-grid">
-          <Kpi label={language === "vi" ? "Khách truy cập" : "Visitors"} value={formatReportNumber(report.visitors, language)} icon={Users} />
-          <Kpi label={language === "vi" ? "Đơn vị trưng bày" : "Exhibitors"} value={expo.exhibitors} icon={Building2} tone="gold" />
-          <Kpi label={language === "vi" ? "Sản phẩm trưng bày" : "Products"} value={formatReportNumber(report.products, language)} icon={PackageSearch} />
-          <Kpi label={language === "vi" ? "Kết nối thành công" : "Completed connections"} value={report.completedConnections} icon={Handshake} tone="green" />
+          <Kpi label={ui(language, "Khách truy cập", "Visitors")} value={formatReportNumber(report.visitors, language)} icon={Users} />
+          <Kpi label={ui(language, "Đơn vị trưng bày", "Exhibitors")} value={expo.exhibitors} icon={Building2} tone="gold" />
+          <Kpi label={ui(language, "Sản phẩm trưng bày", "Products")} value={formatReportNumber(report.products, language)} icon={PackageSearch} />
+          <Kpi label={ui(language, "Kết nối thành công", "Completed connections")} value={report.completedConnections} icon={Handshake} tone="green" />
         </div>
         <div className="expo-report-grid">
           <section className="admin-panel expo-chart-panel">
-            <div className="panel-head"><div><h2><BarChart3 /> {language === "vi" ? "Kết nối và kết quả theo ngày" : "Daily connections and outcomes"}</h2><small>{language === "vi" ? "Hoạt động trong 7 ngày gần nhất" : "Activity over the last 7 days"}</small></div></div>
+            <div className="panel-head"><div><h2><BarChart3 /> {ui(language, "Kết nối và kết quả theo ngày", "Daily connections and outcomes")}</h2><small>{ui(language, "Hoạt động trong 7 ngày gần nhất", "Activity over the last 7 days")}</small></div></div>
             <ExpoTrendChart data={report.trend} />
           </section>
           <section className="admin-panel connection-summary-panel">
-            <div className="panel-head"><h2><Activity /> {language === "vi" ? "Hiệu quả kết nối" : "Connection performance"}</h2></div>
-            <div className="conversion-ring" style={{ "--progress": `${conversion}%` } as CSSProperties}><div><b>{conversion}%</b><span>{language === "vi" ? "Kết nối → thành công" : "Connection → completed"}</span></div></div>
-            <div className="connection-mini-stats"><div><span>{language === "vi" ? "Đang kết nối" : "Active"}</span><b>{report.activeConnections}</b></div><div><span>{language === "vi" ? "Giá trị giao dịch dự kiến" : "Est. deal value"}</span><b>{formatReportUsd(report.estimatedDealValueUsd, language)}</b></div></div>
+            <div className="panel-head"><h2><Activity /> {ui(language, "Hiệu quả kết nối", "Connection performance")}</h2></div>
+            <div className="conversion-ring" style={{ "--progress": `${conversion}%` } as CSSProperties}><div><b>{conversion}%</b><span>{ui(language, "Kết nối → thành công", "Connection → completed")}</span></div></div>
+            <div className="connection-mini-stats"><div><span>{ui(language, "Đang kết nối", "Active")}</span><b>{report.activeConnections}</b></div><div><span>{ui(language, "Giá trị giao dịch dự kiến", "Est. deal value")}</span><b>{formatReportUsd(report.estimatedDealValueUsd, language)}</b></div></div>
           </section>
         </div>
         <section className="admin-panel">
-          <div className="panel-head"><div><h2><Handshake /> {language === "vi" ? "Hoạt động kết nối hai chiều" : "Inbound / outbound connection activity"}</h2><small>{language === "vi" ? "I = tiếp nhận từ đối tác; O = chủ động gửi tới đối tác." : "I = received from partners; O = initiated toward partners."}</small></div></div>
+          <div className="panel-head"><div><h2><Handshake /> {ui(language, "Hoạt động kết nối hai chiều", "Inbound / outbound connection activity")}</h2><small>{ui(language, "I = tiếp nhận từ đối tác; O = chủ động gửi tới đối tác.", "I = received from partners; O = initiated toward partners.")}</small></div></div>
           <div className="io-report-grid">
-            <article className="io-report-card inbound"><div><span>I</span><div><b>{language === "vi" ? "Luồng tiếp nhận" : "Inbound"}</b><small>{language === "vi" ? "Nhu cầu gửi đến đơn vị trưng bày" : "Demand received by exhibitors"}</small></div></div><dl><div><dt>{language === "vi" ? "Kết nối" : "Connections"}</dt><dd>{report.inboundRequests}</dd></div><div><dt>{language === "vi" ? "Giao dịch" : "Deals"}</dt><dd>{report.inboundDeals}</dd></div></dl></article>
-            <article className="io-report-card outbound"><div><span>O</span><div><b>{language === "vi" ? "Luồng chủ động" : "Outbound"}</b><small>{language === "vi" ? "Nhu cầu do đơn vị tham gia khởi tạo" : "Demand initiated by participants"}</small></div></div><dl><div><dt>{language === "vi" ? "Kết nối" : "Connections"}</dt><dd>{report.outboundRequests}</dd></div><div><dt>{language === "vi" ? "Giao dịch" : "Deals"}</dt><dd>{report.outboundDeals}</dd></div></dl></article>
-            <article className="io-report-card completed"><div><CheckCircle2 /><div><b>{language === "vi" ? "Kết nối thành công" : "Completed connections"}</b><small>{language === "vi" ? "Hai bên đã xác nhận kết quả kết nối" : "Outcome confirmed by both parties"}</small></div></div><strong>{report.completedConnections}</strong></article>
+            <article className="io-report-card inbound"><div><span>I</span><div><b>{ui(language, "Luồng tiếp nhận", "Inbound")}</b><small>{ui(language, "Nhu cầu gửi đến đơn vị trưng bày", "Demand received by exhibitors")}</small></div></div><dl><div><dt>{ui(language, "Kết nối", "Connections")}</dt><dd>{report.inboundRequests}</dd></div><div><dt>{ui(language, "Giao dịch", "Deals")}</dt><dd>{report.inboundDeals}</dd></div></dl></article>
+            <article className="io-report-card outbound"><div><span>O</span><div><b>{ui(language, "Luồng chủ động", "Outbound")}</b><small>{ui(language, "Nhu cầu do đơn vị tham gia khởi tạo", "Demand initiated by participants")}</small></div></div><dl><div><dt>{ui(language, "Kết nối", "Connections")}</dt><dd>{report.outboundRequests}</dd></div><div><dt>{ui(language, "Giao dịch", "Deals")}</dt><dd>{report.outboundDeals}</dd></div></dl></article>
+            <article className="io-report-card completed"><div><CheckCircle2 /><div><b>{ui(language, "Kết nối thành công", "Completed connections")}</b><small>{ui(language, "Hai bên đã xác nhận kết quả kết nối", "Outcome confirmed by both parties")}</small></div></div><strong>{report.completedConnections}</strong></article>
           </div>
         </section>
         <div className="expo-report-grid lower">
-          <section className="admin-panel"><div className="panel-head"><h2>{language === "vi" ? "Hiệu quả theo ngành" : "Performance by industry"}</h2></div><div className="industry-report-list">{report.topIndustries.map((item) => <div key={item.industry}><span><b>{industryLabel(item.industry, language)}</b><small>{item.requests} {language === "vi" ? "kết nối" : "connections"}</small></span><strong>{item.connections}<small>{language === "vi" ? " thành công" : " completed"}</small></strong></div>)}</div></section>
-          <section className="admin-panel"><div className="panel-head"><h2>{language === "vi" ? "Kết nối theo thị trường" : "Connections by market"}</h2></div><div className="market-report-bars">{report.topMarkets.map((item) => <div key={item.market}><span><b>{item.market}</b><strong>{item.connections}</strong></span><i><em style={{ width: `${(item.connections / maxMarket) * 100}%` }} /></i></div>)}</div></section>
+          <section className="admin-panel"><div className="panel-head"><h2>{ui(language, "Hiệu quả theo ngành", "Performance by industry")}</h2></div><div className="industry-report-list">{report.topIndustries.map((item) => <div key={item.industry}><span><b>{industryLabel(item.industry, language)}</b><small>{item.requests} {ui(language, "kết nối", "connections")}</small></span><strong>{item.connections}<small>{ui(language, " thành công", " completed")}</small></strong></div>)}</div></section>
+          <section className="admin-panel"><div className="panel-head"><h2>{ui(language, "Kết nối theo thị trường", "Connections by market")}</h2></div><div className="market-report-bars">{report.topMarkets.map((item) => <div key={item.market}><span><b>{item.market}</b><strong>{item.connections}</strong></span><i><em style={{ width: `${(item.connections / maxMarket) * 100}%` }} /></i></div>)}</div></section>
         </div>
-        <section className="admin-panel metric-definition-panel"><div className="panel-head"><h2>{language === "vi" ? "Định nghĩa chỉ số" : "Metric definitions"}</h2></div><div className="metric-definitions"><p><b>{language === "vi" ? "Kết nối I/O" : "Connections I/O"}</b>{language === "vi" ? "Hợp nhất RFQ và Request được tiếp nhận hoặc chủ động gửi trong Expo." : "Consolidates RFQs and Requests received or initiated within the Expo."}</p><p><b>{language === "vi" ? "Giao dịch I/O" : "Deals I/O"}</b>{language === "vi" ? "Cơ hội giao dịch được tạo từ luồng tiếp nhận hoặc chủ động." : "Deal opportunities created from inbound or outbound activity."}</p><p><b>{language === "vi" ? "Kết nối thành công" : "Completed connection"}</b>{language === "vi" ? "Kết nối được hai bên xác nhận; không đồng nghĩa giao dịch đã ký hoặc đã thanh toán." : "A connection confirmed by both parties; it does not mean a contract was signed or paid."}</p></div></section>
+        <section className="admin-panel metric-definition-panel"><div className="panel-head"><h2>{ui(language, "Định nghĩa chỉ số", "Metric definitions")}</h2></div><div className="metric-definitions"><p><b>{ui(language, "Kết nối I/O", "Connections I/O")}</b>{ui(language, "Hợp nhất RFQ và Request được tiếp nhận hoặc chủ động gửi trong Expo.", "Consolidates RFQs and Requests received or initiated within the Expo.")}</p><p><b>{ui(language, "Giao dịch I/O", "Deals I/O")}</b>{ui(language, "Cơ hội giao dịch được tạo từ luồng tiếp nhận hoặc chủ động.", "Deal opportunities created from inbound or outbound activity.")}</p><p><b>{ui(language, "Kết nối thành công", "Completed connection")}</b>{ui(language, "Kết nối được hai bên xác nhận; không đồng nghĩa giao dịch đã ký hoặc đã thanh toán.", "A connection confirmed by both parties; it does not mean a contract was signed or paid.")}</p></div></section>
       </div>
     </AdminShell>
   );
@@ -3036,10 +2924,10 @@ function RequestTable({ requests }: { requests: IndustrialRequest[] }) {
         <thead>
           <tr>
             <th>ID</th>
-            <th>{language === "vi" ? "Loại" : "Funnel"}</th>
-            <th>{language === "vi" ? "Doanh nghiệp" : "Organisation"}</th>
-            <th>{language === "vi" ? "Tỉnh/thành, khu vực" : "Location"}</th>
-            <th>{language === "vi" ? "Trạng thái" : "Status"}</th>
+            <th>{ui(language, "Loại", "Funnel")}</th>
+            <th>{ui(language, "Doanh nghiệp", "Organisation")}</th>
+            <th>{ui(language, "Tỉnh/thành, khu vực", "Location")}</th>
+            <th>{ui(language, "Trạng thái", "Status")}</th>
             <th>SLA</th>
           </tr>
         </thead>
@@ -3050,7 +2938,9 @@ function RequestTable({ requests }: { requests: IndustrialRequest[] }) {
                 <Link to={`/admin/requests/${r.id}`}>{r.id}</Link>
               </td>
               <td>
-                {r.kind === "find_supply" ? "Find Supply" : "Find Demand"}
+                {r.kind === "find_supply"
+                  ? ui(language, "Tìm mặt bằng", "Find Supply")
+                  : ui(language, "Tìm khách thuê/mua", "Find Demand")}
               </td>
               <td>
                 <b>{r.organization}</b>
@@ -3070,7 +2960,7 @@ function RequestTable({ requests }: { requests: IndustrialRequest[] }) {
                 >
                   {["submitted", "under_review"].includes(r.status)
                     ? "4h"
-                    : "On track"}
+                    : ui(language, "Đúng tiến độ", "On track")}
                 </span>
               </td>
             </tr>
@@ -3095,16 +2985,12 @@ function AdminRequests() {
       <div className="admin-page">
         <div className="admin-title">
           <div>
-            <span>REQUEST MANAGEMENT</span>
+            <span>{ui(language, "QUẢN LÝ YÊU CẦU", "REQUEST MANAGEMENT")}</span>
             <h1>
-              {language === "vi"
-                ? "Quản lý yêu cầu Cung – Cầu"
-                : "Supply–Demand request management"}
+              {ui(language, "Quản lý yêu cầu Cung – Cầu", "Supply–Demand request management")}
             </h1>
             <p>
-              {language === "vi"
-                ? "Tiếp nhận, xác minh, ghép nối và điều phối kết nối."
-                : "Receive, verify, match and coordinate connections."}
+              {ui(language, "Tiếp nhận, xác minh, ghép nối và điều phối kết nối.", "Receive, verify, match and coordinate connections.")}
             </p>
           </div>
         </div>
@@ -3115,15 +3001,13 @@ function AdminRequests() {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder={
-                language === "vi"
-                  ? "Tìm mã hoặc doanh nghiệp"
-                  : "Search ID or organisation"
+                ui(language, "Tìm mã hoặc doanh nghiệp", "Search ID or organisation")
               }
             />
           </label>
           <select value={status} onChange={(e) => setStatus(e.target.value)}>
             <option value="all">
-              {language === "vi" ? "Tất cả trạng thái" : "All statuses"}
+              {ui(language, "Tất cả trạng thái", "All statuses")}
             </option>
             {Object.keys(requestTransitions).map((x) => (
               <option value={x} key={x}>
@@ -3173,7 +3057,7 @@ function RequestDetail() {
             <p>
               {r.id} ·{" "}
               {new Date(r.submittedAt).toLocaleString(
-                language === "vi" ? "vi-VN" : "en-US",
+                ui(language, "vi-VN", "en-US"),
               )}
             </p>
           </div>
@@ -3183,12 +3067,12 @@ function RequestDetail() {
           <div>
             <section className="admin-panel request-summary">
               <h2>
-                {language === "vi" ? "Chi tiết yêu cầu" : "Request details"}
+                {ui(language, "Chi tiết yêu cầu", "Request details")}
               </h2>
               <div className="info-grid">
                 <div>
                   <small>
-                    {language === "vi" ? "Người liên hệ" : "Contact"}
+                    {ui(language, "Người liên hệ", "Contact")}
                   </small>
                   <b>{r.contactName}</b>
                   <span>
@@ -3197,14 +3081,14 @@ function RequestDetail() {
                 </div>
                 <div>
                   <small>
-                    {language === "vi" ? "Loại hình bất động sản" : "Asset"}
+                    {ui(language, "Loại hình bất động sản", "Asset")}
                   </small>
                   <b>{r.assetType}</b>
                   <span>{r.transaction}</span>
                 </div>
                 <div>
                   <small>
-                    {language === "vi" ? "Vị trí/khu vực" : "Location"}
+                    {ui(language, "Vị trí/khu vực", "Location")}
                   </small>
                   <b>{r.location}</b>
                   <span>
@@ -3213,36 +3097,36 @@ function RequestDetail() {
                 </div>
                 <div>
                   <small>
-                    {language === "vi" ? "Tên khu công nghiệp" : "Industrial park name"}
+                    {ui(language, "Tên khu công nghiệp", "Industrial park name")}
                   </small>
                   <b>
                     {r.industrialParkName ||
-                      (language === "vi" ? "Chưa xác định" : "Not specified")}
+                      (ui(language, "Chưa xác định", "Not specified"))}
                   </b>
                 </div>
                 <div>
                   <small>
-                    {language === "vi" ? "Ngành nghề dự kiến" : "Industry"}
+                    {ui(language, "Ngành nghề dự kiến", "Industry")}
                   </small>
                   <b>{r.industry}</b>
                   <span>{r.availabilityDate}</span>
                 </div>
                 <div>
                   <small>
-                    {language === "vi" ? "Ngân sách / giá" : "Budget / price"}
+                    {ui(language, "Ngân sách / giá", "Budget / price")}
                   </small>
                   <b>
                     {r.budgetOrPrice ||
-                      (language === "vi" ? "Chưa xác định" : "Not specified")}
+                      (ui(language, "Chưa xác định", "Not specified"))}
                   </b>
                 </div>
                 <div>
-                  <small>{language === "vi" ? "Dịch vụ" : "Service"}</small>
+                  <small>{ui(language, "Dịch vụ", "Service")}</small>
                   <b>{r.service}</b>
                 </div>
               </div>
               <h3>
-                {language === "vi" ? "Yêu cầu khác" : "Other requirements"}
+                {ui(language, "Yêu cầu khác", "Other requirements")}
               </h3>
               <p>{r.requirements || "—"}</p>
             </section>
@@ -3250,27 +3134,19 @@ function RequestDetail() {
               <div className="panel-head">
                 <h2>
                   <Sparkles />{" "}
-                  {language === "vi"
-                    ? "Đề xuất ghép nối"
-                    : "Match recommendations"}
+                  {ui(language, "Đề xuất ghép nối", "Match recommendations")}
                 </h2>
                 <span className="demo-label">
-                  {language === "vi"
-                    ? "ĐỀ XUẤT MÔ PHỎNG"
-                    : "DEMO RECOMMENDATION"}
+                  {ui(language, "ĐỀ XUẤT MÔ PHỎNG", "DEMO RECOMMENDATION")}
                 </span>
               </div>
               {r.status === "submitted" || r.status === "under_review" ? (
                 <Empty
                   title={
-                    language === "vi"
-                      ? "Chưa bắt đầu ghép nối"
-                      : "Matching not started"
+                    ui(language, "Chưa bắt đầu ghép nối", "Matching not started")
                   }
                   text={
-                    language === "vi"
-                      ? "Xác minh yêu cầu trước khi tạo đề xuất."
-                      : "Verify the request before generating recommendations."
+                    ui(language, "Xác minh yêu cầu trước khi tạo đề xuất.", "Verify the request before generating recommendations.")
                   }
                 />
               ) : (
@@ -3294,9 +3170,7 @@ function RequestDetail() {
                         </p>
                         <span>
                           <Check />{" "}
-                          {language === "vi"
-                            ? "Khớp khu vực, ngành và loại tài sản"
-                            : "Region, industry and asset-type match"}
+                          {ui(language, "Khớp khu vực, ngành và loại tài sản", "Region, industry and asset-type match")}
                         </span>
                       </div>
                     </article>
@@ -3308,7 +3182,7 @@ function RequestDetail() {
           <aside>
             <section className="admin-panel status-action">
               <h2>
-                {language === "vi" ? "Cập nhật trạng thái" : "Update status"}
+                {ui(language, "Cập nhật trạng thái", "Update status")}
               </h2>
               <Badge value={r.status} />
               <div className="status-flow">
@@ -3339,9 +3213,7 @@ function RequestDetail() {
                   <div key={x} className="reject-box">
                     <textarea
                       placeholder={
-                        language === "vi"
-                          ? "Lý do từ chối (bắt buộc)"
-                          : "Rejection reason (required)"
+                        ui(language, "Lý do từ chối (bắt buộc)", "Rejection reason (required)")
                       }
                       value={reason}
                       onChange={(e) => setReason(e.target.value)}
@@ -3350,7 +3222,7 @@ function RequestDetail() {
                       disabled={!reason.trim()}
                       onClick={() => transitionRequest(r.id, x, reason)}
                     >
-                      {language === "vi" ? "Từ chối yêu cầu" : "Reject"}
+                      {ui(language, "Từ chối yêu cầu", "Reject")}
                     </button>
                   </div>
                 ) : (
@@ -3359,7 +3231,7 @@ function RequestDetail() {
                     key={x}
                     onClick={() => transitionRequest(r.id, x)}
                   >
-                    {language === "vi" ? "Chuyển trạng thái sang" : "Move to"}{" "}
+                    {ui(language, "Chuyển trạng thái sang", "Move to")}{" "}
                     {tr(labels[x], language)}
                     <ArrowRight />
                   </button>
@@ -3368,7 +3240,7 @@ function RequestDetail() {
             </section>
             <section className="admin-panel">
               <h2>
-                {language === "vi" ? "Lịch sử hoạt động" : "Activity timeline"}
+                {ui(language, "Lịch sử hoạt động", "Activity timeline")}
               </h2>
               <div className="timeline">
                 {r.activities.map((a) => (
@@ -3378,7 +3250,7 @@ function RequestDetail() {
                     <span>{a.actor}</span>
                     <small>
                       {new Date(a.at).toLocaleString(
-                        language === "vi" ? "vi-VN" : "en-US",
+                        ui(language, "vi-VN", "en-US"),
                       )}
                     </small>
                   </div>
@@ -3413,14 +3285,10 @@ function AdminParks() {
           <div>
             <span>INDUSTRIAL DATA LAYER</span>
             <h1>
-              {language === "vi"
-                ? "Quản lý hồ sơ khu công nghiệp"
-                : "Industrial park data management"}
+              {ui(language, "Quản lý hồ sơ khu công nghiệp", "Industrial park data management")}
             </h1>
             <p>
-              {language === "vi"
-                ? "Đối chiếu từng nhóm dữ liệu của hồ sơ với bộ dữ liệu chuẩn khu công nghiệp."
-                : "Compare each profile data group with the industrial park dataset standard."}
+              {ui(language, "Đối chiếu từng nhóm dữ liệu của hồ sơ với bộ dữ liệu chuẩn khu công nghiệp.", "Compare each profile data group with the industrial park dataset standard.")}
             </p>
           </div>
         </div>
@@ -3430,18 +3298,18 @@ function AdminParks() {
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder={language === "vi" ? "Tìm hồ sơ" : "Search profiles"}
+              placeholder={ui(language, "Tìm hồ sơ", "Search profiles")}
             />
           </label>
           <select value={quality} onChange={(e) => setQuality(e.target.value)}>
             <option value="all">
-              {language === "vi" ? "Tất cả hồ sơ" : "All profiles"}
+              {ui(language, "Tất cả hồ sơ", "All profiles")}
             </option>
             <option value="missing">
-              {language === "vi" ? "Thiếu nhóm dữ liệu chuẩn" : "Missing standard data"}
+              {ui(language, "Thiếu nhóm dữ liệu chuẩn", "Missing standard data")}
             </option>
             <option value="conflict">
-              {language === "vi" ? "Có dữ liệu xung đột" : "Conflicts"}
+              {ui(language, "Có dữ liệu xung đột", "Conflicts")}
             </option>
           </select>
         </div>
@@ -3451,17 +3319,17 @@ function AdminParks() {
               <thead>
                 <tr>
                   <th>
-                    {language === "vi" ? "Khu công nghiệp" : "Industrial park"}
+                    {ui(language, "Khu công nghiệp", "Industrial park")}
                   </th>
-                  <th>{language === "vi" ? "Tỉnh" : "Province"}</th>
-                  <th>{language === "vi" ? "Đối chiếu chuẩn" : "Standard review"}</th>
+                  <th>{ui(language, "Tỉnh", "Province")}</th>
+                  <th>{ui(language, "Đối chiếu chuẩn", "Standard review")}</th>
                   <th>
-                    {language === "vi" ? "Xác minh gần nhất" : "Verified"}
+                    {ui(language, "Xác minh gần nhất", "Verified")}
                   </th>
                   <th>
-                    {language === "vi" ? "Trạng thái công bố" : "Publication"}
+                    {ui(language, "Trạng thái công bố", "Publication")}
                   </th>
-                  <th>{language === "vi" ? "Cảnh báo" : "Warnings"}</th>
+                  <th>{ui(language, "Cảnh báo", "Warnings")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -3473,12 +3341,8 @@ function AdminParks() {
                       </Link>
                       <small>
                         {p.id.includes("demo")
-                          ? language === "vi"
-                            ? "DỮ LIỆU MINH HỌA"
-                            : "DEMO DATA"
-                          : language === "vi"
-                            ? "HỒ SƠ THAM CHIẾU"
-                            : "REFERENCE PROFILE"}
+                          ? ui(language, "DỮ LIỆU MINH HỌA", "DEMO DATA")
+                          : ui(language, "HỒ SƠ THAM CHIẾU", "REFERENCE PROFILE")}
                       </small>
                     </td>
                     <td>{p.province}</td>
@@ -3487,11 +3351,11 @@ function AdminParks() {
                         (item) => item.requiredForPublication && item.status === "missing",
                       ) ? (
                         <span className="standard-state missing">
-                          {language === "vi" ? "Cần bổ sung" : "Needs data"}
+                          {ui(language, "Cần bổ sung", "Needs data")}
                         </span>
                       ) : (
                         <span className="standard-state available">
-                          {language === "vi" ? "Đủ nhóm bắt buộc" : "Required groups present"}
+                          {ui(language, "Đủ nhóm bắt buộc", "Required groups present")}
                         </span>
                       )}
                     </td>
@@ -3503,7 +3367,7 @@ function AdminParks() {
                       {p.conflicts?.length ? (
                         <span className="warning-count">
                           {p.conflicts.length}{" "}
-                          {language === "vi" ? "xung đột" : "conflict"}
+                          {ui(language, "xung đột", "conflict")}
                         </span>
                       ) : (
                         "—"
@@ -3529,7 +3393,7 @@ function AdminParkDetail() {
       <div className="admin-page">
         <div className="breadcrumbs">
           <Link to="/admin/industrial-parks">
-            {language === "vi" ? "Hồ sơ khu công nghiệp" : "Industrial parks"}
+            {ui(language, "Hồ sơ khu công nghiệp", "Industrial parks")}
           </Link>
           <ChevronRight size={14} />
           <span>{tr(p.name, language)}</span>
@@ -3538,12 +3402,8 @@ function AdminParkDetail() {
           <div>
             <span>
               {p.id.includes("demo")
-                ? language === "vi"
-                  ? "DỮ LIỆU MINH HỌA"
-                  : "DEMO DATA"
-                : language === "vi"
-                  ? "HỒ SƠ THAM CHIẾU"
-                  : "REFERENCE PROFILE"}
+                ? ui(language, "DỮ LIỆU MINH HỌA", "DEMO DATA")
+                : ui(language, "HỒ SƠ THAM CHIẾU", "REFERENCE PROFILE")}
             </span>
             <h1>{tr(p.name, language)}</h1>
             <p>
@@ -3552,18 +3412,18 @@ function AdminParkDetail() {
           </div>
           <Link className="button outline" to={`/industrial-parks/${p.slug}`}>
             <ExternalLink />
-            {language === "vi" ? "Xem trang công khai" : "Public preview"}
+            {ui(language, "Xem trang công khai", "Public preview")}
           </Link>
         </div>
         <div className="kpi-grid three">
           <Kpi
-            label={language === "vi" ? "Nguồn tài liệu" : "Source documents"}
+            label={ui(language, "Nguồn tài liệu", "Source documents")}
             value={p.documents.length}
             icon={FileText}
           />
           <Kpi
             label={
-              language === "vi" ? "Hạng mục đã xác minh" : "Verified fields"
+              ui(language, "Hạng mục đã xác minh", "Verified fields")
             }
             value={
               p.utilities.filter(
@@ -3574,7 +3434,7 @@ function AdminParkDetail() {
             tone="green"
           />
           <Kpi
-            label={language === "vi" ? "Dữ liệu xung đột" : "Conflicts"}
+            label={ui(language, "Dữ liệu xung đột", "Conflicts")}
             value={p.conflicts?.length || 0}
             icon={Activity}
             tone={p.conflicts?.length ? "red" : "blue"}
@@ -3584,16 +3444,12 @@ function AdminParkDetail() {
           <section className="admin-panel">
             <div className="panel-head">
               <h2>
-                {language === "vi"
-                  ? "Đối chiếu bộ dữ liệu chuẩn khu công nghiệp"
-                  : "Industrial park dataset standard checklist"}
+                {ui(language, "Đối chiếu bộ dữ liệu chuẩn khu công nghiệp", "Industrial park dataset standard checklist")}
               </h2>
               <Badge value={p.publicationStatus} />
             </div>
             <p className="panel-intro">
-              {language === "vi"
-                ? "Danh sách thể hiện nhóm dữ liệu hồ sơ đang có so với cấu trúc chuẩn; không sử dụng điểm số hoặc tỷ lệ phần trăm."
-                : "This checklist shows which profile data groups are present against the standard; no score or percentage is used."}
+              {ui(language, "Danh sách thể hiện nhóm dữ liệu hồ sơ đang có so với cấu trúc chuẩn; không sử dụng điểm số hoặc tỷ lệ phần trăm.", "This checklist shows which profile data groups are present against the standard; no score or percentage is used.")}
             </p>
             <StandardChecklist park={p} />
             <div className="publication-actions">
@@ -3601,7 +3457,7 @@ function AdminParkDetail() {
                 className="button outline"
                 onClick={() => updateParkPublication(p.id, "in_review")}
               >
-                {language === "vi" ? "Gửi duyệt" : "Send to review"}
+                {ui(language, "Gửi duyệt", "Send to review")}
               </button>
               <button
                 className="button primary"
@@ -3609,44 +3465,42 @@ function AdminParkDetail() {
                 onClick={() => updateParkPublication(p.id, "published")}
               >
                 <ShieldCheck />
-                {language === "vi" ? "Công bố hồ sơ" : "Publish profile"}
+                {ui(language, "Công bố hồ sơ", "Publish profile")}
               </button>
             </div>
           </section>
           <section className="admin-panel">
             <h2>
-              {language === "vi"
-                ? "Nguồn và quản trị dữ liệu"
-                : "Sources and governance"}
+              {ui(language, "Nguồn và quản trị dữ liệu", "Sources and governance")}
             </h2>
             <div className="governance">
               <div>
                 <small>
-                  {language === "vi" ? "Đơn vị quản lý dữ liệu" : "Data owner"}
+                  {ui(language, "Đơn vị quản lý dữ liệu", "Data owner")}
                 </small>
                 <b>{p.dataOwner}</b>
               </div>
               <div>
                 <small>
-                  {language === "vi" ? "Xác minh lần cuối" : "Last verified"}
+                  {ui(language, "Xác minh lần cuối", "Last verified")}
                 </small>
                 <b>
                   {p.lastVerifiedAt ||
-                    (language === "vi" ? "Chưa có dữ liệu" : "Not available")}
+                    (ui(language, "Chưa có dữ liệu", "Not available"))}
                 </b>
               </div>
               <div>
                 <small>
-                  {language === "vi" ? "Người xác minh" : "Verified by"}
+                  {ui(language, "Người xác minh", "Verified by")}
                 </small>
                 <b>
                   {p.verifiedBy ||
-                    (language === "vi" ? "Chưa có dữ liệu" : "Not available")}
+                    (ui(language, "Chưa có dữ liệu", "Not available"))}
                 </b>
               </div>
               <div>
                 <small>
-                  {language === "vi" ? "Ngôn ngữ nguồn" : "Source language"}
+                  {ui(language, "Ngôn ngữ nguồn", "Source language")}
                 </small>
                 <b>{p.sourceLanguage.toUpperCase()}</b>
               </div>
@@ -3663,7 +3517,7 @@ function AdminParkDetail() {
                 </div>
               </div>
             ))}
-            <h3>{language === "vi" ? "Tài liệu" : "Documents"}</h3>
+            <h3>{ui(language, "Tài liệu", "Documents")}</h3>
             <div className="mini-docs">
               {p.documents.map((d) => (
                 <div key={d.id}>

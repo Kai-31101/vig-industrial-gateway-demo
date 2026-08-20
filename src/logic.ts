@@ -1,4 +1,5 @@
-import type { IndustrialParkProfile, RequestStatus } from "./types";
+import type { IndustrialParkProfile, Language, RequestStatus } from "./types";
+import { ui } from "./i18n";
 
 export const requestTransitions: Record<RequestStatus, RequestStatus[]> = {
   submitted: ["under_review"],
@@ -73,12 +74,12 @@ export function canPublish(park: IndustrialParkProfile) {
 
 export function displaySourced(
   value: { value: unknown; unit?: string; disclosureStatus: string },
-  language: "vi" | "en",
+  language: Language,
 ) {
   if (value.disclosureStatus === "not_disclosed")
-    return language === "vi" ? "Không công bố" : "Not disclosed";
+    return ui(language, "Không công bố", "Not disclosed");
   if (value.disclosureStatus === "not_available" || value.value === null)
-    return language === "vi" ? "Chưa có dữ liệu" : "Not available";
+    return ui(language, "Chưa có dữ liệu", "Not available");
   const unitVi: Record<string, string> = {
     people: "người",
     "USD billion": "tỷ USD",
@@ -91,5 +92,6 @@ export function displaySourced(
     value.unit && language === "vi"
       ? unitVi[value.unit] || value.unit
       : value.unit;
-  return `${typeof value.value === "number" ? value.value.toLocaleString(language === "vi" ? "vi-VN" : "en-US") : value.value}${unit ? ` ${unit}` : ""}`;
+  const locale = language === "vi" ? "vi-VN" : language === "zh" ? "zh-CN" : "en-US";
+  return `${typeof value.value === "number" ? value.value.toLocaleString(locale) : value.value}${unit ? ` ${unit}` : ""}`;
 }

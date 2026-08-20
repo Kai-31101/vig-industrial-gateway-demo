@@ -1,5 +1,5 @@
-export type Language = 'vi' | 'en';
-export type LocalizedText = { vi: string; en: string };
+export type Language = 'vi' | 'en' | 'zh';
+export type LocalizedText = { vi: string; en: string; zh?: string };
 export type VerificationStatus = 'unverified' | 'reviewed' | 'verified';
 export type DisclosureStatus = 'public' | 'not_disclosed' | 'not_available';
 

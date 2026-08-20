@@ -1,6 +1,7 @@
 import { createContext, useContext, useMemo, useState } from 'react';
 import { parks as seedParks, assets, expos } from './data';
 import { canTransition } from './logic';
+import { translateToChinese } from './i18n';
 import type { IndustrialParkProfile, IndustrialRequest, Language, ParkChatMessage, PublicationStatus, RequestStatus } from './types';
 
 type Role = 'public' | 'admin';
@@ -50,6 +51,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         text: {
           vi: `Xin chào, chúng tôi là bộ phận tư vấn của ${park.name.vi}. Bạn cần thông tin về quỹ đất, nhà xưởng hay hạ tầng kỹ thuật?`,
           en: `Hello, this is the advisory team at ${park.name.en}. How can we help with land, factories, or infrastructure?`,
+          zh: `您好，我们是${park.name.zh || park.name.en}的咨询团队。您需要了解土地、厂房还是基础设施？`,
         },
       }],
     });
@@ -68,13 +70,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       ...threads,
       [chatParkId]: [
         ...(threads[chatParkId] || []),
-        { id: crypto.randomUUID(), sender: 'user', text: { vi: value, en: value } },
+        { id: crypto.randomUUID(), sender: 'user', text: { vi: value, en: value, zh: value } },
         {
           id: crypto.randomUUID(),
           sender: 'supplier',
           text: {
             vi: 'Cảm ơn bạn. Khu công nghiệp đã tiếp nhận nội dung và sẽ phản hồi chi tiết trong bước kết nối tiếp theo.',
             en: 'Thank you. The industrial park has received your message and will provide details during the next connection step.',
+            zh: '谢谢。工业园区已收到您的消息，并将在下一步对接中提供详细信息。',
           },
         },
       ],
@@ -85,4 +88,5 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 export const useApp = () => { const x = useContext(Context); if (!x) throw new Error('AppProvider required'); return x; };
-export const tr = (value: { vi: string; en: string }, language: Language) => value[language];
+export const tr = (value: { vi: string; en: string; zh?: string }, language: Language) =>
+  language === 'vi' ? value.vi : language === 'zh' ? value.zh || translateToChinese(value.en) : value.en;

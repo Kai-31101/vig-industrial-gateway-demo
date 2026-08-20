@@ -2484,11 +2484,6 @@ footer {
   font-size: 13px;
   line-height: 1.6;
 }
-.footer-grid .footer-operator {
-  margin-top: 2px;
-  color: #f4c878;
-  font-weight: 700;
-}
 .footer-grid > div {
   display: flex;
   flex-direction: column;
@@ -2518,22 +2513,25 @@ footer {
   color: #c3d0d8;
   background: transparent;
 }
-.arobid-platform-badge {
-  width: fit-content;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  color: #166534;
-  background: #dcfce7;
-  font-size: 9px !important;
-  line-height: 1.2;
-  white-space: nowrap;
+.footer-grid .footer-operator {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 4px;
 }
-.arobid-platform-badge svg {
-  width: 14px;
-  height: 14px;
+.footer-grid .footer-operator > span {
+  color: #f4c878;
+  font-size: 12px;
+  font-weight: 700;
+}
+.vcbc-logo {
+  display: block;
+  width: min(250px, 100%);
+  height: auto;
+  padding: 6px;
+  border-radius: 5px;
+  background: #fff;
 }
 .arobid-powered-row {
   display: flex;

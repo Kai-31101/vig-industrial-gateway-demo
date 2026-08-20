@@ -464,9 +464,6 @@ function Footer() {
           <p>
             {ui(language, "Kết nối năng lực công nghiệp Việt Nam với nhu cầu đầu tư và sản xuất toàn cầu.", "Connecting Vietnam’s industrial capacity with global investment and manufacturing demand.")}
           </p>
-          <p className="footer-operator">
-            {ui(language, "Quản lý & Vận hành bởi VCBC", "Managed & Operated by VCBC")}
-          </p>
         </div>
         <div>
           <b>{ui(language, "Khám phá", "Discover")}</b>
@@ -493,9 +490,16 @@ function Footer() {
           </span>
         </div>
         <div className="arobid-partner">
-          <span className="arobid-platform-badge">
-            <CheckCircle2 /> Vietnam Industrial Gateway
-          </span>
+          <div className="footer-operator">
+            <span>
+              {ui(language, "Quản lý và vận hành bởi VCBC", "Managed & Operated by VCBC")}
+            </span>
+            <img
+              className="vcbc-logo"
+              src="/images/vcbc-logo.png"
+              alt="VCBC - Vietnam-China Business Council"
+            />
+          </div>
           <div className="arobid-powered-row">
             <span>
               {ui(language, "Được phát triển bởi", "Powered by")}

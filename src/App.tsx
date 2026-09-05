@@ -58,6 +58,14 @@ import { AppProvider, tr, useApp } from "./AppContext";
 import { StatePanel, FactGroup, SafeImage, OptionalSection, DetailUnavailable, hasValue, safeUrl, absentValue, emptyCopy } from "./EmptyStates";
 import { previewPark, previewAsset } from "./emptyPreview";
 import { StatePreview } from "./StatePreview";
+import { AdminProvider, useAdmin } from './admin/AdminContext';
+import { ContentList, ContentEditor } from './admin/ContentEditor';
+import { UsersPage, AcceptInvitation, DemoSession } from './admin/Users';
+import { BatchImport } from './admin/BatchImport';
+import { ExpoReport } from './admin/ExpoReport';
+import { Access } from './admin/ui';
+import { firstAdminPage } from './admin/model';
+import './admin/admin.css';
 import { translateToChinese, ui } from "./i18n";
 import {
   canPublish,
@@ -2331,6 +2339,7 @@ function ExpoPage() {
 }
 function LoginPage() {
   const { language, setRole } = useApp();
+  const admin = useAdmin();
   const navigate = useNavigate();
   return (
     <PublicShell>
@@ -2347,7 +2356,7 @@ function LoginPage() {
             className="button primary"
             onClick={() => {
               setRole("admin");
-              navigate("/admin/dashboard");
+              navigate(firstAdminPage(admin.current));
             }}
           >
             <ShieldCheck />{" "}
@@ -2356,6 +2365,7 @@ function LoginPage() {
           <Link to="/home">
             {ui(language, "Quay lại trang công khai", "Return to public portal")}
           </Link>
+          <DemoSession />
         </div>
       </div>
     </PublicShell>
@@ -2364,10 +2374,13 @@ function LoginPage() {
 
 function AdminGuard({ children }: { children: ReactNode }) {
   const { role } = useApp();
-  return role === "admin" ? children : <Navigate to="/login" replace />;
+  const {pathname}=useLocation();
+  const permission=pathname.includes('/users')?'P12':pathname.includes('/imports')?'P03':pathname.includes('/requests')?'P09':pathname.includes('/industrial-parks')||pathname.includes('/assets')?'P01':'P11';
+  return role === "admin" ? <Access permission={permission}>{children}</Access> : <Navigate to="/login" replace />;
 }
 function AdminShell({ children }: { children: ReactNode }) {
   const { language, setRole, resetDemo } = useApp();
+  const admin=useAdmin();
   const location = useLocation();
   const navigate = useNavigate();
   const openPublicPortal = () => {
@@ -2395,7 +2408,10 @@ function AdminShell({ children }: { children: ReactNode }) {
       ClipboardCheck,
       ui(language, "Quản lý yêu cầu", "Request management"),
     ],
-  ];
+    ['/admin/assets',Warehouse,emptyCopy(language,'Sản phẩm','Assets','工业地产')],
+    ['/admin/imports',Download,emptyCopy(language,'Nhập hàng loạt','Batch import','批量导入')],
+    ['/admin/users',Users,emptyCopy(language,'Người dùng & quyền','Users & permissions','用户与权限')],
+  ].filter(([path])=>admin.can(String(path).includes('/users')?'P12':String(path).includes('/imports')?'P03':String(path).includes('/requests')?'P09':String(path).includes('/industrial-parks')||String(path).includes('/assets')?'P01':'P11'));
   return (
     <div className="admin-shell">
       <aside className="admin-sidebar">
@@ -2424,7 +2440,7 @@ function AdminShell({ children }: { children: ReactNode }) {
           })}
         </nav>
         <div className="sidebar-bottom">
-          <button onClick={resetDemo}>
+          <button onClick={()=>{admin.reset();resetDemo()}}>
             <RotateCcw />
             {ui(language, "Khôi phục dữ liệu demo", "Reset demo")}
           </button>
@@ -2450,7 +2466,7 @@ function AdminShell({ children }: { children: ReactNode }) {
               aria-label={
                 ui(language, "Khôi phục dữ liệu demo", "Reset demo")
               }
-              onClick={resetDemo}
+              onClick={()=>{admin.reset();resetDemo()}}
             >
               <RotateCcw />
             </button>
@@ -2488,6 +2504,7 @@ function AdminShell({ children }: { children: ReactNode }) {
           })}
         </nav>
         <main>{children}</main>
+        <DemoSession />
       </div>
     </div>
   );
@@ -3482,6 +3499,15 @@ function AppRoutes() {
       <Route path="/request-confirmation/:id" element={<ConfirmationPage />} />
       <Route path="/industrial-expo" element={<ExpoPage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/accept-invitation/:token" element={<AcceptInvitation />} />
+      <Route path="/admin/no-access" element={<AdminShell><Access permission="P01"><Navigate to="/admin/industrial-parks" /></Access></AdminShell>} />
+      <Route path="/admin/users" element={<AdminGuard><AdminShell><UsersPage /></AdminShell></AdminGuard>} />
+      <Route path="/admin/imports" element={<AdminGuard><AdminShell><BatchImport /></AdminShell></AdminGuard>} />
+      <Route path="/admin/assets" element={<AdminGuard><AdminShell><ContentList kind="asset" /></AdminShell></AdminGuard>} />
+      <Route path="/admin/assets/new" element={<AdminGuard><AdminShell><ContentEditor key="new-asset" kind="asset" /></AdminShell></AdminGuard>} />
+      <Route path="/admin/assets/:id/edit" element={<AdminGuard><AdminShell><ContentEditor kind="asset" /></AdminShell></AdminGuard>} />
+      <Route path="/admin/industrial-parks/new" element={<AdminGuard><AdminShell><ContentEditor key="new-park" kind="park" /></AdminShell></AdminGuard>} />
+      <Route path="/admin/industrial-parks/:id/edit" element={<AdminGuard><AdminShell><ContentEditor kind="park" /></AdminShell></AdminGuard>} />
       <Route
         path="/admin/dashboard"
         element={
@@ -3502,7 +3528,7 @@ function AppRoutes() {
         path="/admin/expos/:id"
         element={
           <AdminGuard>
-            <AdminExpoDetail />
+            <AdminShell><ExpoReport /></AdminShell>
           </AdminGuard>
         }
       />
@@ -3526,7 +3552,7 @@ function AppRoutes() {
         path="/admin/industrial-parks"
         element={
           <AdminGuard>
-            <AdminParks />
+            <AdminShell><ContentList kind="park" /></AdminShell>
           </AdminGuard>
         }
       />
@@ -3534,7 +3560,7 @@ function AppRoutes() {
         path="/admin/industrial-parks/:id"
         element={
           <AdminGuard>
-            <AdminParkDetail />
+            <AdminShell><ContentEditor kind="park" /></AdminShell>
           </AdminGuard>
         }
       />
@@ -3545,9 +3571,11 @@ function AppRoutes() {
 export default function App() {
   return (
     <AppProvider>
+      <AdminProvider>
       <HashRouter>
         <AppRoutes />
       </HashRouter>
+      </AdminProvider>
     </AppProvider>
   );
 }

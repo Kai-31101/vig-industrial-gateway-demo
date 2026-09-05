@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo, useState } from 'react';
-import { parks as seedParks, assets, expos } from './data';
+import { parks as seedParks, assets as seedAssets, expos } from './data';
+import type { IndustrialAsset } from './types';
 import { canTransition } from './logic';
 import { translateToChinese } from './i18n';
 import type { IndustrialParkProfile, IndustrialRequest, Language, ParkChatMessage, PublicationStatus, RequestStatus } from './types';
@@ -8,7 +9,8 @@ type Role = 'public' | 'admin';
 type NewRequest = Omit<IndustrialRequest, 'id' | 'status' | 'submittedAt' | 'assignedTo' | 'activities'>;
 interface AppState {
   language: Language; setLanguage: (l: Language) => void; role: Role; setRole: (r: Role) => void;
-  parks: IndustrialParkProfile[]; assets: typeof assets; expos: typeof expos; requests: IndustrialRequest[];
+  parks: IndustrialParkProfile[]; assets: IndustrialAsset[]; expos: typeof expos; requests: IndustrialRequest[];
+  publishContent: (data: IndustrialParkProfile | IndustrialAsset) => void;
   createRequest: (input: NewRequest) => string; transitionRequest: (id: string, to: RequestStatus, reason?: string) => boolean;
   updateParkPublication: (id: string, status: PublicationStatus) => void; resetDemo: () => void;
   chatParkId: string | null; chatOpen: boolean; chatThreads: Record<string, ParkChatMessage[]>;
@@ -26,6 +28,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguage] = useState<Language>('vi');
   const [role, setRole] = useState<Role>('public');
   const [parks, setParks] = useState(seedParks);
+  const [assets, setAssets] = useState(seedAssets);
+  const publishContent = (data: IndustrialParkProfile | IndustrialAsset) => {
+    if ('slug' in data) setParks(list => list.some(p=>p.id===data.id)?list.map(p=>p.id===data.id?data:p):[...list,data]);
+    else setAssets(list => list.some(a=>a.id===data.id)?list.map(a=>a.id===data.id?data:a):[...list,data]);
+  };
   const [requests, setRequests] = useState(initialRequests);
   const [chatParkId, setChatParkId] = useState<string | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
@@ -83,8 +90,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       ],
     }));
   };
-  const resetDemo = () => { setParks(seedParks); setRequests(initialRequests); setChatParkId(null); setChatOpen(false); setChatThreads({}); setRole('public'); setLanguage('vi'); };
-  const value = useMemo(() => ({ language, setLanguage, role, setRole, parks, assets, expos, requests, createRequest, transitionRequest, updateParkPublication, resetDemo, chatParkId, chatOpen, chatThreads, openParkChat, closeParkChat, toggleParkChat, sendParkChatMessage }), [language, role, parks, requests, chatParkId, chatOpen, chatThreads]);
+  const resetDemo = () => { setParks(seedParks); setAssets(seedAssets); setRequests(initialRequests); setChatParkId(null); setChatOpen(false); setChatThreads({}); setRole('public'); setLanguage('vi'); };
+  const value = useMemo(() => ({ language, setLanguage, role, setRole, parks, assets, expos, requests, createRequest, transitionRequest, updateParkPublication, publishContent, resetDemo, chatParkId, chatOpen, chatThreads, openParkChat, closeParkChat, toggleParkChat, sendParkChatMessage }), [language, role, parks, assets, requests, chatParkId, chatOpen, chatThreads]);
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 export const useApp = () => { const x = useContext(Context); if (!x) throw new Error('AppProvider required'); return x; };

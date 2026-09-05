@@ -47,6 +47,7 @@ export interface IndustrialParkProfile {
 
 export interface IndustrialAsset { id: string; parkId: string; name: LocalizedText; type: ParkAvailability['type']; area: number; unit: 'ha' | 'm²'; transaction: 'lease' | 'sale'; price: SourcedValue<number>; availableFrom: string; powerMva?: number; industries: string[]; featured: boolean; image: string; description: LocalizedText; }
 export type RequestKind = 'find_demand' | 'find_supply';
+export interface IndustrialAsset { imageApproved?: boolean; priceMode?: 'specific' | 'negotiable' | 'not_available'; pricingBasis?: string; }
 export type RequestStatus = 'submitted' | 'under_review' | 'verified' | 'matching' | 'connection_scheduled' | 'closed' | 'rejected';
 export interface RequestActivity { id: string; at: string; actor: string; action: LocalizedText; }
 export interface IndustrialRequest { id: string; kind: RequestKind; organization: string; contactName: string; email: string; phone: string; service: string; assetType: string; industrialParkName: string; location: string; areaMin: number; areaMax: number; transaction: 'lease' | 'sale'; budgetOrPrice: string; industry: string; availabilityDate: string; requirements: string; status: RequestStatus; submittedAt: string; assignedTo: string; activities: RequestActivity[]; rejectionReason?: string; }

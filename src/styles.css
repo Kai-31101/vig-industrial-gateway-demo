@@ -4004,3 +4004,57 @@ td small {
     white-space: nowrap;
   }
 }
+
+/* Empty/partial-data UI: content drives layout; no reserved empty columns. */
+.state-panel { display:flex; align-items:flex-start; gap:20px; padding:32px; margin:16px 0; background:#fff; border:1px solid var(--line); border-radius:10px; color:var(--navy); text-align:left; }
+.state-icon { flex:0 0 32px; width:32px; height:32px; color:#28727a; }
+.state-message { min-width:0; max-width:680px; }
+.state-message h3 { margin:0 0 8px; font-size:20px; line-height:1.4; }
+.state-message p { margin:0; color:#516574; line-height:1.6; }
+.state-actions { display:flex; flex-wrap:wrap; gap:12px; margin-top:20px; }
+.state-actions .button { min-height:44px; white-space:normal; }
+.image-fallback { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; min-height:180px; background:#edf2f4; color:#425b69; text-align:center; padding:24px; }
+.image-fallback svg { width:36px; height:36px; }
+.image-fallback span { max-width:250px; font-size:14px; line-height:1.5; }
+.detail-hero > .image-fallback { position:absolute; inset:0; min-height:100%; align-items:flex-end; justify-content:flex-start; background:#173e50; color:#e2edf0; }
+.detail-hero:has(> .image-fallback) .detail-shade { background:linear-gradient(90deg,rgba(7,31,45,.95),rgba(7,31,45,.4)); }
+.asset-card-image > .image-fallback, .park-image > .image-fallback { height:100%; min-height:220px; }
+.asset-detail:has(> .image-fallback) { grid-template-columns:240px minmax(0,1fr); align-items:start; }
+.asset-detail > .image-fallback { min-height:180px; border-radius:7px; }
+.media-gallery .image-fallback { height:260px; }
+.adaptive-facts { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr)); gap:18px; width:100%; min-width:0; margin:16px 0; }
+.adaptive-fact { min-width:0; display:flex; flex-direction:column; gap:5px; }
+.adaptive-fact small { color:#526876; font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
+.adaptive-fact strong { color:var(--navy); font-size:19px; line-height:1.4; overflow-wrap:break-word; }
+.missing-summary { grid-column:1 / -1; display:flex; align-items:flex-start; gap:10px; padding:14px 16px; background:#f3f6f7; border-radius:6px; color:#516574; }
+.missing-summary svg { flex-shrink:0; margin-top:2px; }
+.missing-summary b { font-size:13px; color:#425b69; }
+.missing-summary p { margin:4px 0 0; font-size:13px; line-height:1.6; display:block; }
+.key-facts.adaptive-key-facts { display:block; padding:22px; }
+.adaptive-key-facts .adaptive-facts { margin:0; }
+.detail-grid:has(> :only-child), .connect-grid:has(> :only-child) { grid-template-columns:minmax(0,1fr); }
+.detail-page .triple { grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr)); }
+.detail-page .content-card { min-width:0; }
+.detail-grid.overview-sparse { grid-template-columns:minmax(0,1fr); }
+.overview-sparse .operator-card { display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:18px 24px; text-align:left; }
+.overview-sparse .operator-card > span { margin:0; flex-shrink:0; }
+.overview-sparse .operator-card h3 { margin:0; flex:1; min-width:150px; }
+.overview-sparse .operator-card p:empty { display:none; }
+.detail-hero:has(> .image-fallback) { height:auto; min-height:350px; }
+.detail-hero:has(> .image-fallback) .detail-hero-content { position:relative; padding-top:48px; padding-bottom:48px; }
+.preview-note { font-size:13px; color:#516574; padding:12px 16px !important; border:1px dashed #a9bcc5; border-radius:6px; margin:16px 0; }
+.document-unavailable { font-size:12px; color:#516574; padding:8px; }
+.state-preview-controls { display:flex; align-items:center; flex-wrap:wrap; gap:16px; margin:24px 0; }
+.state-preview-controls select { padding:10px 14px; min-height:44px; }
+@media(max-width:600px) {
+  .asset-detail:has(> .image-fallback) { grid-template-columns:minmax(0,1fr); }
+  .state-panel { padding:22px 18px; gap:12px; }
+  .state-message h3 { font-size:18px; }
+  .state-actions { flex-direction:column; }
+  .state-actions .button { width:100%; }
+  .adaptive-facts { grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+  .adaptive-fact strong { font-size:17px; }
+  .asset-detail > .image-fallback { min-height:200px; }
+  .detail-hero > .image-fallback span, .detail-hero > .image-fallback svg { display:none; }
+  .state-preview-controls { align-items:stretch; flex-direction:column; }
+}

@@ -78,7 +78,7 @@ export function displaySourced(
 ) {
   if (value.disclosureStatus === "not_disclosed")
     return ui(language, "Không công bố", "Not disclosed");
-  if (value.disclosureStatus === "not_available" || value.value === null)
+  if (value.disclosureStatus === "not_available" || value.value == null || (typeof value.value === 'string' && !value.value.trim()) || (typeof value.value === 'number' && !Number.isFinite(value.value)))
     return ui(language, "Chưa có dữ liệu", "Not available");
   const unitVi: Record<string, string> = {
     people: "người",

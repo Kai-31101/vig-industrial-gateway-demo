@@ -55,6 +55,9 @@ import {
   Zap,
 } from "lucide-react";
 import { AppProvider, tr, useApp } from "./AppContext";
+import { StatePanel, FactGroup, SafeImage, OptionalSection, DetailUnavailable, hasValue, safeUrl, absentValue, emptyCopy } from "./EmptyStates";
+import { previewPark, previewAsset } from "./emptyPreview";
+import { StatePreview } from "./StatePreview";
 import { translateToChinese, ui } from "./i18n";
 import {
   canPublish,
@@ -282,14 +285,8 @@ function SectionTitle({
     </div>
   );
 }
-function Empty({ title, text }: { title: string; text: string }) {
-  return (
-    <div className="empty">
-      <Database size={34} />
-      <h3>{title}</h3>
-      <p>{text}</p>
-    </div>
-  );
+function Empty({ title, text, action }: { title: string; text: string; action?: ReactNode }) {
+  return <StatePanel title={title} text={text} action={action} />;
 }
 function StandardChecklist({ park }: { park: IndustrialParkProfile }) {
   const { language } = useApp();
@@ -323,10 +320,10 @@ function StandardChecklist({ park }: { park: IndustrialParkProfile }) {
   );
 }
 function SourceValue({
-  value,
+  value = absentValue,
   compact = false,
 }: {
-  value: SourcedValue<unknown>;
+  value?: SourcedValue<unknown>;
   compact?: boolean;
 }) {
   const { language } = useApp();
@@ -840,7 +837,7 @@ function ParkCard({ park }: { park: IndustrialParkProfile }) {
   return (
     <article className="park-card">
       <Link to={`/industrial-parks/${park.slug}`} className="park-image">
-        <img src={park.media[0]?.url} alt={tr(park.name, language)} />
+        <SafeImage src={park.media.find(m => m.approved)?.url} alt={tr(park.name, language)} />
         <span className="demo-label">
           {park.id.includes("demo")
             ? ui(language, "DỮ LIỆU MINH HỌA", "DEMO DATA")
@@ -998,6 +995,7 @@ function ParksPage() {
             text={
               ui(language, "Vui lòng điều chỉnh từ khóa hoặc bộ lọc.", "Try changing your filters.")
             }
+            action={<button className="button primary" onClick={() => {setQ("");setRegion("all");setIndustry("all");setStatus("all");}}>{ui(language,"Xóa bộ lọc","Clear filters")}</button>}
           />
         )}
       </div>
@@ -1110,23 +1108,26 @@ function ParkDetailPage() {
     "information",
   );
   const [activeSection, setActiveSection] = useState("overview");
-  const park = parks.find((p) => p.slug === slug);
+  const [previewParams] = useSearchParams();
+  const previewMode = import.meta.env.DEV ? previewParams.get("demoState") : null;
+  const originalPark = parks.find((p) => p.slug === slug);
+  const park = originalPark ? previewPark(originalPark, previewMode) : undefined;
   if (!park)
     return (
       <PublicShell>
         <div className="page page-top">
-          <Empty
-            title={
-              ui(language, "Không tìm thấy hồ sơ", "Profile not found")
-            }
-            text={
-              ui(language, "Hồ sơ khu công nghiệp này không tồn tại.", "This industrial park profile does not exist.")
-            }
-          />
+          <DetailUnavailable to="/industrial-parks" label={ui(language,"Danh mục khu công nghiệp","Industrial park directory")} />
         </div>
       </PublicShell>
     );
-  const linked = assets.filter((a) => a.parkId === park.id);
+  const linked = previewMode ? [] : assets.filter((a) => a.parkId === park.id);
+  const approvedMedia = park.media.filter(m => m.approved && m.url.trim());
+  const visibleSections: Record<string, boolean> = {
+    overview: true, connectivity: Boolean(park.coordinates || park.connectivity.length),
+    infrastructure: Boolean(park.utilities.length || park.amenities.length),
+    workforce: [park.provinceProfile.population, park.provinceProfile.grdp, park.provinceProfile.growthRate, park.workforce.laborForce, park.workforce.skilledLabor, park.workforce.catchmentPopulation, park.provinceProfile.context, park.workforce.salaryBenchmark].some(hasValue),
+    incentives: park.incentives.length > 0, media: approvedMedia.length > 0, documents: park.documents.length > 0,
+  };
   const publicDocs = park.documents;
   const scrollToSection = (id: string) => {
     setActiveSection(id);
@@ -1143,11 +1144,11 @@ function ParkDetailPage() {
     ["incentives", ui(language, "Ưu đãi", "Incentives")],
     ["media", ui(language, "Hình ảnh", "Media")],
     ["documents", ui(language, "Tài liệu", "Documents")],
-  ];
+  ].filter(([id]) => visibleSections[id]);
   return (
     <PublicShell>
       <div className="detail-hero">
-        <img src={park.media[0]?.url} alt={tr(park.name, language)} />
+        <SafeImage src={approvedMedia[0]?.url} alt={tr(park.name, language)} />
         <div className="detail-shade" />
         <div className="page detail-hero-content">
           <div className="breadcrumbs">
@@ -1159,10 +1160,10 @@ function ParkDetailPage() {
           </div>
           <div className="detail-badges">
             <Badge value={park.status} tone="green" />
-            <span className="verified">
+            {!previewMode && park.verifiedBy && <span className="verified">
               <ShieldCheck size={15} />
               {ui(language, "Hồ sơ đã xác minh", "Verified profile")}
-            </span>
+            </span>}
           </div>
           <h1>{tr(park.name, language)}</h1>
           <p>
@@ -1226,33 +1227,16 @@ function ParkDetailPage() {
             </button>
           ))}
         </aside>
-        <section className="key-facts">
-          <div>
-            <span>{ui(language, "Tổng diện tích", "Total area")}</span>
-            <SourceValue value={park.totalArea} />
-          </div>
-          <div>
-            <span>
-              {ui(language, "Đất công nghiệp", "Industrial land")}
-            </span>
-            <SourceValue value={park.industrialLandArea} />
-          </div>
-          <div>
-            <span>
-              {ui(language, "Diện tích sẵn sàng", "Available area")}
-            </span>
-            <SourceValue value={park.availability[0].available} />
-          </div>
-          <div>
-            <span>{ui(language, "Lô tối thiểu", "Minimum plot")}</span>
-            {park.availability[0].minimumPlot ? (
-              <SourceValue value={park.availability[0].minimumPlot} />
-            ) : (
-              <b>—</b>
-            )}
-          </div>
+        <section className="key-facts adaptive-key-facts">
+          <FactGroup facts={[
+            {label:ui(language,"Tổng diện tích","Total area"),source:park.totalArea},
+            {label:ui(language,"Đất công nghiệp","Industrial land"),source:park.industrialLandArea},
+            {label:ui(language,"Diện tích sẵn sàng","Available area"),source:park.availability[0]?.available},
+            {label:ui(language,"Lô tối thiểu","Minimum plot"),source:park.availability[0]?.minimumPlot},
+          ]} />
         </section>
-        <section id="overview" className="detail-grid">
+        {previewMode && <section className="preview-note">{emptyCopy(language,"Mô phỏng UI: dữ liệu thiếu chỉ áp dụng cho màn hình này, không sửa hồ sơ nguồn.","UI preview: missing data applies only to this screen, not the source profile.","界面演示：缺失数据仅用于本页面，不修改原始资料。")}</section>}
+        <section id="overview" className={`detail-grid ${!hasValue(park.operator.overview) && !safeUrl(park.operator.website) ? 'overview-sparse' : ''}`}>
           <div className="content-card wide">
             <SectionTitle
               eyebrow={ui(language, "01 · HỒ SƠ", "01 · PROFILE")}
@@ -1260,41 +1244,25 @@ function ParkDetailPage() {
                 ui(language, "Tổng quan khu công nghiệp", "Industrial park overview")
               }
             />
-            <p className="lead">{tr(park.summary, language)}</p>
-            <div className="info-grid">
-              <div>
-                <small>{ui(language, "Loại hình", "Park type")}</small>
-                <b>{tr(park.parkType, language)}</b>
-              </div>
-              <div>
-                <small>
-                  {ui(language, "Khu kinh tế", "Economic zone")}
-                </small>
-                <b>{tr(park.economicZone, language)}</b>
-              </div>
-              <div>
-                <small>
-                  {ui(language, "Năm thành lập", "Established")}
-                </small>
-                <b>{park.establishmentYear}</b>
-              </div>
-              <div>
-                <small>{ui(language, "Giai đoạn", "Phase")}</small>
-                <b>{tr(park.phases[0].name, language)}</b>
-              </div>
-            </div>
+            <p className="lead">{tr(park.summary, language) || emptyCopy(language,"Thông tin giới thiệu đang được bổ sung. Bạn có thể gửi yêu cầu để VIG hỗ trợ.","The overview is not yet available. Send a request for VIG support.","项目介绍暂未提供，可向VIG提交需求。")}</p>
+            <FactGroup facts={[
+              {label:ui(language,"Loại hình","Park type"),value:tr(park.parkType,language)},
+              {label:ui(language,"Khu kinh tế","Economic zone"),value:tr(park.economicZone,language)},
+              {label:ui(language,"Năm thành lập","Established"),value:park.establishmentYear == null ? null : String(park.establishmentYear)},
+              {label:ui(language,"Giai đoạn","Phase"),value:park.phases[0] ? tr(park.phases[0].name,language) : null},
+            ]} />
           </div>
           <aside className="content-card operator-card">
             <span>{park.logoText}</span>
             <h3>{dataText(park.operator.name, language)}</h3>
             <p>{tr(park.operator.overview, language)}</p>
-            <a href={park.operator.website} target="_blank">
+            {safeUrl(park.operator.website) && <a href={park.operator.website} target="_blank" rel="noreferrer">
               {ui(language, "Website đơn vị phát triển", "Developer website")}
               <ExternalLink size={14} />
-            </a>
+            </a>}
           </aside>
         </section>
-        <section className="profile-stats">
+        <OptionalSection show={park.operator.portfolioStats.some(x => hasValue(x.value))} className="profile-stats">
           <SectionTitle
             eyebrow={ui(language, "NĂNG LỰC ĐƠN VỊ PHÁT TRIỂN", "OPERATOR TRACK RECORD")}
             title={
@@ -1323,8 +1291,8 @@ function ParkDetailPage() {
               </div>
             </div>
           ) : null}
-        </section>
-        <section id="connectivity">
+        </OptionalSection>
+        <OptionalSection show={visibleSections.connectivity} id="connectivity">
           <SectionTitle
             eyebrow={ui(language, "02 · VỊ TRÍ", "02 · LOCATION")}
             title={
@@ -1332,7 +1300,7 @@ function ParkDetailPage() {
             }
           />
           <div className="connect-grid">
-            <div className="map-panel">
+            {park.coordinates && <div className="map-panel">
               <div className="map-rings">
                 <span className="map-point park">VIG</span>
                 <span className="map-point port">
@@ -1352,7 +1320,7 @@ function ParkDetailPage() {
                 {park.coordinates?.lng.toFixed(4)}
               </div>
             </div>
-            <div className="connect-list">
+            }<div className="connect-list">
               {park.connectivity.map((c, i) => (
                 <article key={i}>
                   {c.type === "port" ? (
@@ -1387,8 +1355,8 @@ function ParkDetailPage() {
               ))}
             </div>
           </div>
-        </section>
-        <section>
+        </OptionalSection>
+        <OptionalSection show={approvedMedia.some(m => m.type === "masterplan")}>
           <SectionTitle
             eyebrow={ui(language, "03 · QUY HOẠCH", "03 · MASTERPLAN")}
             title={
@@ -1434,33 +1402,15 @@ function ParkDetailPage() {
               </small>
             </div>
           </div>
-        </section>
-        <section id="infrastructure">
+        </OptionalSection>
+        <OptionalSection show={visibleSections.infrastructure} id="infrastructure">
           <SectionTitle
             eyebrow={ui(language, "04 · HẠ TẦNG", "04 · INFRASTRUCTURE")}
             title={
               ui(language, "Hạ tầng và tiện ích đồng bộ", "Integrated infrastructure and utilities")
             }
           />
-          <div className="utility-grid">
-            {park.utilities.map((u, i) => {
-              const UtilityIcon = [
-                Zap,
-                Warehouse,
-                Activity,
-                Globe2,
-                ShieldCheck,
-                Factory,
-              ][i % 6];
-              return (
-                <article key={u.key}>
-                  <UtilityIcon size={25} />
-                  <span>{tr(u.label, language)}</span>
-                  <SourceValue value={u.capacity} />
-                </article>
-              );
-            })}
-          </div>
+          <FactGroup facts={park.utilities.map(u => ({label:tr(u.label,language),source:u.capacity}))} />
           <div className="pill-list">
             {park.amenities.map((x) => (
               <span key={x.en}>
@@ -1469,8 +1419,8 @@ function ParkDetailPage() {
               </span>
             ))}
           </div>
-        </section>
-        <section id="workforce" className="detail-grid">
+        </OptionalSection>
+        <OptionalSection show={visibleSections.workforce} id="workforce" className="detail-grid">
           <div className="content-card wide">
             <SectionTitle
               eyebrow={ui(language, "05 · BỐI CẢNH ĐỊA PHƯƠNG", "05 · PROVINCIAL CONTEXT")}
@@ -1478,43 +1428,17 @@ function ParkDetailPage() {
                 ui(language, "Kinh tế địa phương và nguồn nhân lực", "Provincial economy and workforce")
               }
             />
-            <div className="metric-grid">
-              <div>
-                <small>{ui(language, "Dân số", "Population")}</small>
-                <SourceValue value={park.provinceProfile.population} />
-              </div>
-              <div>
-                <small>GRDP</small>
-                <SourceValue value={park.provinceProfile.grdp} />
-              </div>
-              <div>
-                <small>
-                  {ui(language, "Tốc độ tăng trưởng", "Growth")}
-                </small>
-                <SourceValue value={park.provinceProfile.growthRate} />
-              </div>
-              <div>
-                <small>
-                  {ui(language, "Lực lượng lao động", "Labour force")}
-                </small>
-                <SourceValue value={park.workforce.laborForce} />
-              </div>
-              <div>
-                <small>
-                  {ui(language, "Lao động qua đào tạo", "Skilled labour")}
-                </small>
-                <SourceValue value={park.workforce.skilledLabor} />
-              </div>
-              <div>
-                <small>
-                  {ui(language, "Nguồn lao động trong bán kính 20 km", "20 km catchment")}
-                </small>
-                <SourceValue value={park.workforce.catchmentPopulation} />
-              </div>
-            </div>
+            <FactGroup facts={[
+              {label:ui(language,"Dân số","Population"),source:park.provinceProfile.population},
+              {label:"GRDP",source:park.provinceProfile.grdp},
+              {label:ui(language,"Tốc độ tăng trưởng","Growth"),source:park.provinceProfile.growthRate},
+              {label:ui(language,"Lực lượng lao động","Labour force"),source:park.workforce.laborForce},
+              {label:ui(language,"Lao động qua đào tạo","Skilled labour"),source:park.workforce.skilledLabor},
+              {label:ui(language,"Nguồn lao động","Labour catchment"),source:park.workforce.catchmentPopulation},
+            ]}/>
             <p>{tr(park.provinceProfile.context, language)}</p>
           </div>
-          <aside className="content-card">
+          {park.workforce.salaryBenchmark.length > 0 && <aside className="content-card">
             <h3>
               {ui(language, "Mức lương tham khảo", "Salary benchmark")}
             </h3>
@@ -1528,9 +1452,9 @@ function ParkDetailPage() {
             ) : (
               <p>{ui(language, "Chưa có dữ liệu", "Not available")}</p>
             )}
-          </aside>
-        </section>
-        <section id="incentives">
+          </aside>}
+        </OptionalSection>
+        <OptionalSection show={visibleSections.incentives} id="incentives">
           <SectionTitle
             eyebrow={ui(language, "06 · ƯU ĐÃI", "06 · INCENTIVES")}
             title={
@@ -1569,7 +1493,7 @@ function ParkDetailPage() {
               }
             />
           )}
-        </section>
+        </OptionalSection>
         <section className="park-assets-panel">
           <SectionTitle
             eyebrow={ui(language, "07 · SẢN PHẨM SẴN CÓ", "07 · AVAILABILITY")}
@@ -1591,10 +1515,11 @@ function ParkDetailPage() {
               text={
                 ui(language, "Liên hệ VIG để được hỗ trợ tìm mặt bằng phù hợp.", "Contact VIG for supply sourcing support.")
               }
+              action={<Link className="button primary" to={`/find-supply?parkId=${park.id}`}>{ui(language,"Tìm mặt bằng","Find Supply")}</Link>}
             />
           )}
         </section>
-        <section>
+        <OptionalSection show={park.process.length > 0}>
           <SectionTitle
             eyebrow={ui(language, "08 · QUY TRÌNH ĐẦU TƯ", "08 · INVESTMENT PROCESS")}
             title={
@@ -1618,8 +1543,8 @@ function ParkDetailPage() {
               </article>
             ))}
           </div>
-        </section>
-        <section className="detail-grid">
+        </OptionalSection>
+        <OptionalSection show={[park.logistics.portCapacityDwt,park.logistics.cargoThroughput,park.logistics.shippingRoutes,park.logistics.indicativeCosts].some(hasValue)} className="detail-grid">
           <div className="content-card wide">
             <SectionTitle
               eyebrow={ui(language, "09 · LOGISTICS", "09 · LOGISTICS")}
@@ -1656,7 +1581,7 @@ function ParkDetailPage() {
               ))}
             </div>
           </div>
-          <aside className="content-card">
+          {park.logistics.indicativeCosts.length > 0 && <aside className="content-card">
             <h3>
               {ui(language, "Chi phí vận chuyển tham khảo", "Indicative costs")}
             </h3>
@@ -1669,10 +1594,10 @@ function ParkDetailPage() {
             <small>
               {ui(language, "Chi phí mang tính tham khảo tại thời điểm của tài liệu nguồn.", "Indicative only, based on the source profile.")}
             </small>
-          </aside>
-        </section>
-        <section className="triple">
-          <div className="content-card">
+          </aside>}
+        </OptionalSection>
+        <OptionalSection show={[park.suitableIndustries,park.sustainability,park.community].some(hasValue)} className="triple">
+          {park.suitableIndustries.length > 0 && <div className="content-card">
             <h3>
               {ui(language, "Ngành phù hợp", "Suitable industries")}
             </h3>
@@ -1683,8 +1608,8 @@ function ParkDetailPage() {
                 </span>
               ))}
             </div>
-          </div>
-          <div className="content-card">
+          </div>}
+          {park.sustainability.length > 0 && <div className="content-card">
             <h3>
               {ui(language, "Phát triển bền vững", "Sustainability")}
             </h3>
@@ -1694,8 +1619,8 @@ function ParkDetailPage() {
                 {tr(x, language)}
               </p>
             ))}
-          </div>
-          <div className="content-card">
+          </div>}
+          {park.community.length > 0 && <div className="content-card">
             <h3>{ui(language, "Cộng đồng", "Community")}</h3>
             {park.community.length ? (
               park.community.map((x) => (
@@ -1707,9 +1632,9 @@ function ParkDetailPage() {
             ) : (
               <p>{ui(language, "Chưa có dữ liệu", "Not available")}</p>
             )}
-          </div>
-        </section>
-        {park.media.length ? (
+          </div>}
+        </OptionalSection>
+        {approvedMedia.length ? (
           <section id="media">
             <SectionTitle
               eyebrow={ui(language, "10 · TRUYỀN THÔNG", "10 · MEDIA")}
@@ -1718,11 +1643,10 @@ function ParkDetailPage() {
               }
             />
             <div className="media-gallery">
-              {park.media
-                .filter((item) => item.approved)
+              {approvedMedia
                 .map((item) => (
                   <figure key={item.id}>
-                    <img src={item.url} alt={tr(item.title, language)} />
+                    <SafeImage src={item.url} alt={tr(item.title, language)} />
                     <figcaption>
                       <b>{tr(item.title, language)}</b>
                       <span>
@@ -1741,7 +1665,7 @@ function ParkDetailPage() {
             ) : null}
           </section>
         ) : null}
-        <section id="documents">
+        <OptionalSection show={visibleSections.documents} id="documents">
           <SectionTitle
             eyebrow={ui(language, "11 · TÀI LIỆU", "11 · DOCUMENTS")}
             title={
@@ -1775,21 +1699,21 @@ function ParkDetailPage() {
                       : ui(language, "công khai", "public")}
                   </small>
                 </div>
-                {d.visibility === "admin_only" ? (
+                {d.visibility !== "public" ? (
                   <button disabled>
                     <Lock size={15} />
                     {ui(language, "Chỉ quản trị viên", "Admin only")}
                   </button>
-                ) : (
+                ) : safeUrl(d.sourceUrl) ? (
                   <a href={d.sourceUrl} target="_blank" rel="noreferrer">
                     <Download size={15} />
                     {ui(language, "Xem tài liệu", "View source")}
                   </a>
-                )}
+                ) : <span className="document-unavailable">{emptyCopy(language,"Chưa có bản tải xuống","Download not available","暂无下载文件")}</span>}
               </article>
             ))}
           </div>
-        </section>
+        </OptionalSection>
         <section className="contact-card">
           <div>
             <span>{ui(language, "LIÊN HỆ VIG", "CONTACT VIG")}</span>
@@ -1799,7 +1723,7 @@ function ParkDetailPage() {
             <p>
               {park.contact
                 ? `${tr(park.contact.office, language)} · ${park.contact.email}`
-                : ""}
+                : emptyCopy(language,"Chưa có đầu mối liên hệ công khai. VIG sẽ hỗ trợ tiếp nhận nhu cầu của bạn.","No public contact is available. VIG can help receive your requirements.","暂无公开联系人，VIG可协助接收您的需求。")}
             </p>
           </div>
           <div>
@@ -1843,18 +1767,18 @@ function AssetCard({
         tabIndex={0}
         onClick={() => navigate(`/assets/${asset.id}`)}
         onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") navigate(`/assets/${asset.id}`);
+          if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); navigate(`/assets/${asset.id}`); }
         }}
       >
         <div className="asset-card-image">
-          <img src={asset.image} alt={tr(asset.name, language)} />
+          <SafeImage src={asset.image} alt={tr(asset.name, language)} />
         </div>
         <div className="asset-card-body">
           <Badge value={asset.type} tone="blue" />
           <h3>{tr(asset.name, language)}</h3>
           <p>
             <MapPin size={14} />
-            {park ? tr(park.name, language) : ""}
+            {park ? tr(park.name, language) : emptyCopy(language,"Chưa có KCN liên kết","Linked park unavailable","关联园区暂不可用")}
           </p>
           <div className="asset-card-facts">
             <b>
@@ -1873,7 +1797,7 @@ function AssetCard({
             >
               <MessageCircle /> {ui(language, "Trao đổi", "Chat")}
             </button>
-            <Link to={requestUrl} onClick={(event) => event.stopPropagation()}>
+            <Link to={park ? requestUrl : "/find-supply"} onClick={(event) => event.stopPropagation()}>
               <Send /> {ui(language, "Gửi yêu cầu trực tiếp", "Direct Request")}
             </Link>
           </div>
@@ -1945,6 +1869,7 @@ function AssetsPage() {
           <Empty
             title={ui(language, "Chưa có tài sản phù hợp", "No matching assets")}
             text={ui(language, "Vui lòng chọn loại hình khác hoặc gửi yêu cầu tìm mặt bằng.", "Choose another asset type or submit a supply request.")}
+            action={<button className="button primary" onClick={() => setType("all")}>{ui(language,"Xóa bộ lọc","Clear filters")}</button>}
           />
         )}
       </div>
@@ -1954,69 +1879,34 @@ function AssetsPage() {
 function AssetDetailPage() {
   const { id } = useParams();
   const { assets, parks, language, openParkChat } = useApp();
-  const asset = assets.find((a) => a.id === id);
-  if (!asset) return <Navigate to="/assets" />;
-  const park = parks.find((p) => p.id === asset.parkId)!;
-  const requestUrl = `/find-supply?${new URLSearchParams({ parkId: park.id, assetId: asset.id }).toString()}`;
-  return (
-    <PublicShell>
-      <div className="page page-top">
-        <div className="breadcrumbs">
-          <Link to="/assets">
-            {ui(language, "Bất động sản công nghiệp", "Assets")}
-          </Link>
-          <ChevronRight size={14} />
-          <span>{tr(asset.name, language)}</span>
-        </div>
-        <div className="asset-detail">
-          <img src={asset.image} alt={tr(asset.name, language)} />
-          <div>
-            <Badge value={asset.type} />
-            <h1>{tr(asset.name, language)}</h1>
-            <p>
-              <MapPin size={16} />
-              <Link to={`/industrial-parks/${park.slug}`}>
-                {tr(park.name, language)}
-              </Link>
-            </p>
-            <p>{tr(asset.description, language)}</p>
-            <div className="key-facts stacked">
-              <div>
-                <span>
-                  {ui(language, "Diện tích chào thuê", "Area")}
-                </span>
-                <b>
-                  {asset.area.toLocaleString()} {asset.unit}
-                </b>
-              </div>
-              <div>
-                <span>{ui(language, "Đơn giá tham khảo", "Price")}</span>
-                <SourceValue value={asset.price} />
-              </div>
-              <div>
-                <span>
-                  {ui(language, "Thời điểm bàn giao", "Available from")}
-                </span>
-                <b>{asset.availableFrom}</b>
-              </div>
-              <div>
-                <span>{ui(language, "Công suất điện", "Power")}</span>
-                <b>{asset.powerMva} MVA</b>
-              </div>
-            </div>
-            <div className="asset-detail-actions">
-              <button className="button outline" type="button" onClick={() => openParkChat(park.id)}>
-                <MessageCircle /> {ui(language, "Trao đổi với KCN", "Chat with park")}
-              </button>
-              <Link className="button primary" to={requestUrl}>
-                <Send /> {ui(language, "Gửi yêu cầu tư vấn", "Send requirement")}
-              </Link>
-            </div>
-          </div>
+  const [params] = useSearchParams();
+  const mode = import.meta.env.DEV ? params.get("demoState") : null;
+  const original = assets.find(a => a.id === id);
+  const asset = original ? previewAsset(original,mode) : undefined;
+  if (!asset) return <PublicShell><div className="page page-top"><DetailUnavailable to="/assets" label={ui(language,"Bất động sản công nghiệp","Assets")} /></div></PublicShell>;
+  const park = mode === "orphan" ? undefined : parks.find(p => p.id === asset.parkId);
+  const requestUrl = park ? `/find-supply?${new URLSearchParams({parkId:park.id,assetId:asset.id})}` : "/find-supply";
+  return <PublicShell><div className="page page-top">
+    <div className="breadcrumbs"><Link to="/assets">{ui(language,"Bất động sản công nghiệp","Assets")}</Link><ChevronRight size={14}/><span>{tr(asset.name,language)}</span></div>
+    {mode && <p className="preview-note">{emptyCopy(language,"Mô phỏng UI — Không thay đổi dữ liệu nguồn","UI preview — Source records remain unchanged","界面演示 — 不修改原始数据")}</p>}
+    <div className="asset-detail">
+      <SafeImage src={asset.image} alt={tr(asset.name,language)} />
+      <div><Badge value={asset.type}/><h1>{tr(asset.name,language)}</h1>
+        {park ? <p><MapPin size={16}/><Link to={`/industrial-parks/${park.slug}`}>{tr(park.name,language)}</Link></p> : <p className="missing-summary">{emptyCopy(language,"Chưa xác định được KCN liên kết. VIG có thể hỗ trợ tìm mặt bằng.","The linked park is unavailable. VIG can help find a property.","关联园区暂不可用，VIG可协助寻找场地。")}</p>}
+        {hasValue(asset.description) && <p>{tr(asset.description,language)}</p>}
+        <FactGroup facts={[
+          {label:ui(language,"Diện tích chào thuê","Area"),value:asset.area,unit:asset.unit},
+          {label:ui(language,"Đơn giá tham khảo","Price"),source:asset.price},
+          {label:ui(language,"Thời điểm bàn giao","Available from"),value:asset.availableFrom},
+          {label:ui(language,"Công suất điện","Power"),value:asset.powerMva,unit:"MVA"},
+        ]}/>
+        <div className="asset-detail-actions">
+          {park && <button className="button outline" type="button" onClick={() => openParkChat(park.id)}><MessageCircle/>{ui(language,"Trao đổi với KCN","Chat with park")}</button>}
+          <Link className="button primary" to={requestUrl}><Send/>{park ? ui(language,"Gửi yêu cầu trực tiếp","Direct Request") : ui(language,"Tìm mặt bằng","Find Supply")}</Link>
         </div>
       </div>
-    </PublicShell>
-  );
+    </div>
+  </div></PublicShell>;
 }
 
 const emptyForm = {
@@ -2740,6 +2630,7 @@ const formatReportUsd = (value: number, language: Language) =>
 
 function ExpoTrendChart({ data }: { data: ExpoDailyMetric[] }) {
   const { language } = useApp();
+  if (!data.length) return <StatePanel title={emptyCopy(language,"Chưa có dữ liệu biểu đồ","No chart data available","暂无图表数据")} text={emptyCopy(language,"Chưa có số liệu theo ngày để hiển thị. Không quy đổi dữ liệu thiếu thành số 0.","Daily figures are not available. Missing data is not treated as zero.","暂无每日数据，不将缺失数据视为零。")}/>;
   const width = 660;
   const height = 220;
   const chartTop = 20;
@@ -2797,7 +2688,7 @@ function AdminExpos() {
     }),
     { exhibitors: 0, connections: 0, deals: 0, completed: 0 },
   );
-  const trend = expos[0].analytics.trend.map((item, index) => ({
+  const trend = (expos[0]?.analytics.trend || []).map((item, index) => ({
     date: item.date,
     requests: expos.reduce((sum, expo) => sum + (expo.analytics.trend[index]?.requests || 0), 0),
     connections: expos.reduce((sum, expo) => sum + (expo.analytics.trend[index]?.connections || 0), 0),
@@ -2856,7 +2747,8 @@ function AdminExpos() {
               <option value="upcoming">{ui(language, "Sắp diễn ra", "Upcoming")}</option>
             </select>
           </div>
-          <div className="table-wrap expo-report-table">
+          {!filtered.length && <StatePanel kind="no_results" title={emptyCopy(language,"Không có Expo phù hợp","No matching Expos","没有符合条件的展会")} text={emptyCopy(language,"Thử thay đổi từ khóa hoặc trạng thái triển lãm.","Try a different keyword or Expo status.","请尝试其他关键词或展会状态。")} action={<button className="button primary" onClick={()=>{setQuery("");setStatus("all");}}>{ui(language,"Xóa bộ lọc","Clear filters")}</button>}/>}
+          <div className="table-wrap expo-report-table" hidden={!filtered.length}>
             <table>
               <thead><tr>
                 <th>{ui(language, "Expo", "Expo")}</th><th>{ui(language, "Trạng thái", "Status")}</th><th>{ui(language, "Khách truy cập", "Visitors")}</th><th>{ui(language, "Kết nối I / O", "Connections I / O")}</th><th>{ui(language, "Giao dịch I / O", "Deals I / O")}</th><th>{ui(language, "Kết nối thành công", "Completed")}</th><th></th>
@@ -2883,7 +2775,7 @@ function AdminExpoDetail() {
   const { language, expos } = useApp();
   const { id } = useParams();
   const expo = expos.find((item) => item.id === id);
-  if (!expo) return <Navigate to="/admin/expos" replace />;
+  if (!expo) return <AdminShell><div className="admin-page"><DetailUnavailable to="/admin/expos" label={ui(language,"Quản lý Expo","Expo Management")} /></div></AdminShell>;
   const report = expo.analytics;
   const totalConnections = report.inboundRequests + report.outboundRequests;
   const conversion = totalConnections ? Math.round((report.completedConnections / totalConnections) * 100) : 0;
@@ -3034,7 +2926,10 @@ function AdminRequests() {
           </select>
         </div>
         <section className="admin-panel">
-          <RequestTable requests={filtered} />
+          {filtered.length ? <RequestTable requests={filtered} /> : <StatePanel kind={requests.length ? "no_results" : "empty"}
+            title={emptyCopy(language,requests.length ? "Không có yêu cầu phù hợp" : "Chưa có yêu cầu kết nối",requests.length ? "No matching requests" : "No connection requests yet",requests.length ? "没有符合条件的需求" : "暂无连接需求")}
+            text={emptyCopy(language,"Yêu cầu sẽ xuất hiện tại đây khi được tiếp nhận. Nếu đang lọc, hãy thử mở rộng điều kiện.","Requests appear here once received. If filters are active, try broadening them.","收到需求后将在此显示。如果已筛选，请扩大筛选范围。")}
+            action={(q || status !== "all") && <button className="button primary" onClick={() => {setQ("");setStatus("all");}}>{ui(language,"Xóa bộ lọc","Clear filters")}</button>}/>}
         </section>
       </div>
     </AdminShell>
@@ -3045,7 +2940,7 @@ function RequestDetail() {
   const { language, requests, parks, transitionRequest } = useApp();
   const r = requests.find((x) => x.id === id);
   const [reason, setReason] = useState("");
-  if (!r) return <Navigate to="/admin/requests" />;
+  if (!r) return <AdminShell><div className="admin-page"><DetailUnavailable to="/admin/requests" label={ui(language,"Quản lý yêu cầu","Request management")} /></div></AdminShell>;
   const matches = parks
     .filter(
       (p) =>
@@ -3332,7 +3227,7 @@ function AdminParks() {
           </select>
         </div>
         <section className="admin-panel">
-          <div className="table-wrap">
+          {filtered.length ? <div className="table-wrap">
             <table>
               <thead>
                 <tr>
@@ -3395,7 +3290,7 @@ function AdminParks() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </div> : <StatePanel kind="no_results" title={emptyCopy(language,"Không có hồ sơ phù hợp","No matching profiles","没有符合条件的档案")} text={emptyCopy(language,"Thử thay đổi từ khóa hoặc điều kiện đối chiếu dữ liệu.","Try a different keyword or data-quality filter.","请尝试其他关键词或数据质量筛选条件。")} action={<button className="button primary" onClick={() => {setQ("");setQuality("all");}}>{ui(language,"Xóa bộ lọc","Clear filters")}</button>}/>}
         </section>
       </div>
     </AdminShell>
@@ -3405,7 +3300,7 @@ function AdminParkDetail() {
   const { id } = useParams();
   const { language, parks, updateParkPublication } = useApp();
   const p = parks.find((x) => x.id === id);
-  if (!p) return <Navigate to="/admin/industrial-parks" />;
+  if (!p) return <AdminShell><div className="admin-page"><DetailUnavailable to="/admin/industrial-parks" label={ui(language,"Hồ sơ khu công nghiệp","Industrial parks")} /></div></AdminShell>;
   return (
     <AdminShell>
       <div className="admin-page">
@@ -3569,6 +3464,7 @@ function AdminParkDetail() {
 function AppRoutes() {
   return (
     <Routes>
+      {import.meta.env.DEV && <Route path="/demo/empty-states" element={<PublicShell><StatePreview /></PublicShell>} />}
       <Route path="/" element={<Navigate to="/home" replace />} />
       <Route path="/home" element={<HomePage />} />
       <Route path="/industrial-parks" element={<ParksPage />} />

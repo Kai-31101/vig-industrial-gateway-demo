@@ -1,16 +1,18 @@
 import ExcelJS from 'exceljs';
+import {mergeImported,importSafe} from './repeatedRows';
 import {parks,assets} from '../data';
 import {newContent,blank} from './ContentEditor';
 import {contentErrors,type Draft,type ImportRow,type Content,type ContentKind} from './model';
-export const IMPORT_VERSION='VIG-DEMO-1';
+export const IMPORT_VERSION='VIG-DEMO-2';
 export const IMPORT_LIMITS={bytes:5*1024*1024,rows:500};
 export function flatten(value:any,path=''):Record<string,unknown>{
+  if(Array.isArray(value))return {[path]:value};
   if(value&&typeof value==='object'){return Object.fromEntries(Object.entries(value).filter(([k])=>!['conflicts','payment','publicationStatus','id','verifiedBy','lastVerifiedAt','verificationStatus','visibility','approved','imageApproved'].includes(k)).flatMap(([k,v])=>Object.entries(flatten(v,path?`${path}.${k}`:k))))}
   return {[path]:value};
 }
 export const importColumns={Parks:['action','id',...Object.keys(flatten(parks[0]))],Products:['action','id',...Object.keys(flatten(assets[0]))]};
 function setPath(root:any,path:string,value:unknown,sample:any){const keys=path.split('.');let obj=root,shape=sample;keys.slice(0,-1).forEach((key,index)=>{shape=shape?.[key];if(obj[key]==null)obj[key]=shape&&typeof shape==='object'?blank(shape):/^\d+$/.test(keys[index+1])?[]:{};obj=obj[key]});obj[keys.at(-1)!]=value;}
-export async function templateWorkbook(mode:string,sample=false){const wb=new ExcelJS.Workbook();const info=wb.addWorksheet('Instructions');info.addRows([[IMPORT_VERSION],['DEMO ONLY: 5 MB / 500 rows. Production limits require approval.'],['Empty update cells retain saved values. Import creates drafts only.'],['Parks before Products. Use explicit IDs; no fuzzy name matching.'],['Review full records in VIG before publishing. No verification can be imported.']]);
+export async function templateWorkbook(mode:string,sample=false){const wb=new ExcelJS.Workbook();const info=wb.addWorksheet('Instructions');info.addRows([[IMPORT_VERSION],['DEMO ONLY: 5 MB / 500 rows. Production limits require approval.'],['Empty update cells retain saved values. Import creates drafts only.'],['Parks before Products. Use explicit IDs; no fuzzy name matching.'],['Review full records in VIG before publishing. No verification can be imported.'],['Repeated groups use JSON arrays with stable _rowId (or existing id). Never use row position.'],['Export current drafts to obtain row IDs. Missing rows and empty values are retained; remove only in the draft editor.']]);
   for(const name of (mode==='both'?['Parks','Products']:[mode]) as ('Parks'|'Products')[]){const ws=wb.addWorksheet(name);ws.addRow(importColumns[name]);ws.getRow(1).font={bold:true};ws.views=[{state:'frozen',ySplit:1}];ws.columns.forEach(c=>c.width=23);
     if(sample){const row:Record<string,string>={action:'create',id:name==='Parks'?'demo-import-park':'demo-import-product','name.vi':name==='Parks'?'KCN minh họa mới':'Nhà xưởng minh họa','name.en':name==='Parks'?'Demo industrial park':'Demo factory','name.zh':name==='Parks'?'演示园区':'演示厂房',parkId:'demo-import-park'};if(name==='Products'){row.area='12000';row.unit='m²';row.type='ready_built_factory';row.transaction='lease'}ws.addRow(importColumns[name].map(k=>row[k]||''));}
   }return wb;
@@ -25,7 +27,7 @@ export async function readImport(file:File,drafts:Draft[],mode:string):Promise<I
       const id=values.id,action=values.action as 'create'|'update',old=drafts.find(d=>d.id===id),kind:ContentKind=sheet==='Parks'?'park':'asset';
       if(!id||!['create','update'].includes(action))errors.push('id/action');if(action==='create'&&old||action==='update'&&(!old||old.kind!==kind))errors.push('record');
       const after=structuredClone(old?.data||newContent(kind,id));const schema=flatten(sheet==='Parks'?parks[0]:assets[0]);
-      for(const key of headers.slice(2)){const v=values[key];if(!v)continue;const shape=schema[key];let parsed:unknown=v;if(typeof shape==='number'){parsed=Number(v);if(!Number.isFinite(parsed))errors.push(key)}if(typeof shape==='boolean'){if(!['true','false'].includes(v))errors.push(key);parsed=v==='true'}setPath(after,key,parsed,sheet==='Parks'?parks[0]:assets[0]);}
+      for(const key of headers.slice(2)){const v=values[key];if(!v)continue;const shape=schema[key];let parsed:unknown=v;if(Array.isArray(shape)){try{const patch=JSON.parse(v);if(!Array.isArray(patch))throw new Error('array');const previous=key.split('.').reduce((o,k)=>o?.[k],after as any);parsed=mergeImported(previous,patch,blank(shape[0]))}catch{errors.push(key+': row_id/array/permission');continue}}if(typeof shape==='number'){parsed=Number(v);if(!Number.isFinite(parsed))errors.push(key)}if(typeof shape==='boolean'){if(!['true','false'].includes(v))errors.push(key);parsed=v==='true'}setPath(after,key,parsed,sheet==='Parks'?parks[0]:assets[0]);}
       errors.push(...Object.keys(contentErrors(after)));rows.push({sheet,row:n,id,action,parkId:(after as any).parkId||'',values,errors,warnings:['Draft only; review required'],before:old?.data,after:after as Content,revision:old?.revision});
     });
   }
@@ -35,4 +37,5 @@ export async function readImport(file:File,drafts:Draft[],mode:string):Promise<I
   return rows;
 }
 export async function downloadWorkbook(wb:ExcelJS.Workbook,name:string){const bytes=await wb.xlsx.writeBuffer();const url=URL.createObjectURL(new Blob([bytes as BlobPart],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+export async function draftWorkbook(mode:string,drafts:Draft[]){const wb=await templateWorkbook(mode);for(const sheet of ['Parks','Products'] as const){const ws=wb.getWorksheet(sheet);if(!ws)continue;for(const d of drafts.filter(d=>d.kind===(sheet==='Parks'?'park':'asset'))){const values=flatten(importSafe(d.data));ws.addRow(importColumns[sheet].map(key=>key==='action'?'update':key==='id'?d.id:Array.isArray(values[key])?JSON.stringify(values[key]):values[key]??''));}}return wb;}
 export async function fileFingerprint(file:File){const hash=await crypto.subtle.digest('SHA-256',await file.arrayBuffer());return [...new Uint8Array(hash)].map(v=>v.toString(16).padStart(2,'0')).join('');}

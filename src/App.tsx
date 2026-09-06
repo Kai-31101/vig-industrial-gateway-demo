@@ -1,6 +1,16 @@
-import { CSSProperties, FormEvent, ReactNode, useMemo, useState } from "react";
+import {AdminLogin} from './admin/AdminLogin';
+import {PackageCards} from './PackageCards';
+import {PackageSettings} from './admin/PackageSettings';
+import {PermissionMatrix} from './admin/PermissionMatrix';
+import {TradeExpoSection} from './TradeExpoSection';
+import {DiscoveryFilters,matchesParkFilters,matchesAssetFilters} from './DiscoveryFilters';
+import {assetPriceText} from './assetPrice';
+import {ConnectionDetail,ConnectionDashboard,ExpoDirectoryAdmin} from './admin/Connections';
+import {successfulConnection} from './connectionLogic';
+import {validPhone} from './admin/model';
+import { CSSProperties, FormEvent, ReactNode, useMemo, useState, useRef } from "react";
 import {
-  HashRouter,
+  BrowserRouter,
   Link,
   Navigate,
   Route,
@@ -60,11 +70,11 @@ import { previewPark, previewAsset } from "./emptyPreview";
 import { StatePreview } from "./StatePreview";
 import { AdminProvider, useAdmin } from './admin/AdminContext';
 import { ContentList, ContentEditor } from './admin/ContentEditor';
-import { UsersPage, AcceptInvitation, DemoSession } from './admin/Users';
+import { UsersPage, AcceptInvitation } from './admin/Users';
 import { BatchImport } from './admin/BatchImport';
 import { ExpoReport } from './admin/ExpoReport';
 import { Access } from './admin/ui';
-import { firstAdminPage } from './admin/model';
+import { firstAdminPage, routePermission } from './admin/model';
 import './admin/admin.css';
 import { translateToChinese, ui } from "./i18n";
 import {
@@ -385,7 +395,7 @@ function LanguageToggle({ compact = false }: { compact?: boolean }) {
 }
 
 function Header() {
-  const { language, role } = useApp();
+  const { language } = useApp();
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const nav = [
@@ -438,16 +448,7 @@ function Header() {
         </nav>
         <div className="header-actions">
           <LanguageToggle />
-          {role === "admin" ? (
-            <Link className="admin-chip" to="/admin/dashboard">
-              <ShieldCheck size={16} /> {ui(language, "Quản trị", "Admin")}
-            </Link>
-          ) : (
-            <Link className="login-link" to="/login">
-              <LogIn size={16} />
-              {ui(language, "Quản trị", "Admin")}
-            </Link>
-          )}
+
         </div>
       </div>
     </header>
@@ -525,6 +526,7 @@ function Footer() {
   );
 }
 function FloatingParkChat() {
+  const [failNext,setFailNext]=useState(false);
   const {
     language,
     parks,
@@ -534,13 +536,14 @@ function FloatingParkChat() {
     openParkChat,
     closeParkChat,
     toggleParkChat,
-    sendParkChatMessage,
+    sendParkChatMessage,retryParkChatMessage,
   } = useApp();
   const [draft, setDraft] = useState("");
   const activePark = parks.find((park) => park.id === chatParkId) || null;
   const threadIds = Object.keys(chatThreads);
   return (
     <div className="floating-chat-root">
+      {chatOpen && !activePark && <section className="floating-chat-panel empty-conversations"><div className="floating-chat-screen"><header><b>{ui(language,"Trao đổi","Chats")}</b><button onClick={closeParkChat} aria-label={ui(language,"Đóng","Close")}><X/></button></header><StatePanel title={ui(language,"Chưa có hội thoại","No conversations yet")} text={ui(language,"Chọn khu công nghiệp để bắt đầu trao đổi.","Choose an industrial park to start a conversation.")} action={<Link className="button primary" to="/industrial-parks" onClick={closeParkChat}>{ui(language,"Khám phá KCN","Explore parks")}</Link>}/></div></section>}
       {chatOpen && activePark && (
         <section className="floating-chat-panel" aria-label={ui(language, "Trao đổi với khu công nghiệp", "Industrial park chat")}>
           <aside className="floating-chat-users">
@@ -591,15 +594,18 @@ function FloatingParkChat() {
               {(chatThreads[activePark.id] || []).map((message) => (
                 <div className={`chat-bubble ${message.sender}`} key={message.id}>
                   {tr(message.text, language)}
+                  <small className="chat-delivery">{message.at&&new Date(message.at).toLocaleTimeString(language==='vi'?'vi-VN':language==='zh'?'zh-CN':'en-US',{hour:'2-digit',minute:'2-digit'})} · {message.sender==='supplier'||message.contextOnly?ui(language,"Mô phỏng","Simulation"):message.status==='sending'?ui(language,"Đang gửi","Sending"):message.status==='failed'?ui(language,"Gửi thất bại","Failed"):ui(language,"Đã gửi (mô phỏng)","Sent (simulation)")}</small>
+                  {message.status==='failed'&&<button className="button" onClick={()=>retryParkChatMessage(message.id)}>{ui(language,"Thử lại","Retry")}</button>}
                 </div>
               ))}
             </div>
+            <label className="chat-failure-demo"><input type="checkbox" checked={failNext} onChange={e=>setFailNext(e.target.checked)}/>{ui(language,"Mô phỏng lỗi gửi tin tiếp theo","Simulate next message failure")}</label>
             <form
               className="floating-chat-composer"
               onSubmit={(event) => {
                 event.preventDefault();
                 if (!draft.trim()) return;
-                sendParkChatMessage(draft);
+                sendParkChatMessage(draft,failNext);setFailNext(false);
                 setDraft("");
               }}
             >
@@ -640,11 +646,12 @@ function PublicShell({ children }: { children: ReactNode }) {
 }
 
 function HomePage() {
+  const [keyword,setKeyword]=useState("");
   const { language, parks, assets, requests } = useApp();
   const navigate = useNavigate();
-  const featured = parks.slice(0, 4);
+  const featured = parks.filter(p=>p.publicationStatus==="published").slice(0, 4);
   const completedConnections = requests.filter(
-    (request) => request.status === "closed",
+    successfulConnection,
   ).length;
   return (
     <PublicShell>
@@ -725,12 +732,14 @@ function HomePage() {
           <Search />
           <input
             aria-label={ui(language, "Tìm kiếm công nghiệp", "Industrial search")}
+            value={keyword} onChange={e=>setKeyword(e.target.value)}
+            onKeyDown={e=>{if(e.key==="Enter")navigate(`/industrial-parks?q=${encodeURIComponent(keyword.trim())}`)}}
             placeholder={
               ui(language, "Tìm KCN, tỉnh, ngành hoặc loại tài sản...", "Search park, province, industry or asset type...")
             }
           />
         </div>
-        <button onClick={() => navigate("/industrial-parks")}>
+        <button onClick={() => navigate(`/industrial-parks?q=${encodeURIComponent(keyword.trim())}`)}>
           {ui(language, "Tìm kiếm", "Search")}
         </button>
       </section>
@@ -890,10 +899,10 @@ function ParkCard({ park }: { park: IndustrialParkProfile }) {
 
 function ParksPage() {
   const { language, parks } = useApp();
-  const [q, setQ] = useState("");
-  const [region, setRegion] = useState("all");
-  const [status, setStatus] = useState("all");
-  const [industry, setIndustry] = useState("all");
+  const [params,setParams]=useSearchParams();
+  const q=params.get("q")||"",region=params.get("region")||"all",status=params.get("status")||"all",industry=params.get("industry")||"all";
+  const setFilter=(key:string,value:string)=>setParams(previous=>{const next=new URLSearchParams(previous);if(value&&value!=="all")next.set(key,value);else next.delete(key);return next},{replace:true});
+  const setQ=(value:string)=>setFilter("q",value),setRegion=(value:string)=>setFilter("region",value),setStatus=(value:string)=>setFilter("status",value),setIndustry=(value:string)=>setFilter("industry",value);
   const industryOptions = useMemo(
     () =>
       [...new Set(parks.flatMap((park) => park.suitableIndustries))].sort(
@@ -907,7 +916,7 @@ function ParksPage() {
   );
   const filtered = parks.filter(
     (p) =>
-      (!q ||
+      p.publicationStatus==="published" && matchesParkFilters(p,params) && (!q ||
         `${tr(p.name, language)} ${p.province} ${p.suitableIndustries}`
           .toLowerCase()
           .includes(q.toLowerCase())) &&
@@ -927,7 +936,7 @@ function ParksPage() {
             {ui(language, "Tra cứu vị trí, quỹ đất, hạ tầng kỹ thuật, khả năng kết nối và hồ sơ pháp lý của từng khu công nghiệp.", "Explore industrial supply through standardised, source-aware profiles.")}
           </p>
         </div>
-        <div className="filter-panel">
+        <DiscoveryFilters/><div className="filter-panel">
           <label>
             <Search size={17} />
             <input
@@ -1003,7 +1012,7 @@ function ParksPage() {
             text={
               ui(language, "Vui lòng điều chỉnh từ khóa hoặc bộ lọc.", "Try changing your filters.")
             }
-            action={<button className="button primary" onClick={() => {setQ("");setRegion("all");setIndustry("all");setStatus("all");}}>{ui(language,"Xóa bộ lọc","Clear filters")}</button>}
+            action={<button className="button primary" onClick={() => {setParams({},{replace:true});}}>{ui(language,"Xóa bộ lọc","Clear filters")}</button>}
           />
         )}
       </div>
@@ -1034,80 +1043,9 @@ function Modal({
     </div>
   );
 }
-function ContactModal({
-  type,
-  park,
-  close,
-}: {
-  type: string;
-  park: IndustrialParkProfile;
-  close: () => void;
-}) {
-  const { language } = useApp();
-  const [sent, setSent] = useState(false);
-  const modalTitle: Record<string, LocalizedText> = {
-    Inquiry: tx("Yêu cầu tư vấn", "Inquiry"),
-    Meeting: tx("Yêu cầu cuộc hẹn", "Meeting request"),
-  };
-  if (sent)
-    return (
-      <Modal
-        title={ui(language, "Đã ghi nhận", "Request recorded")}
-        close={close}
-      >
-        <div className="success-state">
-          <CheckCircle2 />
-          <h3>
-            {ui(language, "VIG đã tiếp nhận yêu cầu", "VIG received your request")}
-          </h3>
-          <p>
-            {ui(language, "Yêu cầu đã được ghi nhận trong phiên bản demo. Bộ phận quản trị VIG sẽ tiếp tục xử lý ở bước tiếp theo.", "This is a simulation. VIG Admin would be notified to coordinate the next step.")}
-          </p>
-          <button className="button primary" onClick={close}>
-            {ui(language, "Hoàn tất", "Done")}
-          </button>
-        </div>
-      </Modal>
-    );
-  return (
-    <Modal
-      title={`${tr(modalTitle[type] || tx(type, type), language)} · ${tr(park.name, language)}`}
-      close={close}
-    >
-      <form
-        className="modal-form"
-        onSubmit={(e) => {
-          e.preventDefault();
-          setSent(true);
-        }}
-      >
-        <label>
-          {ui(language, "Họ tên", "Name")}
-          <input required />
-        </label>
-        <label>
-          {ui(language, "Email", "Email")}
-          <input type="email" required />
-        </label>
-        <label>
-          {ui(language, "Nội dung", "Message")}
-          <textarea
-            defaultValue={
-              language === "vi"
-                ? `Tôi muốn tìm hiểu thêm về ${tr(park.name, language)}.`
-                : `I would like to know more about ${tr(park.name, language)}.`
-            }
-          />
-        </label>
-        <button className="button primary">
-          <Send size={16} />
-          {ui(language, "Gửi yêu cầu", "Send demo request")}
-        </button>
-      </form>
-    </Modal>
-  );
+function ContactModal({type,park}:{type:string;park:IndustrialParkProfile;close:()=>void}) {
+  return <Navigate replace to={`/find-supply?parkId=${encodeURIComponent(park.id)}&support=${type==='Meeting'?'meeting':'inquiry'}`} />;
 }
-
 function ParkDetailPage() {
   const { slug } = useParams();
   const { language, parks, assets, openParkChat } = useApp();
@@ -1118,7 +1056,7 @@ function ParkDetailPage() {
   const [activeSection, setActiveSection] = useState("overview");
   const [previewParams] = useSearchParams();
   const previewMode = import.meta.env.DEV ? previewParams.get("demoState") : null;
-  const originalPark = parks.find((p) => p.slug === slug);
+  const originalPark = parks.find((p) => p.slug === slug && p.publicationStatus==="published");
   const park = originalPark ? previewPark(originalPark, previewMode) : undefined;
   if (!park)
     return (
@@ -1792,14 +1730,14 @@ function AssetCard({
             <b>
               {asset.area.toLocaleString()} {asset.unit}
             </b>
-            <SourceValue value={asset.price} compact />
+            <strong>{assetPriceText(asset,language)}</strong>
           </div>
           <div className="asset-card-actions">
             <button
               type="button"
               onClick={(event) => {
                 event.stopPropagation();
-                if (park) openParkChat(park.id);
+                if (park) openParkChat(park.id,asset.id);
               }}
               disabled={!park}
             >
@@ -1814,9 +1752,9 @@ function AssetCard({
   );
 }
 function AssetsPage() {
-  const { language, assets } = useApp();
-  const [type, setType] = useState("all");
-  const filtered = assets.filter((a) => type === "all" || a.type === type);
+  const { language, assets, parks } = useApp();
+  const [params,setParams]=useSearchParams();const type=params.get("type")||"all";const setType=(value:string)=>setParams(old=>{const next=new URLSearchParams(old);if(value==="all")next.delete("type");else next.set("type",value);return next},{replace:true});
+  const filtered = assets.filter((a) => parks.some(p=>p.id===a.parkId&&p.publicationStatus==="published"&&matchesAssetFilters(a,p,params))&&(type === "all" || a.type === type));
   const assetTypeFilters = [
     { value: "all", icon: PackageSearch, vi: "Tất cả loại hình", en: "All assets" },
     { value: "industrial_land", icon: Map, vi: "Đất công nghiệp", en: "Industrial land" },
@@ -1836,7 +1774,7 @@ function AssetsPage() {
             {ui(language, "Quỹ đất công nghiệp, nhà xưởng xây sẵn, kho vận và giải pháp xây theo yêu cầu.", "Land, factories, warehouses and build-to-suit solutions.")}
           </p>
         </div>
-        <div
+        <DiscoveryFilters asset/><div
           className="filter-tabs"
           role="group"
           aria-label={ui(language, "Lọc loại hình bất động sản", "Filter asset type")}
@@ -1889,7 +1827,7 @@ function AssetDetailPage() {
   const { assets, parks, language, openParkChat } = useApp();
   const [params] = useSearchParams();
   const mode = import.meta.env.DEV ? params.get("demoState") : null;
-  const original = assets.find(a => a.id === id);
+  const original = assets.find(a => a.id === id && parks.some(p=>p.id===a.parkId&&p.publicationStatus==="published"));
   const asset = original ? previewAsset(original,mode) : undefined;
   if (!asset) return <PublicShell><div className="page page-top"><DetailUnavailable to="/assets" label={ui(language,"Bất động sản công nghiệp","Assets")} /></div></PublicShell>;
   const park = mode === "orphan" ? undefined : parks.find(p => p.id === asset.parkId);
@@ -1904,12 +1842,12 @@ function AssetDetailPage() {
         {hasValue(asset.description) && <p>{tr(asset.description,language)}</p>}
         <FactGroup facts={[
           {label:ui(language,"Diện tích chào thuê","Area"),value:asset.area,unit:asset.unit},
-          {label:ui(language,"Đơn giá tham khảo","Price"),source:asset.price},
+          {label:ui(language,"Đơn giá tham khảo","Price"),value:assetPriceText(asset,language)},
           {label:ui(language,"Thời điểm bàn giao","Available from"),value:asset.availableFrom},
           {label:ui(language,"Công suất điện","Power"),value:asset.powerMva,unit:"MVA"},
         ]}/>
         <div className="asset-detail-actions">
-          {park && <button className="button outline" type="button" onClick={() => openParkChat(park.id)}><MessageCircle/>{ui(language,"Trao đổi với KCN","Chat with park")}</button>}
+          {park && <button className="button outline" type="button" onClick={() => openParkChat(park.id,asset.id)}><MessageCircle/>{ui(language,"Trao đổi với KCN","Chat with park")}</button>}
           <Link className="button primary" to={requestUrl}><Send/>{park ? ui(language,"Gửi yêu cầu trực tiếp","Direct Request") : ui(language,"Tìm mặt bằng","Find Supply")}</Link>
         </div>
       </div>
@@ -1936,6 +1874,8 @@ const emptyForm = {
 };
 function RequestFormPage({ kind }: { kind: RequestKind }) {
   const { language, createRequest, parks, assets } = useApp();
+  const admin = useAdmin();
+  const servicePackages = admin.store.packages.filter(p=>p.kinds.includes(kind));
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const selectedAsset = assets.find((asset) => asset.id === searchParams.get("assetId"));
@@ -1945,7 +1885,7 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
   const [form, setForm] = useState(() => ({
     ...emptyForm,
     assetType: selectedAsset
-      ? tr(labels[selectedAsset.type], language)
+      ? selectedAsset.type
       : "",
     industrialParkName: selectedPark?.name.en || "",
     location: selectedPark?.province || "",
@@ -1957,7 +1897,8 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
       : "",
     transaction: selectedAsset?.transaction || "lease",
     industry: selectedAsset?.industries[0] || "",
-    availabilityDate: selectedAsset?.availableFrom || "",
+    availabilityDate: selectedAsset?.availableFrom && selectedAsset.availableFrom>=new Date().toLocaleDateString("en-CA") ? selectedAsset.availableFrom : "",
+    service: searchParams.get("support")==="meeting" ? "Meeting / Connection" : "",
     requirements: selectedAsset && selectedPark
       ? language === "vi"
         ? `Tôi quan tâm đến ${tr(selectedAsset.name, language)} tại ${tr(selectedPark.name, language)}.`
@@ -1968,10 +1909,27 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
   }));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const isSupply = kind === "find_supply";
+  const submitted=useRef(false);
+  const [consent,setConsent]=useState(false);
+  const [dateUnknown,setDateUnknown]=useState(false);
+  const [priceMode,setPriceMode]=useState("");
+  const [currency,setCurrency]=useState("USD");
+  const [basis,setBasis]=useState("");
   const update = (k: string, v: string) => setForm((x) => ({ ...x, [k]: v }));
+  const choices:Partial<Record<keyof typeof form,string[]>>={
+    assetType:['industrial_land','ready_built_factory','warehouse','build_to_suit'],
+    industry:[...new Set(parks.flatMap(p=>p.suitableIndustries)),'Not specified'],
+    location:[...new Set(parks.map(p=>p.province)),...(isSupply?['North','Central','South','Not specified']:[])],
+  };
   function submit(e: FormEvent) {
     e.preventDefault();
+    if(submitted.current)return;
     const er: Record<string, string> = {};
+    if(form.service&&!servicePackages.some(p=>p.id===form.service))er.service=emptyCopy(language,'Vui lòng chọn lại gói hỗ trợ.','Please select an available package.','请重新选择可用套餐。');
+    Object.entries(choices).forEach(([key,options])=>{if(!options?.includes(form[key as keyof typeof form]))er[key]=ui(language,"Vui lòng chọn giá trị trong danh sách","Select a listed option")});
+    if(!consent)er.consent=ui(language,"Vui lòng đồng ý sử dụng thông tin","Consent is required");
+    if(!validPhone(form.phone))er.phone=ui(language,"Điện thoại cần 8–15 chữ số","Phone must contain 8–15 digits");
+    if((searchParams.has("parkId")&&!selectedPark)||(searchParams.has("assetId")&&!selectedAsset)||(selectedAsset&&selectedPark&&selectedAsset.parkId!==selectedPark.id)||(selectedPark&&selectedPark.publicationStatus!=="published"))er.context=ui(language,"KCN hoặc sản phẩm không còn phù hợp. Hãy mở lại từ danh mục.","Park or asset context is invalid. Reopen from the directory.");
     [
       "organization",
       "contactName",
@@ -1982,11 +1940,12 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
       "areaMin",
       "areaMax",
       "industry",
-      "availabilityDate",
     ].forEach((k) => {
       if (!String(form[k as keyof typeof form]).trim())
         er[k] = ui(language, "Vui lòng nhập thông tin", "Required");
     });
+    if(!dateUnknown&&!form.availabilityDate)er.availabilityDate=ui(language,"Chọn ngày hoặc Chưa xác định","Choose a date or Not specified");
+    if(!priceMode||(priceMode==="specific"&&(!(+form.budgetOrPrice>0)||!/^[A-Z]{3}$/.test(currency)||!basis.trim())))er.budgetOrPrice=ui(language,"Chọn chế độ giá; giá cụ thể cần số dương, tiền tệ và đơn vị định giá","Choose a price mode; a specific price needs a positive amount, currency and pricing basis");
     if (form.email && !/^\S+@\S+\.\S+$/.test(form.email))
       er.email =
         ui(language, "Địa chỉ email không hợp lệ", "Invalid email");
@@ -1998,15 +1957,19 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
       er.areaMin =
         ui(language, "Khoảng diện tích không hợp lệ", "Invalid area range");
     if (
-      form.availabilityDate &&
+      !dateUnknown && form.availabilityDate &&
       new Date(form.availabilityDate) < new Date(new Date().toDateString())
     )
       er.availabilityDate =
         ui(language, "Thời điểm bàn giao phải từ hôm nay trở đi", "Date must be in the future");
     setErrors(er);
     if (Object.keys(er).length) return;
+    submitted.current=true;
     const id = createRequest({
+      parkId:selectedPark?.id,assetId:selectedAsset?.id,entrySource:selectedAsset?"asset":selectedPark?"park":"form",consent,
       ...form,
+      budgetOrPrice:priceMode==="specific"?`${currency} ${form.budgetOrPrice}/${basis}`:priceMode==="negotiable"?"Negotiable":"Not specified",
+      availabilityDate:dateUnknown?"":form.availabilityDate,
       kind,
       areaMin: +form.areaMin,
       areaMax: +form.areaMax,
@@ -2017,11 +1980,11 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
   const field = (key: keyof typeof form, label: string, type = "text") => (
     <label className={errors[key] ? "invalid" : ""}>
       <span>{label} *</span>
-      <input
+      {choices[key]?<select value={form[key]} onChange={e=>update(key,e.target.value)}><option value="">{ui(language,"Chọn thông tin","Choose an option")}</option>{choices[key]!.map(value=><option key={value} value={value}>{key==='assetType'?tr(labels[value as keyof typeof labels],language):key==='industry'?industryLabel(value,language):dataText(value,language)}</option>)}</select>:<input
         type={type}
         value={form[key]}
         onChange={(e) => update(key, e.target.value)}
-      />
+      />}
       {errors[key] && <small>{errors[key]}</small>}
     </label>
   );
@@ -2046,6 +2009,8 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
       </div>
       <div className="page request-layout">
         <form className="request-form" onSubmit={submit}>
+          {Object.keys(errors).length>0&&<div role="alert" className="admin-message error">{Object.values(errors).join(" · ")}</div>}
+          {selectedAsset&&<div className="form-section"><b>{tr(selectedAsset.name,language)}</b><p>{selectedPark&&tr(selectedPark.name,language)} · {ui(language,"Ngữ cảnh chỉ đọc từ sản phẩm","Read-only product context")}</p></div>}
           <div className="form-section">
             <h2>
               1.{" "}
@@ -2062,12 +2027,13 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
                 <span>{ui(language, "Tên khu công nghiệp", "Industrial park name")}</span>
                 <select
                   value={form.industrialParkName}
+                  disabled={!!selectedPark}
                   onChange={(e) => update("industrialParkName", e.target.value)}
                 >
                   <option value="">
                     {ui(language, "Chưa xác định", "Not specified")}
                   </option>
-                  {parks.map((park) => (
+                  {parks.filter(p=>p.publicationStatus==="published").map((park) => (
                     <option key={park.id} value={park.name.en}>
                       {tr(park.name, language)}
                     </option>
@@ -2110,25 +2076,16 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
                   </option>
                 </select>
               </label>
-              {field(
-                "budgetOrPrice",
-                isSupply
-                  ? ui(language, "Ngân sách dự kiến / Chưa xác định", "Budget / Not specified")
-                  : ui(language, "Đơn giá chào / Thỏa thuận", "Asking price / Negotiable"),
-              )}
+              <label><span>{ui(language,"Chế độ giá/ngân sách","Budget / price mode")} *</span><select value={priceMode} onChange={e=>setPriceMode(e.target.value)}><option value="">{ui(language,"Chọn chế độ","Choose a mode")}</option><option value="specific">{ui(language,"Giá cụ thể","Specific price")}</option><option value="negotiable">{ui(language,"Thỏa thuận","Negotiable")}</option><option value="not_specified">{ui(language,"Chưa xác định","Not specified")}</option></select></label>
+              {priceMode==="specific"&&<>{field("budgetOrPrice",ui(language,"Số tiền","Amount"),"number")}<label>{ui(language,"Mã tiền tệ","Currency code")}<input value={currency} maxLength={3} onChange={e=>setCurrency(e.target.value.toUpperCase())}/></label><label>{ui(language,"Đơn vị định giá","Pricing basis")}<input value={basis} placeholder={ui(language,"Ví dụ: m²/tháng","Example: m²/month")} onChange={e=>setBasis(e.target.value)}/></label></>}
               {field(
                 "industry",
                 isSupply
                   ? ui(language, "Ngành nghề dự kiến", "Intended industry")
                   : ui(language, "Ngành nghề tiếp nhận", "Suitable industry"),
               )}
-              {field(
-                "availabilityDate",
-                isSupply
-                  ? ui(language, "Thời điểm cần bàn giao", "Required date")
-                  : ui(language, "Thời điểm sẵn sàng bàn giao", "Available from"),
-                "date",
-              )}
+              {!dateUnknown&&field("availabilityDate",ui(language,"Thời điểm bàn giao","Required date"),"date")}
+              <label><input type="checkbox" checked={dateUnknown} onChange={e=>setDateUnknown(e.target.checked)}/>{ui(language,"Chưa xác định ngày bàn giao","Date not specified")}</label>
             </div>
             <label>
               <span>
@@ -2164,36 +2121,12 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
               3.{" "}
               {ui(language, "Gói hỗ trợ mong muốn", "Preferred service")}
             </h2>
-            <div className="service-options">
-              {(isSupply
-                ? [
-                    "Find Supply",
-                    "Premium Matching",
-                    "Supply Sourcing",
-                    "Meeting / Connection",
-                  ]
-                : [
-                    "Find Demand",
-                    "Premium Matching",
-                    "Market Outreach",
-                    "Meeting / Connection",
-                  ]
-              ).map((x) => (
-                <label key={x} className={form.service === x ? "selected" : ""}>
-                  <input
-                    type="radio"
-                    name="service"
-                    checked={form.service === x}
-                    onChange={() => update("service", x)}
-                  />
-                  <CheckCircle2 />
-                  <span>{dataText(x, language)}</span>
-                </label>
-              ))}
-            </div>
+            <p>{emptyCopy(language,"Chọn gói phù hợp hoặc gửi yêu cầu mà chưa chọn gói. Nội dung dưới đây là minh họa; VIG sẽ trao đổi phạm vi hỗ trợ sau khi tiếp nhận.","Choose a package or submit without one. These are demo descriptions; VIG will discuss support scope after receiving your request.","您可选择套餐，也可暂不选择。以下为演示说明；VIG将在接收需求后协商支持范围。")}</p>
+            <PackageCards packages={servicePackages} language={language} value={form.service} onChange={id=>update("service",id)}/>
+            {form.service&&<button className="button" type="button" onClick={()=>update("service","")}>{emptyCopy(language,"Chưa chọn gói hỗ trợ","Continue without a package","暂不选择套餐")}</button>}
           </div>
           <label className="consent">
-            <input type="checkbox" required />
+            <input type="checkbox" required checked={consent} onChange={e=>setConsent(e.target.checked)}/>
             {ui(language, "Tôi đồng ý để VIG sử dụng thông tin đã cung cấp nhằm hỗ trợ tìm kiếm và kết nối đối tác.", "I agree that VIG may use this information to coordinate the connection.")}
           </label>
           <button className="button primary submit">
@@ -2227,8 +2160,9 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
 }
 function ConfirmationPage() {
   const { id } = useParams();
-  const { language, requests } = useApp();
-  const r = requests.find((x) => x.id === id);
+  const { language, requests, ownRequestIds } = useApp();
+  const r = requests.find((x) => x.id === id && ownRequestIds.includes(x.id));
+  if(!r)return <PublicShell><div className="page section"><StatePanel kind="not_found" title={emptyCopy(language,"Không thể xem xác nhận yêu cầu","Request confirmation unavailable","无法查看需求确认")} text={emptyCopy(language,"Không tìm thấy yêu cầu thuộc phiên hiện tại. Dữ liệu demo có thể đã mất sau khi tải lại trang; màn hình này không xác nhận yêu cầu đã được gửi.","No request belonging to this session was found. Demo data may have been reset after a refresh; this screen does not confirm submission.","未找到属于当前会话的需求。刷新后演示数据可能已重置；此页面不代表需求已提交。")} action={<Link className="button primary" to="/find-supply">{ui(language,"Gửi nhu cầu mới","Submit a request")}</Link>}/></div></PublicShell>;
   return (
     <PublicShell>
       <div className="page confirmation">
@@ -2281,111 +2215,20 @@ function ConfirmationPage() {
     </PublicShell>
   );
 }
-function ExpoPage() {
-  const { language, expos } = useApp();
-  return (
-    <PublicShell>
-      <div className="expo-hero">
-        <div className="page">
-          <Globe2 />
-          <span>{ui(language, "TRIỂN LÃM CÔNG NGHIỆP SỐ", "DIGITAL TRADEXPO")}</span>
-          <h1>
-            {ui(language, "Triển lãm Công nghiệp số", "Digital Industrial Expo")}
-          </h1>
-          <p>
-            {ui(language, "Kết nối doanh nghiệp Việt Nam với thị trường quốc tế qua gian hàng số và phiên kết nối trực tuyến.", "Connect Vietnamese enterprises with global markets through digital booths and online sessions.")}
-          </p>
-        </div>
-      </div>
-      <div className="page section">
-        <div className="expo-grid">
-          {expos.map((e) => (
-            <article key={e.id}>
-              <Badge
-                value={e.status}
-                tone={e.status === "live" ? "red" : "amber"}
-              />
-              <Globe2 />
-              <h2>{tr(e.title, language)}</h2>
-              <p>
-                {e.industries
-                  .map((industry) => industryLabel(industry, language))
-                  .join(" · ")}
-              </p>
-              <div>
-                <span>
-                  <Clock3 /> {e.date}
-                </span>
-                <span>
-                  <Users /> {e.exhibitors} {ui(language, "đơn vị trưng bày", "exhibitors")}
-                </span>
-              </div>
-              <button
-                className="button primary"
-                onClick={() =>
-                  alert(
-                    ui(language, "Mô phỏng: mở trang chi tiết Expo", "Demo: open Expo detail"),
-                  )
-                }
-              >
-                {ui(language, "Khám phá Expo", "Explore Expo")}
-              </button>
-            </article>
-          ))}
-        </div>
-      </div>
-    </PublicShell>
-  );
-}
-function LoginPage() {
-  const { language, setRole } = useApp();
-  const admin = useAdmin();
-  const navigate = useNavigate();
-  return (
-    <PublicShell>
-      <div className="login-page">
-        <div className="login-card">
-          <span className="brand-mark">VIG</span>
-          <h1>
-            {ui(language, "Truy cập hệ thống quản trị VIG", "Access VIG Admin")}
-          </h1>
-          <p>
-            {ui(language, "Phiên bản demo cho phép truy cập trực tiếp, không yêu cầu tài khoản.", "Demo mode does not require real credentials.")}
-          </p>
-          <button
-            className="button primary"
-            onClick={() => {
-              setRole("admin");
-              navigate(firstAdminPage(admin.current));
-            }}
-          >
-            <ShieldCheck />{" "}
-            {ui(language, "Vào trang quản trị", "Enter admin console")}
-          </button>
-          <Link to="/home">
-            {ui(language, "Quay lại trang công khai", "Return to public portal")}
-          </Link>
-          <DemoSession />
-        </div>
-      </div>
-    </PublicShell>
-  );
-}
-
+function ExpoPage(){return <PublicShell><div className="page page-top"><TradeExpoSection/></div></PublicShell>}
 function AdminGuard({ children }: { children: ReactNode }) {
-  const { role } = useApp();
-  const {pathname}=useLocation();
-  const permission=pathname.includes('/users')?'P12':pathname.includes('/imports')?'P03':pathname.includes('/requests')?'P09':pathname.includes('/industrial-parks')||pathname.includes('/assets')?'P01':'P11';
-  return role === "admin" ? <Access permission={permission}>{children}</Access> : <Navigate to="/login" replace />;
+  const admin=useAdmin(),{pathname,search}=useLocation();
+  if(!admin.current)return <Navigate to="/admin/login" state={{from:pathname+search}} replace/>;
+  return pathname==='/admin/no-access'?<>{children}</>:<Access permission={routePermission(pathname)}>{children}</Access>;
 }
 function AdminShell({ children }: { children: ReactNode }) {
-  const { language, setRole, resetDemo } = useApp();
+  const { language, resetDemo } = useApp();
   const admin=useAdmin();
   const location = useLocation();
   const navigate = useNavigate();
   const openPublicPortal = () => {
     navigate("/home");
-    window.setTimeout(() => setRole("public"), 0);
+    admin.logout();
   };
   const links = [
     [
@@ -2410,12 +2253,14 @@ function AdminShell({ children }: { children: ReactNode }) {
     ],
     ['/admin/assets',Warehouse,emptyCopy(language,'Sản phẩm','Assets','工业地产')],
     ['/admin/imports',Download,emptyCopy(language,'Nhập hàng loạt','Batch import','批量导入')],
+    ['/admin/packages',PackageSearch,emptyCopy(language,'Nội dung gói hỗ trợ','Package content','服务套餐内容')],
     ['/admin/users',Users,emptyCopy(language,'Người dùng & quyền','Users & permissions','用户与权限')],
-  ].filter(([path])=>admin.can(String(path).includes('/users')?'P12':String(path).includes('/imports')?'P03':String(path).includes('/requests')?'P09':String(path).includes('/industrial-parks')||String(path).includes('/assets')?'P01':'P11'));
+    ['/admin/permissions',ShieldCheck,emptyCopy(language,'Ma trận quyền','Permission matrix','权限矩阵')],
+  ].filter(([path])=>admin.can(routePermission(String(path))));
   return (
     <div className="admin-shell">
       <aside className="admin-sidebar">
-        <Link to="/admin/dashboard" className="admin-brand">
+        <Link to={firstAdminPage(admin.current,admin.store.matrix)} className="admin-brand">
           <span>VIG</span>
           <div>
             <b>VIG Admin</b>
@@ -2482,7 +2327,7 @@ function AdminShell({ children }: { children: ReactNode }) {
           <div className="admin-header-controls">
             <LanguageToggle />
             <div className="admin-user">
-              VA<span>VIG Admin</span>
+              <span>{admin.current?.name}</span><button className="button" onClick={()=>{admin.logout();navigate("/admin/login")}}>{emptyCopy(language,"Đăng xuất","Sign out","退出")}</button>
             </div>
           </div>
         </header>
@@ -2504,7 +2349,7 @@ function AdminShell({ children }: { children: ReactNode }) {
           })}
         </nav>
         <main>{children}</main>
-        <DemoSession />
+
       </div>
     </div>
   );
@@ -3498,9 +3343,13 @@ function AppRoutes() {
       />
       <Route path="/request-confirmation/:id" element={<ConfirmationPage />} />
       <Route path="/industrial-expo" element={<ExpoPage />} />
-      <Route path="/login" element={<LoginPage />} />
+      <Route path="/login" element={<Navigate to="/admin/login" replace/>} />
+      <Route path="/admin/login" element={<AdminLogin/>}/>
+      <Route path="/admin" element={<AdminEntry/>}/>
+      <Route path="/admin/packages" element={<AdminGuard><AdminShell><PackageSettings/></AdminShell></AdminGuard>}/>
+      <Route path="/admin/permissions" element={<AdminGuard><AdminShell><PermissionMatrix/></AdminShell></AdminGuard>}/>
       <Route path="/accept-invitation/:token" element={<AcceptInvitation />} />
-      <Route path="/admin/no-access" element={<AdminShell><Access permission="P01"><Navigate to="/admin/industrial-parks" /></Access></AdminShell>} />
+      <Route path="/admin/no-access" element={<AdminGuard><AdminShell><AdminNoAccess/></AdminShell></AdminGuard>} />
       <Route path="/admin/users" element={<AdminGuard><AdminShell><UsersPage /></AdminShell></AdminGuard>} />
       <Route path="/admin/imports" element={<AdminGuard><AdminShell><BatchImport /></AdminShell></AdminGuard>} />
       <Route path="/admin/assets" element={<AdminGuard><AdminShell><ContentList kind="asset" /></AdminShell></AdminGuard>} />
@@ -3512,7 +3361,7 @@ function AppRoutes() {
         path="/admin/dashboard"
         element={
           <AdminGuard>
-            <AdminDashboard />
+            <AdminShell><ConnectionDashboard /></AdminShell>
           </AdminGuard>
         }
       />
@@ -3520,7 +3369,7 @@ function AppRoutes() {
         path="/admin/expos"
         element={
           <AdminGuard>
-            <AdminExpos />
+            <AdminShell><ExpoDirectoryAdmin /></AdminShell>
           </AdminGuard>
         }
       />
@@ -3544,7 +3393,7 @@ function AppRoutes() {
         path="/admin/requests/:id"
         element={
           <AdminGuard>
-            <RequestDetail />
+            <AdminShell><ConnectionDetail /></AdminShell>
           </AdminGuard>
         }
       />
@@ -3568,13 +3417,18 @@ function AppRoutes() {
     </Routes>
   );
 }
+function AdminNoAccess(){const {language}=useApp();return <StatePanel kind="forbidden" title={emptyCopy(language,"Chưa có quyền truy cập","No accessible modules","无可访问模块")} text={emptyCopy(language,"Liên hệ Super Admin để được cấp quyền.","Contact your Super Admin to review your access.","请联系超级管理员审核权限。")}/>}
+function AdminEntry(){const a=useAdmin();return <Navigate to={a.current?firstAdminPage(a.current,a.store.matrix):'/admin/login'} replace/>}
 export default function App() {
+  // Convert saved legacy hash links before the browser router reads the location.
+  if(window.location.hash.startsWith('#/')){const target=window.location.hash.slice(1);if(target.startsWith('/')&&!target.startsWith('//'))window.history.replaceState(null,'',target);}
+
   return (
     <AppProvider>
       <AdminProvider>
-      <HashRouter>
+      <BrowserRouter>
         <AppRoutes />
-      </HashRouter>
+      </BrowserRouter>
       </AdminProvider>
     </AppProvider>
   );

@@ -1,0 +1,11 @@
+import {useState} from 'react';
+import {Link,Navigate,useLocation,useNavigate} from 'react-router-dom';
+import {useAdmin} from './AdminContext';
+import {firstAdminPage,permissions,routePermission} from './model';
+import {AdminLanguage,AdminNotice,Message,useText} from './ui';
+
+export function AdminLogin(){const a=useAdmin(),t=useText(),navigate=useNavigate(),location=useLocation();const [username,setUsername]=useState(''),[password,setPassword]=useState(''),[error,setError]=useState('');
+  const returnTo=(location.state as {from?:string}|null)?.from;
+  if(a.current)return <Navigate to={returnTo?.startsWith('/admin/')&&!returnTo.startsWith('/admin/login')&&permissions(a.current,a.store.matrix).includes(routePermission(returnTo))?returnTo:firstAdminPage(a.current,a.store.matrix)} replace/>;
+  return <main className="admin-login"><section className="admin-login-brand"><span className="brand-mark">VIG</span><h1>{t('Cổng quản trị VIG','VIG Admin Portal','VIG管理门户')}</h1><p>{t('Quản lý dữ liệu công nghiệp và kết nối đầu tư.','Manage industrial data and investment connections.','管理工业数据与投资对接。')}</p></section><section className="admin-login-form"><AdminLanguage/><h2>{t('Đăng nhập','Sign in','登录')}</h2><AdminNotice/><form onSubmit={e=>{e.preventDefault();const r=a.login(username,password);setPassword('');if(!r.ok){setError(r.error||'credentials');return}const u=a.store.users.find(u=>u.id===r.id),target=(location.state as {from?:string}|null)?.from;const safe=target?.startsWith('/admin/')&&!target.startsWith('/admin/login')&&permissions(u,a.store.matrix).includes(routePermission(target));navigate(safe?target!:firstAdminPage(u,a.store.matrix),{replace:true})}}><Message code={error}/><label>{t('Tên đăng nhập','Username','用户名')}<input required autoComplete="username" value={username} onChange={e=>setUsername(e.target.value)}/></label><label>{t('Mật khẩu','Password','密码')}<input required type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)}/></label><button className="button primary">{t('Đăng nhập','Sign in','登录')}</button></form><p>{t('Sử dụng tài khoản demo do nhà phát triển cung cấp.','Use the demo credentials provided by your developer.','请使用开发者提供的演示账户。')}</p><Link to="/home">{t('Về trang công khai','Return to public portal','返回公开门户')}</Link></section></main>
+}

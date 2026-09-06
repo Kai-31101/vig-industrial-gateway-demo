@@ -1,4 +1,6 @@
 export type Language = 'vi' | 'en' | 'zh';
+export interface ParkDocument { documentNumber?: string }
+export interface IndustrialParkProfile { sourceDocumentId?: string }
 export type LocalizedText = { vi: string; en: string; zh?: string };
 export type VerificationStatus = 'unverified' | 'reviewed' | 'verified';
 export type DisclosureStatus = 'public' | 'not_disclosed' | 'not_available';
@@ -49,9 +51,11 @@ export interface IndustrialAsset { id: string; parkId: string; name: LocalizedTe
 export type RequestKind = 'find_demand' | 'find_supply';
 export interface IndustrialAsset { imageApproved?: boolean; priceMode?: 'specific' | 'negotiable' | 'not_available'; pricingBasis?: string; }
 export type RequestStatus = 'submitted' | 'under_review' | 'verified' | 'matching' | 'connection_scheduled' | 'closed' | 'rejected';
+export interface ConnectionOutcome { result: 'success' | 'unsuccessful'; note: string; requesterConfirmed: boolean; partnerConfirmed: boolean; confirmedOn: string; recordedBy: string; }
+export interface IndustrialRequest { parkId?: string; assetId?: string; entrySource?: 'form'|'park'|'asset'; direction?: 'inbound'|'outbound'; consent?: boolean; outcome?: ConnectionOutcome; revision?: number; selectedParkId?: string; coordinationNote?: string; }
 export interface RequestActivity { id: string; at: string; actor: string; action: LocalizedText; }
 export interface IndustrialRequest { id: string; kind: RequestKind; organization: string; contactName: string; email: string; phone: string; service: string; assetType: string; industrialParkName: string; location: string; areaMin: number; areaMax: number; transaction: 'lease' | 'sale'; budgetOrPrice: string; industry: string; availabilityDate: string; requirements: string; status: RequestStatus; submittedAt: string; assignedTo: string; activities: RequestActivity[]; rejectionReason?: string; }
-export interface ParkChatMessage { id: string; sender: 'supplier' | 'user'; text: LocalizedText; }
+export interface ParkChatMessage { id: string; sender: 'supplier' | 'user'; text: LocalizedText; at?:string; status?:'sending'|'sent'|'failed'; assetId?:string; contextOnly?:boolean; }
 export interface ExpoDailyMetric { date: string; requests: number; connections: number; }
 export interface ExpoIndustryMetric { industry: string; requests: number; connections: number; }
 export interface ExpoMarketMetric { market: string; connections: number; }
@@ -70,4 +74,4 @@ export interface ExpoAnalytics {
   topIndustries: ExpoIndustryMetric[];
   topMarkets: ExpoMarketMetric[];
 }
-export interface ExpoProgram { id: string; title: LocalizedText; market: string; industries: string[]; date: string; status: 'upcoming' | 'live'; exhibitors: number; analytics: ExpoAnalytics; }
+export interface ExpoProgram { id: string; title: LocalizedText; market: string; industries: string[]; date: string; status: 'upcoming' | 'live' | 'ended'; exhibitors: number; analytics: ExpoAnalytics; }

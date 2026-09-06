@@ -68,13 +68,13 @@ describe('implemented UI flows',()=>{
   it('keeps absent assets in an explicit recovery screen instead of silent navigation',()=>{
     window.location.hash='#/assets/not-found';render(<App/>);
     expect(screen.getByRole('heading',{name:'Không thể mở nội dung này'})).toBeTruthy();
-    expect(window.location.hash).toBe('#/assets/not-found');
+    expect(window.location.pathname).toBe('/assets/not-found');
   });
   it('resets park filters using the empty-state action',()=>{
     window.location.hash='#/industrial-parks';render(<App/>);
     fireEvent.change(screen.getByPlaceholderText(/Tìm theo tên khu công nghiệp/),{target:{value:'no-such-park-000'}});
     expect(screen.getByText('Không tìm thấy khu công nghiệp phù hợp')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button',{name:'Xóa bộ lọc'}));
+    fireEvent.click(screen.getAllByRole('button',{name:'Xóa bộ lọc'}).at(-1)!);
     expect(screen.queryByText('Không tìm thấy khu công nghiệp phù hợp')).toBeNull();
     expect(screen.getByPlaceholderText(/Tìm theo tên khu công nghiệp/).getAttribute('value')).toBe('');
   });

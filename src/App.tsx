@@ -1,5 +1,6 @@
 import {AdminLogin} from './admin/AdminLogin';
 import {PackageCards} from './PackageCards';
+import {HomeAds} from './HomeAds';
 import {PackageSettings} from './admin/PackageSettings';
 import {PermissionMatrix} from './admin/PermissionMatrix';
 import {TradeExpoSection} from './TradeExpoSection';
@@ -770,6 +771,7 @@ function HomePage() {
           {ui(language, "Tìm kiếm", "Search")}
         </button>
       </section>
+      <HomeAds placement="top" />
       <section className="page section">
         <SectionTitle
           eyebrow={ui(language, "LỚP DỮ LIỆU CÔNG NGHIỆP", "INDUSTRIAL DATA LAYER")}
@@ -792,6 +794,7 @@ function HomePage() {
           </Link>
         </div>
       </section>
+      <HomeAds placement="bottom" />
       <section className="dark-section">
         <div className="page">
           <SectionTitle

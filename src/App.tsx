@@ -674,7 +674,8 @@ function HomePage() {
   const [keyword,setKeyword]=useState("");
   const { language, parks, assets, requests } = useApp();
   const navigate = useNavigate();
-  const featured = parks.filter(p=>p.publicationStatus==="published").slice(0, 4);
+  const publishedParks = parks.filter(p=>p.publicationStatus==="published");
+  const featured = publishedParks.slice(0, 12);
   const completedConnections = requests.filter(
     successfulConnection,
   ).length;
@@ -785,7 +786,7 @@ function HomePage() {
         </div>
         <div className="center">
           <Link className="text-link" to="/industrial-parks">
-            {ui(language, "Xem tất cả 20 hồ sơ", "View all 20 profiles")}
+            {language === "zh" ? `查看全部 ${publishedParks.length} 个园区档案` : ui(language, `Xem tất cả ${publishedParks.length} hồ sơ`, `View all ${publishedParks.length} profiles`)}
             <ArrowRight size={17} />
           </Link>
         </div>

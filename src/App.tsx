@@ -435,7 +435,7 @@ function LanguageToggle({ compact = false }: { compact?: boolean }) {
 function Header() {
   const mobile=useMobile();const menuTrigger=useRef<HTMLButtonElement>(null);
   const closeMenu=()=>{setOpen(false);menuTrigger.current?.focus()};
-  const { language } = useApp();
+  const { language, toggleParkChat, chatOpen } = useApp();
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const nav = [
@@ -461,6 +461,7 @@ function Header() {
             </small>
           </span>
         </Link>
+        {mobile && <button className="mobile-header-chat" onClick={toggleParkChat} aria-expanded={chatOpen} aria-label={ui(language,"Mở trao đổi với khu công nghiệp","Open industrial park chat")}><MessageCircle /></button>}
         <button
           className="mobile-menu"
           ref={menuTrigger}
@@ -748,7 +749,7 @@ function HomePage() {
           </div>
           <div className="hero-stats">
             <div>
-              <b>20</b>
+              <b>{publishedParks.length}</b>
               <span>
                 {ui(language, "hồ sơ khu công nghiệp", "park profiles")}
               </span>
@@ -899,7 +900,8 @@ function ParkStatusBadge({park}:{park:IndustrialParkProfile}) {
 }
 
 function ParkCard({ park,featured=false }: { park: IndustrialParkProfile;featured?:boolean }) {
-  const { language } = useApp();
+  const { language, assets } = useApp();
+  const assetCount = assets.filter(asset => asset.parkId === park.id).length;
   const available = park.availability[0]?.available;
   return (
     <article className="park-card" role={featured?"listitem":undefined}>
@@ -933,6 +935,7 @@ function ParkCard({ park,featured=false }: { park: IndustrialParkProfile;feature
             {available?.value != null ? <SourceValue value={available} compact /> : <span>{ui(language, "Liên hệ xác nhận", "Contact for availability")}</span>}
           </div>
         </div>
+        <div className="park-asset-count"><Building2 size={14} aria-hidden="true"/><span>{language === "zh" ? `${assetCount} 个资产` : ui(language, `${assetCount} tài sản`, `${assetCount} assets`)}</span></div>
         <div className="industries">
           {park.suitableIndustries.slice(0, 3).map((x) => (
             <span key={x}>{industryLabel(x, language)}</span>
@@ -1780,7 +1783,7 @@ function AssetCard({
           </p>
           <div className="asset-card-facts">
             <b>
-              {asset.area.toLocaleString()} {asset.unit}
+              {asset.area.toLocaleString(language === "vi" ? "vi-VN" : language === "zh" ? "zh-CN" : "en-US")} {asset.unit}
             </b>
             <strong>{assetPriceText(asset,language)}</strong>
           </div>
@@ -2032,7 +2035,7 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
     navigate(`/request-confirmation/${id}`);
   }
   const field = (key: keyof typeof form, label: string, type = "text") => (
-    <label className={errors[key] ? "invalid" : ""}>
+    <label data-field={key} className={errors[key] ? "invalid" : ""}>
       <span>{label} *</span>
       {choices[key]?<select value={form[key]} onChange={e=>update(key,e.target.value)}><option value="">{ui(language,"Chọn thông tin","Choose an option")}</option>{choices[key]!.map(value=><option key={value} value={value}>{key==='assetType'?tr(labels[value as keyof typeof labels],language):key==='industry'?industryLabel(value,language):dataText(value,language)}</option>)}</select>:<input
         type={type}

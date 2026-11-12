@@ -84,6 +84,8 @@ export function displaySourced(
     people: "người",
     "USD billion": "tỷ USD",
     "USD/month": "USD/tháng",
+    "USD/m²/term": "USD/m²/kỳ thuê",
+    "USD/m²/month": "USD/m²/tháng",
     "m wide": "m bề rộng",
     "m³/day": "m³/ngày",
     "million tonnes/year": "triệu tấn/năm",
@@ -101,6 +103,7 @@ export function displaySourced(
     "million tonnes/year": "百万吨/年",
     "USD/m²": "美元/平方米",
     "USD/m²/term": "美元/平方米/租期",
+    "USD/m²/month": "美元/平方米/月",
   };
   const unit =
     value.unit && language === "vi"

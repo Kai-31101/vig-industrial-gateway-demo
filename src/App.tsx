@@ -5,6 +5,7 @@ import {PermissionMatrix} from './admin/PermissionMatrix';
 import {TradeExpoSection} from './TradeExpoSection';
 import {DiscoveryFilters,matchesParkFilters,matchesAssetFilters} from './DiscoveryFilters';
 import {assetPriceText} from './assetPrice';
+import {sortParksByCompleteness} from './parkCompleteness';
 import {ConnectionDetail,ConnectionDashboard,ExpoDirectoryAdmin} from './admin/Connections';
 import {successfulConnection} from './connectionLogic';
 import {validPhone} from './admin/model';
@@ -674,7 +675,7 @@ function HomePage() {
   const [keyword,setKeyword]=useState("");
   const { language, parks, assets, requests } = useApp();
   const navigate = useNavigate();
-  const publishedParks = parks.filter(p=>p.publicationStatus==="published");
+  const publishedParks = sortParksByCompleteness(parks.filter(p=>p.publicationStatus==="published"));
   const featured = publishedParks.slice(0, 12);
   const completedConnections = requests.filter(
     successfulConnection,
@@ -946,7 +947,7 @@ function ParksPage() {
       ),
     [parks, language],
   );
-  const filtered = parks.filter(
+  const filtered = sortParksByCompleteness(parks.filter(
     (p) =>
       p.publicationStatus==="published" && matchesParkFilters(p,params) && (!q ||
         `${tr(p.name, language)} ${p.province} ${p.suitableIndustries}`
@@ -955,7 +956,7 @@ function ParksPage() {
       (region === "all" || p.region === region) &&
       (industry === "all" || p.suitableIndustries.includes(industry)) &&
       (status === "all" || p.status === status),
-  );
+  ));
   return (
     <PublicShell>
       <div className="page page-top">

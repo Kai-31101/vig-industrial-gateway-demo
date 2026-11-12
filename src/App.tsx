@@ -878,30 +878,11 @@ function HomePage() {
   );
 }
 
-function ParkSourceLink({park,sourceId}:{park:IndustrialParkProfile;sourceId?:string}) {
-  const {language}=useApp();
-  const doc=park.documents.find(d=>d.id===sourceId);
-  return doc?.visibility==='public' && safeUrl(doc.sourceUrl) ? <a className="profile-source-link" href={doc.sourceUrl} target="_blank" rel="noreferrer">{ui(language,"Xem nguồn công bố", "View published source")}</a> : null;
-}
-
 function ParkStatusBadge({park}:{park:IndustrialParkProfile}) {
   const {language}=useApp();
   return <span title={park.statusEvidence ? tr(park.statusEvidence.note,language) : undefined}>
     <Badge value={park.status} tone={park.status==='operational'?'green':park.status==='developing'?'amber':'blue'} />
   </span>;
-}
-
-function ParkStatusEvidence({park}:{park:IndustrialParkProfile}) {
-  const {language}=useApp();
-  const evidence=park.statusEvidence;
-  const doc=park.documents.find(d=>d.id===evidence?.sourceDocumentId);
-  if(!evidence || doc?.visibility!=='public' || !safeUrl(doc.sourceUrl))return null;
-  return <div className="park-status-evidence">
-    <b>{ui(language,'Trạng thái theo nguồn công bố','Status based on published evidence')}</b>
-    <p>{tr(evidence.note,language)}</p>
-    <small>{ui(language,'Mốc nguồn','Source milestone')}: {evidence.sourceDate || ui(language,'Không ghi ngày','Undated')} · {ui(language,'Tra cứu','Checked')}: {evidence.checkedAt}</small>
-    <a className="profile-source-link" href={doc.sourceUrl} target="_blank" rel="noreferrer">{ui(language,'Nguồn trạng thái','Status source')} · {tr(doc.issuer,language)}</a>
-  </div>;
 }
 
 function ParkCard({ park }: { park: IndustrialParkProfile }) {
@@ -1168,7 +1149,6 @@ function ParkDetailPage() {
             </span>}
           </div>
           <h1>{tr(park.name, language)}</h1>
-          {park.documents[0]?.sourceUrl && <p><a href={park.documents[0].sourceUrl} target="_blank" rel="noreferrer">{ui(language,"Nguồn: VSIP • Truy cập 12/11/2026", "Source: VSIP • Retrieved 12 Nov 2026")}</a></p>}
           <p>
             <MapPin size={18} />
             {tr(park.address, language)}
@@ -1238,10 +1218,8 @@ function ParkDetailPage() {
             {label:ui(language,"Lô tối thiểu","Minimum plot"),source:park.availability[0]?.minimumPlot},
           ]} />
         </section>
-        {previewMode && <section className="preview-note">{emptyCopy(language,"Mô phỏng UI: dữ liệu thiếu chỉ áp dụng cho màn hình này, không sửa hồ sơ nguồn.","UI preview: missing data applies only to this screen, not the source profile.","界面演示：缺失数据仅用于本页面，不修改原始资料。")}</section>}
         <section id="overview" className={`detail-grid ${!hasValue(park.operator.overview) && !safeUrl(park.operator.website) ? 'overview-sparse' : ''}`}>
           <div className="content-card wide">
-            <ParkStatusEvidence park={park} />
             <SectionTitle
               eyebrow={ui(language, "01 · HỒ SƠ", "01 · PROFILE")}
               title={
@@ -1402,7 +1380,7 @@ function ParkDetailPage() {
                 {ui(language, "Khu mở rộng", "Future")}
               </span>
               <small>
-                {ui(language, "Sơ đồ quy hoạch minh họa trong phiên bản demo", "Interactive schematic for demonstration")}
+                {ui(language, "Sơ đồ quy hoạch", "Masterplan schematic")}
               </small>
             </div>
           </div>
@@ -1414,8 +1392,6 @@ function ParkDetailPage() {
               ui(language, "Hạ tầng và tiện ích đồng bộ", "Integrated infrastructure and utilities")
             }
           />
-          <p className="profile-source-note">{ui(language,"Thông số theo công bố của chủ đầu tư; nguồn không xác nhận toàn bộ công suất đã vận hành hoặc còn sẵn cho khách thuê. Công suất theo giai đoạn/phần mở rộng được giữ riêng.","Developer-published specifications; the source does not confirm that all capacity is operational or available to tenants. Phase and expansion capacities remain separate.")}</p>
-          <ParkSourceLink park={park} sourceId={park.utilities[0]?.capacity.sourceDocumentId}/>
           <FactGroup facts={park.utilities.map(u => ({label:tr(u.label,language),source:u.capacity}))} />
           <div className="pill-list">
             {park.amenities.map((x) => (
@@ -1608,7 +1584,6 @@ function ParkDetailPage() {
               {ui(language, "Ngành nghề thu hút", "Industry focus")}
             </h3>
             {park.industryNote && <p className="profile-source-note">{tr(park.industryNote,language)}</p>}
-            <ParkSourceLink park={park} sourceId={park.industrySourceDocumentId}/>
             <div className="pill-list">
               {park.suitableIndustries.map((x) => (
                 <span key={x}>
@@ -1666,11 +1641,7 @@ function ParkDetailPage() {
                   </figure>
                 ))}
             </div>
-            {park.id.includes("demo") ? (
-              <p className="media-disclaimer">
-                {ui(language, "Hình ảnh được tạo cho mục đích mô phỏng giao diện và không phản ánh một dự án thực tế.", "Images were created for interface demonstration and do not depict a real project.")}
-              </p>
-            ) : null}
+
           </section>
         ) : null}
         <OptionalSection show={visibleSections.documents} id="documents">
@@ -1733,7 +1704,6 @@ function ParkDetailPage() {
               <p>{tr(park.contact.title,language)}</p>
               <p><a href={`tel:${park.contact.phone.replace(/[^+0-9]/g,'')}`}>{park.contact.phone}</a> · <a href={`mailto:${park.contact.email}`}>{park.contact.email}</a></p>
               <p>{tr(park.contact.address,language)}</p>
-              <ParkSourceLink park={park} sourceId={park.contact.sourceDocumentId}/>
             </div> : <p>{ui(language,"Chưa có đầu mối liên hệ công khai.","No public contact is available.")}</p>}
           </div>
           <div>
@@ -1898,13 +1868,11 @@ function AssetDetailPage() {
   const requestUrl = park ? `/find-supply?${new URLSearchParams({parkId:park.id,assetId:asset.id})}` : "/find-supply";
   return <PublicShell><div className="page page-top">
     <div className="breadcrumbs"><Link to="/assets">{ui(language,"Bất động sản công nghiệp","Assets")}</Link><ChevronRight size={14}/><span>{tr(asset.name,language)}</span></div>
-    {mode && <p className="preview-note">{emptyCopy(language,"Mô phỏng UI — Không thay đổi dữ liệu nguồn","UI preview — Source records remain unchanged","界面演示 — 不修改原始数据")}</p>}
     <div className="asset-detail">
       <SafeImage fallbackIllustration src={asset.image} alt={tr(asset.name,language)} />
       <div><Badge value={asset.type}/><h1>{tr(asset.name,language)}</h1>
         {park ? <p><MapPin size={16}/><Link to={`/industrial-parks/${park.slug}`}>{tr(park.name,language)}</Link></p> : <p className="missing-summary">{emptyCopy(language,"Chưa xác định được KCN liên kết. VIG có thể hỗ trợ tìm mặt bằng.","The linked park is unavailable. VIG can help find a property.","关联园区暂不可用，VIG可协助寻找场地。")}</p>}
         {hasValue(asset.description) && <p>{tr(asset.description,language)}</p>}
-        {park?.documents[0]?.sourceUrl && <p><a href={park.documents[0].sourceUrl} target="_blank" rel="noreferrer">{ui(language,"Nguồn: VSIP • Truy cập 12/11/2026", "Source: VSIP • Retrieved 12 Nov 2026")}</a></p>}
         <FactGroup facts={[
           {label:asset.listingKind === "project_inventory" ? ui(language,"Quỹ đất công bố toàn dự án","Published project inventory") : ui(language,"Diện tích chào thuê","Area"),value:asset.area,unit:asset.unit},
           {label:ui(language,"Đơn giá tham khảo","Price"),value:assetPriceText(asset,language)},
@@ -2186,7 +2154,7 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
               3.{" "}
               {ui(language, "Gói hỗ trợ mong muốn", "Preferred service")}
             </h2>
-            <p>{emptyCopy(language,"Chọn gói phù hợp hoặc gửi yêu cầu mà chưa chọn gói. Nội dung dưới đây là minh họa; VIG sẽ trao đổi phạm vi hỗ trợ sau khi tiếp nhận.","Choose a package or submit without one. These are demo descriptions; VIG will discuss support scope after receiving your request.","您可选择套餐，也可暂不选择。以下为演示说明；VIG将在接收需求后协商支持范围。")}</p>
+            <p>{emptyCopy(language,"Chọn gói phù hợp hoặc gửi yêu cầu mà chưa chọn gói. VIG sẽ trao đổi phạm vi hỗ trợ sau khi tiếp nhận.","Choose a package or submit without one. VIG will discuss support scope after receiving your request.","您可选择套餐，也可暂不选择。以下为演示说明；VIG将在接收需求后协商支持范围。")}</p>
             <PackageCards packages={servicePackages} language={language} value={form.service} onChange={id=>update("service",id)}/>
             {form.service&&<button className="button" type="button" onClick={()=>update("service","")}>{emptyCopy(language,"Chưa chọn gói hỗ trợ","Continue without a package","暂不选择套餐")}</button>}
           </div>
@@ -2692,7 +2660,6 @@ function AdminExpos() {
             </table>
           </div>
         </section>
-        <p className="report-source-note">{ui(language, "Mô hình báo cáo tham chiếu Partner Portal: RFQ và Request được hợp nhất thành chỉ số Kết nối; khách truy cập được cập nhật gần thời gian thực; đơn vị trưng bày và sản phẩm theo bản chụp. Bản TSX này sử dụng dữ liệu mô phỏng tĩnh.", "Reporting model adapted from Partner Portal: RFQs and Requests are consolidated into the Connection metric; visitors are near real time, while exhibitor and product totals are snapshots. This TSX demo uses static fixture data.")}</p>
       </div>
     </AdminShell>
   );

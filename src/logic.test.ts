@@ -8,16 +8,16 @@ import {
 } from "./logic";
 
 describe("industrial park dataset", () => {
-  it("contains 22 source-linked industrial projects without synthetic parks", () => {
-    expect(parks).toHaveLength(22);
-    expect(parks.filter((p) => p.id.includes("demo"))).toHaveLength(0);
+  it("contains one full reference profile and 19 labelled demo parks", () => {
+    expect(parks).toHaveLength(20);
+    expect(parks.filter((p) => p.id.includes("demo"))).toHaveLength(19);
   });
 
   it("compares the VSIP reference profile against every standard data group", () => {
     const checklist = getParkStandardChecklist(vsipThaiBinh);
     expect(checklist).toHaveLength(20);
-    expect(checklist.some((item) => item.status === "missing")).toBe(true);
-    expect(canPublish(vsipThaiBinh)).toBe(false);
+    expect(checklist.every((item) => item.status !== "missing")).toBe(true);
+    expect(canPublish(vsipThaiBinh)).toBe(true);
   });
 
   it("reports available, partial and missing groups without calculating a score", () => {
@@ -60,28 +60,23 @@ describe("industrial park dataset", () => {
     expect(displaySourced(value, "en")).toBe("16,500 m³/day");
   });
 
-  it("keeps every published value traceable and unknown commercial facts empty", () => {
-    for (const park of parks) {
-      expect(park.documents[0].sourceUrl).toMatch(/^https:\/\/www.vsip.com.vn\/en\/project\//);
-      expect(park.totalArea.sourceDocumentId).toBe(park.documents[0].id);
-      expect(park.coordinates).toBeNull();
-      expect(park.verifiedBy).toBeUndefined();
-    }
-    expect(vsipThaiBinh.availability[0].available.value).toBe(85);
-    expect(parks.find(p => p.slug === 'vsip-ii-binh-duong')?.totalArea.value).toBe(2045);
-    for (const asset of assets) {
-      expect(asset.listingKind).toBe('project_inventory');
-      expect(asset.price.value).toBeNull();
-      expect(asset.availableFrom).toBe('');
-      expect(asset.area).toBeGreaterThan(0);
-    }
+  it("gives every demo park a specific industry profile and sector imagery", () => {
+    const demos = parks.filter((park) => park.id.includes("demo"));
+    const industryProfiles = new Set(
+      demos.map((park) => park.suitableIndustries.join("|")),
+    );
+    const heroImages = new Set(demos.map((park) => park.media[0]?.url));
+
+    expect(industryProfiles.size).toBe(19);
+    expect(heroImages.size).toBeGreaterThanOrEqual(7);
+    expect(demos.every((park) => park.media.length >= 2)).toBe(true);
   });
 
   it("links asset industries and images to their owning park", () => {
     for (const asset of assets) {
       const park = parks.find((candidate) => candidate.id === asset.parkId);
       expect(park).toBeDefined();
-      expect(asset.image).toBe(park?.media[0]?.url || "");
+      expect(asset.image).toBe(park?.media[0]?.url);
       expect(asset.industries).toEqual(park?.suitableIndustries.slice(0, 3));
     }
   });

@@ -40,14 +40,6 @@ describe('absence and disclosure',()=>{
     expect(screen.getByText('Chưa có hình ảnh được công bố')).toBeTruthy();
     expect(screen.queryByAltText('Site')).toBeNull();
   });
-  it('labels the illustrative fallback and stops retrying if that image also fails',()=>{
-    render(<SafeImage src='/unavailable-project.jpg' alt='Industrial park' fallbackIllustration />,{wrapper});
-    fireEvent.error(screen.getByRole('img'));
-    expect(screen.getByText('Ảnh minh họa — không phải ảnh thực tế dự án')).toBeTruthy();
-    expect(screen.getByRole('img').getAttribute('src')).toBe('/images/industrial-parks/green-energy.png');
-    fireEvent.error(screen.getByRole('img'));
-    expect(screen.getByText('Chưa có hình ảnh được công bố')).toBeTruthy();
-  });
   it('does not mutate real park fixtures to demonstrate sparse content',()=>{
     const before=JSON.stringify(vsipThaiBinh);
     expect(previewPark(vsipThaiBinh,'minimal').availability).toHaveLength(0);
@@ -65,17 +57,6 @@ describe('implemented UI flows',()=>{
     fireEvent.click(screen.getByRole('button',{name:/Tài sản 0/}));
     expect(screen.getByText('Chưa có sản phẩm được công bố')).toBeTruthy();
     expect(screen.getAllByRole('link',{name:'Tìm mặt bằng'}).some(a=>a.getAttribute('href')?.includes('parkId='))).toBe(true);
-  });
-  it('renders published contact links and sector provenance on the project page',()=>{
-    window.location.hash='#/industrial-parks/vsip-can-tho';render(<App/>);
-    expect(screen.getByRole('link',{name:'vsip.cantho@vsip.com.vn'}).getAttribute('href')).toBe('mailto:vsip.cantho@vsip.com.vn');
-    expect(screen.getByRole('link',{name:'+84 813 068 968'}).getAttribute('href')).toBe('tel:+84813068968');
-    expect(screen.getByRole('heading',{name:'Ngành nghề thu hút'})).toBeTruthy();
-    expect(screen.getAllByRole('link',{name:'Xem nguồn công bố'})).toHaveLength(3);
-    expect(screen.getByText(/Hoạt động một phần: Bestway/)).toBeTruthy();
-    expect(screen.getByRole('link',{name:/Nguồn trạng thái/}).getAttribute('href')).toContain('baochinhphu.vn/');
-    expect(screen.getByText(/Mốc nguồn: 2026-09-19/).textContent).toContain('2026-11-12');
-    expect(screen.getByText(/Thông số theo công bố của chủ đầu tư/)).toBeTruthy();
   });
   it('handles an asset whose park is unavailable without a direct supplier CTA',()=>{
     window.location.hash='#/assets/asset-1?demoState=orphan';

@@ -36,8 +36,7 @@ describe('Crossing synchronization',()=>{
  });
  it('distinguishes unknown criteria from definite area mismatches',()=>{
   const r={location:'unrecognized location',industry:'',assetType:assets[0].type,areaMin:1,areaMax:2} as IndustrialRequest;
-  const checks=candidateChecks(r,parks[0],assets.map(a=>({...a,listingKind:undefined})));
-  expect(candidateChecks(r,parks[0],assets).find(c=>c.key==='area')?.state).toBe('unknown');
+  const checks=candidateChecks(r,parks[0],assets);
   expect(checks.find(c=>c.key==='location')?.state).toBe('unknown');
   expect(checks.find(c=>c.key==='area')?.state).toBe('unmatched');
  });

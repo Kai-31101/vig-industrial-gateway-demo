@@ -3,13 +3,13 @@ import {parks} from './data';
 import {parkCompleteness,sortParksByCompleteness} from './parkCompleteness';
 describe('park completeness order',()=>{
  it('prefers documented coverage and excludes illustrative media and hidden values',()=>{
-  const full=structuredClone(parks[2]);
+  const full=structuredClone(parks[0]);
   const sparse={...full,media:[{...full.media[0],url:'/images/industrial-parks/green-energy.png'}],suitableIndustries:[],availability:full.availability.map(a=>({...a,available:{...a.available,value:999,disclosureStatus:'not_disclosed' as const}}))};
   expect(parkCompleteness(full)).toBeGreaterThan(parkCompleteness(sparse));
   expect(sortParksByCompleteness([sparse,full])[0]).toBe(full);
  });
  it('counts a published zero and does not reward duplicate media or industries',()=>{
-  const p=parks.find(p=>p.slug==='vsip-bac-ninh-i')!;
+  const p=structuredClone(parks[0]); p.availability[0].available.value=0;
   expect(p.availability[0].available.value).toBe(0);
   const missing={...p,availability:[]};
   expect(parkCompleteness(p)-parkCompleteness(missing)).toBe(1);

@@ -2,7 +2,6 @@
 import {afterEach,describe,it,expect} from 'vitest';
 import {cleanup,render,screen,fireEvent} from '@testing-library/react';
 import App from './App';
-import {assets} from './data';
 afterEach(cleanup);
 describe('Cross-Epic UI contracts',()=>{
  it('carries the homepage keyword into the directory URL and filter',()=>{
@@ -21,7 +20,7 @@ describe('Cross-Epic UI contracts',()=>{
  it('direct request keeps the parent read-only and provides explicit price/date modes',()=>{
   window.location.hash='#/find-supply?assetId=asset-1';render(<App/>);
   expect((screen.getByLabelText('Tên khu công nghiệp') as HTMLSelectElement).disabled).toBe(true);
-  expect(screen.getByText(assets[0].name.vi)).toBeTruthy();
+  expect(screen.getByText('Nhà xưởng xây sẵn 1')).toBeTruthy();
   const mode=screen.getByLabelText(/Chế độ giá\/ngân sách/);
   fireEvent.change(mode,{target:{value:'specific'}});
   expect(screen.getByLabelText('Mã tiền tệ')).toBeTruthy();

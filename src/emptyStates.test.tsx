@@ -72,6 +72,9 @@ describe('implemented UI flows',()=>{
     expect(screen.getByRole('link',{name:'+84 813 068 968'}).getAttribute('href')).toBe('tel:+84813068968');
     expect(screen.getByRole('heading',{name:'Ngành nghề thu hút'})).toBeTruthy();
     expect(screen.getAllByRole('link',{name:'Xem nguồn công bố'})).toHaveLength(3);
+    expect(screen.getByText(/Hoạt động một phần: Bestway/)).toBeTruthy();
+    expect(screen.getByRole('link',{name:/Nguồn trạng thái/}).getAttribute('href')).toContain('baochinhphu.vn/');
+    expect(screen.getByText(/Mốc nguồn: 2026-09-19/).textContent).toContain('2026-11-12');
     expect(screen.getByText(/Thông số theo công bố của chủ đầu tư/)).toBeTruthy();
   });
   it('handles an asset whose park is unavailable without a direct supplier CTA',()=>{

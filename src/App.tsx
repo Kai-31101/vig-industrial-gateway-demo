@@ -881,6 +881,26 @@ function ParkSourceLink({park,sourceId}:{park:IndustrialParkProfile;sourceId?:st
   return doc?.visibility==='public' && safeUrl(doc.sourceUrl) ? <a className="profile-source-link" href={doc.sourceUrl} target="_blank" rel="noreferrer">{ui(language,"Xem nguồn công bố", "View published source")}</a> : null;
 }
 
+function ParkStatusBadge({park}:{park:IndustrialParkProfile}) {
+  const {language}=useApp();
+  return <span title={park.statusEvidence ? tr(park.statusEvidence.note,language) : undefined}>
+    <Badge value={park.status} tone={park.status==='operational'?'green':park.status==='developing'?'amber':'blue'} />
+  </span>;
+}
+
+function ParkStatusEvidence({park}:{park:IndustrialParkProfile}) {
+  const {language}=useApp();
+  const evidence=park.statusEvidence;
+  const doc=park.documents.find(d=>d.id===evidence?.sourceDocumentId);
+  if(!evidence || doc?.visibility!=='public' || !safeUrl(doc.sourceUrl))return null;
+  return <div className="park-status-evidence">
+    <b>{ui(language,'Trạng thái theo nguồn công bố','Status based on published evidence')}</b>
+    <p>{tr(evidence.note,language)}</p>
+    <small>{ui(language,'Mốc nguồn','Source milestone')}: {evidence.sourceDate || ui(language,'Không ghi ngày','Undated')} · {ui(language,'Tra cứu','Checked')}: {evidence.checkedAt}</small>
+    <a className="profile-source-link" href={doc.sourceUrl} target="_blank" rel="noreferrer">{ui(language,'Nguồn trạng thái','Status source')} · {tr(doc.issuer,language)}</a>
+  </div>;
+}
+
 function ParkCard({ park }: { park: IndustrialParkProfile }) {
   const { language } = useApp();
   const available = park.availability[0]?.available;
@@ -896,7 +916,7 @@ function ParkCard({ park }: { park: IndustrialParkProfile }) {
       </Link>
       <div className="park-body">
         <div className="park-meta">
-          <Badge value={park.status} tone="green" />
+          <ParkStatusBadge park={park} />
           <span>
             <MapPin size={14} />
             {park.province}
@@ -1138,7 +1158,7 @@ function ParkDetailPage() {
             <span>{tr(park.name, language)}</span>
           </div>
           <div className="detail-badges">
-            <Badge value={park.status} tone="green" />
+            <ParkStatusBadge park={park} />
             {!previewMode && park.verifiedBy && <span className="verified">
               <ShieldCheck size={15} />
               {ui(language, "Hồ sơ đã xác minh", "Verified profile")}
@@ -1218,6 +1238,7 @@ function ParkDetailPage() {
         {previewMode && <section className="preview-note">{emptyCopy(language,"Mô phỏng UI: dữ liệu thiếu chỉ áp dụng cho màn hình này, không sửa hồ sơ nguồn.","UI preview: missing data applies only to this screen, not the source profile.","界面演示：缺失数据仅用于本页面，不修改原始资料。")}</section>}
         <section id="overview" className={`detail-grid ${!hasValue(park.operator.overview) && !safeUrl(park.operator.website) ? 'overview-sparse' : ''}`}>
           <div className="content-card wide">
+            <ParkStatusEvidence park={park} />
             <SectionTitle
               eyebrow={ui(language, "01 · HỒ SƠ", "01 · PROFILE")}
               title={

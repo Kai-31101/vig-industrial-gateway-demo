@@ -2,6 +2,7 @@ import type { ExpoProgram, IndustrialAsset, IndustrialParkProfile, LocalizedText
 import { translateToChinese } from './i18n';
 import projects from './vsipProjects.json';
 import { enrichVsipProfiles } from './vsipEnrichment';
+import { applyVsipStatuses } from './vsipStatuses';
 const l = (vi: string, en: string, zh = translateToChinese(en)): LocalizedText => ({ vi, en, zh });
 const retrievedAt = '2026-11-12';
 const unknownText = l('Chưa có dữ liệu', 'Not available', '暂无数据');
@@ -30,11 +31,11 @@ export const parks: IndustrialParkProfile[] = projects.map(project => {
   };
 });
 const qtip = parks.find(p => p.slug === 'quang-tri-international-industrial-park-qtip')!;
-qtip.status = 'developing';
 qtip.operator.name = 'VSIP JV / Amata City Bien Hoa / Sumitomo Corporation';
 qtip.operator.ownership = l('Liên doanh VSIP JV, Amata City Biên Hòa và Sumitomo Corporation.', 'Joint venture of VSIP JV, Amata City Bien Hoa and Sumitomo Corporation.', 'VSIP JV、Amata City Bien Hoa 与住友商事合资。');
 qtip.documents.push({id:'qtip-sumitomo',title:l('QTIP – thông tin từ Sumitomo', 'QTIP – Sumitomo project information', 'QTIP — 住友商事项目信息'),category:'presentation',issuer:l('Sumitomo Corporation','Sumitomo Corporation'),language:'en',visibility:'public',verificationStatus:'reviewed',sourceUrl:'https://sumitomocorp-indpark.com/en/industrial_park/quang_tri/'});
 enrichVsipProfiles(parks);
+applyVsipStatuses(parks);
 export const vsipThaiBinh = parks.find(p => p.slug === 'vsip-thai-binh')!;
 // Project-level inventory, never invented individual plots, factory units or prices.
 export const assets: IndustrialAsset[] = parks.filter(p => (p.availability[0].available.value ?? 0) > 0).map((park, index) => ({

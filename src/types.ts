@@ -1,6 +1,7 @@
 export type Language = 'vi' | 'en' | 'zh';
 export interface ParkDocument { documentNumber?: string }
 export interface IndustrialParkProfile { sourceDocumentId?: string; industrySourceDocumentId?: string; industryNote?: LocalizedText }
+export interface IndustrialParkProfile { statusEvidence?: { sourceDocumentId: string; sourceDate?: string; checkedAt: string; note: LocalizedText } }
 export type LocalizedText = { vi: string; en: string; zh?: string };
 export type VerificationStatus = 'unverified' | 'reviewed' | 'verified';
 export type DisclosureStatus = 'public' | 'not_disclosed' | 'not_available';

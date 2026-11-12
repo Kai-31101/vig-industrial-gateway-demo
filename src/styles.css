@@ -514,6 +514,16 @@ b {
   background: #e7f6ef;
   color: #087454;
 }
+.park-status-evidence {
+  padding: 16px;
+  margin-bottom: 24px;
+  border-left: 3px solid #1687ac;
+  background: #f1f7fa;
+  border-radius: 6px;
+}
+.park-status-evidence p { margin: 8px 0; }
+.park-status-evidence small { display: block; color: var(--muted); }
+.park-status-evidence a { display: inline-block; margin-top: 8px; overflow-wrap: anywhere; }
 .badge.amber {
   background: #fff4db;
   color: #9a5a08;

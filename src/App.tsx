@@ -892,11 +892,7 @@ function ParkCard({ park }: { park: IndustrialParkProfile }) {
     <article className="park-card">
       <Link to={`/industrial-parks/${park.slug}`} className="park-image">
         <SafeImage fallbackIllustration src={park.media.find(m => m.approved)?.url} alt={tr(park.name, language)} />
-        <span className="demo-label">
-          {park.id.includes("demo")
-            ? ui(language, "DỮ LIỆU MINH HỌA", "DEMO DATA")
-            : ui(language, "HỒ SƠ THAM CHIẾU", "REFERENCE PROFILE")}
-        </span>
+
       </Link>
       <div className="park-body">
         <div className="park-meta">
@@ -1837,7 +1833,7 @@ function AssetsPage() {
           <b>
             {filtered.length} {ui(language, "bất động sản công nghiệp", "industrial assets")}
           </b>
-          <span>{ui(language, "Dữ liệu minh họa", "Demo inventory")}</span>
+
         </div>
         {filtered.length ? (
           <div className="asset-grid">
@@ -3146,11 +3142,7 @@ function AdminParks() {
                       <Link to={`/admin/industrial-parks/${p.id}`}>
                         <b>{tr(p.name, language)}</b>
                       </Link>
-                      <small>
-                        {p.id.includes("demo")
-                          ? ui(language, "DỮ LIỆU MINH HỌA", "DEMO DATA")
-                          : ui(language, "HỒ SƠ THAM CHIẾU", "REFERENCE PROFILE")}
-                      </small>
+
                     </td>
                     <td>{p.province}</td>
                     <td>
@@ -3207,11 +3199,7 @@ function AdminParkDetail() {
         </div>
         <div className="admin-title">
           <div>
-            <span>
-              {p.id.includes("demo")
-                ? ui(language, "DỮ LIỆU MINH HỌA", "DEMO DATA")
-                : ui(language, "HỒ SƠ THAM CHIẾU", "REFERENCE PROFILE")}
-            </span>
+
             <h1>{tr(p.name, language)}</h1>
             <p>
               {p.province} · {dataText(p.dataOwner, language)}

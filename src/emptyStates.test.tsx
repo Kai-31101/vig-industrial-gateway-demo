@@ -40,6 +40,14 @@ describe('absence and disclosure',()=>{
     expect(screen.getByText('Chưa có hình ảnh được công bố')).toBeTruthy();
     expect(screen.queryByAltText('Site')).toBeNull();
   });
+  it('labels the illustrative fallback and stops retrying if that image also fails',()=>{
+    render(<SafeImage src='/unavailable-project.jpg' alt='Industrial park' fallbackIllustration />,{wrapper});
+    fireEvent.error(screen.getByRole('img'));
+    expect(screen.getByText('Ảnh minh họa — không phải ảnh thực tế dự án')).toBeTruthy();
+    expect(screen.getByRole('img').getAttribute('src')).toBe('/images/industrial-parks/green-energy.png');
+    fireEvent.error(screen.getByRole('img'));
+    expect(screen.getByText('Chưa có hình ảnh được công bố')).toBeTruthy();
+  });
   it('does not mutate real park fixtures to demonstrate sparse content',()=>{
     const before=JSON.stringify(vsipThaiBinh);
     expect(previewPark(vsipThaiBinh,'minimal').availability).toHaveLength(0);

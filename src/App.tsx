@@ -845,7 +845,7 @@ function ParkCard({ park }: { park: IndustrialParkProfile }) {
   return (
     <article className="park-card">
       <Link to={`/industrial-parks/${park.slug}`} className="park-image">
-        <SafeImage src={park.media.find(m => m.approved)?.url} alt={tr(park.name, language)} />
+        <SafeImage fallbackIllustration src={park.media.find(m => m.approved)?.url} alt={tr(park.name, language)} />
         <span className="demo-label">
           {park.id.includes("demo")
             ? ui(language, "DỮ LIỆU MINH HỌA", "DEMO DATA")
@@ -875,7 +875,7 @@ function ParkCard({ park }: { park: IndustrialParkProfile }) {
             <small>
               {ui(language, "Diện tích còn trống", "Available")}
             </small>
-            {available ? <SourceValue value={available} compact /> : "—"}
+            {available?.value != null ? <SourceValue value={available} compact /> : <span>{ui(language, "Liên hệ xác nhận", "Contact for availability")}</span>}
           </div>
         </div>
         <div className="industries">
@@ -1085,7 +1085,7 @@ function ParkDetailPage() {
   return (
     <PublicShell>
       <div className="detail-hero">
-        <SafeImage src={approvedMedia[0]?.url} alt={tr(park.name, language)} />
+        <SafeImage fallbackIllustration src={approvedMedia[0]?.url} alt={tr(park.name, language)} />
         <div className="detail-shade" />
         <div className="page detail-hero-content">
           <div className="breadcrumbs">
@@ -1584,7 +1584,7 @@ function ParkDetailPage() {
               {approvedMedia
                 .map((item) => (
                   <figure key={item.id}>
-                    <SafeImage src={item.url} alt={tr(item.title, language)} />
+                    <SafeImage fallbackIllustration src={item.url} alt={tr(item.title, language)} />
                     <figcaption>
                       <b>{tr(item.title, language)}</b>
                       <span>
@@ -1709,7 +1709,7 @@ function AssetCard({
         }}
       >
         <div className="asset-card-image">
-          <SafeImage src={asset.image} alt={tr(asset.name, language)} />
+          <SafeImage fallbackIllustration src={asset.image} alt={tr(asset.name, language)} />
         </div>
         <div className="asset-card-body">
           <Badge value={asset.type} tone="blue" />
@@ -1828,7 +1828,7 @@ function AssetDetailPage() {
     <div className="breadcrumbs"><Link to="/assets">{ui(language,"Bất động sản công nghiệp","Assets")}</Link><ChevronRight size={14}/><span>{tr(asset.name,language)}</span></div>
     {mode && <p className="preview-note">{emptyCopy(language,"Mô phỏng UI — Không thay đổi dữ liệu nguồn","UI preview — Source records remain unchanged","界面演示 — 不修改原始数据")}</p>}
     <div className="asset-detail">
-      <SafeImage src={asset.image} alt={tr(asset.name,language)} />
+      <SafeImage fallbackIllustration src={asset.image} alt={tr(asset.name,language)} />
       <div><Badge value={asset.type}/><h1>{tr(asset.name,language)}</h1>
         {park ? <p><MapPin size={16}/><Link to={`/industrial-parks/${park.slug}`}>{tr(park.name,language)}</Link></p> : <p className="missing-summary">{emptyCopy(language,"Chưa xác định được KCN liên kết. VIG có thể hỗ trợ tìm mặt bằng.","The linked park is unavailable. VIG can help find a property.","关联园区暂不可用，VIG可协助寻找场地。")}</p>}
         {hasValue(asset.description) && <p>{tr(asset.description,language)}</p>}

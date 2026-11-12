@@ -23,7 +23,7 @@ def capture(url):
         if 'grid-cols-2' in grid.get('class',[]):
             cells=grid.find_all('div',recursive=False)
             for i in range(0,len(cells)-1,2): fields[cells[i].get_text(' ',strip=True)]=cells[i+1].get_text(' ',strip=True)
-    imgs=list(dict.fromkeys(i.get('src') for i in doc.find_all('img') if i.get('alt')==name and i.get('src')))
+    imgs=list(dict.fromkeys(i.get('src') for i in doc.find_all('img') if ' '.join(i.get('alt','').split())==' '.join(name.split()) and i.get('src')))
     return {'name':name,'url':url,'retrievedAt':'2026-11-12','fields':fields,'images':imgs[:3]}
 with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool: records=list(pool.map(capture,links))
 (ROOT/'docs/data-sources/vsip-public-facts-2026-11-12.json').write_text(json.dumps(records,ensure_ascii=False,indent=2),encoding='utf-8')

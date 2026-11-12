@@ -27,11 +27,16 @@ export const parks: IndustrialParkProfile[] = projects.map(project => {
     ] : [], amenities: [], suitableIndustries: project.slug === 'vsip-nghe-an-i' ? ['Electronics', 'Precision engineering', 'Garments', 'Consumer goods', 'Supporting industries'] : project.slug === 'vsip-iii-binh-duong' ? ['High-tech manufacturing', 'Semiconductors'] : [], restrictedIndustries: [], environmentalConditions: unknownText,
     incentives: [], process: [], logistics: {shippingRoutes: [], indicativeCosts: []}, sustainability: [], community: [], tenants: [],
     contact: {office: l('VSIP Group – Phòng Truyền thông', 'VSIP Group – Communications Department'), address: unknownText, person: '', title: l('Đầu mối liên hệ chung của tập đoàn', 'Group contact; not a dedicated project leasing desk'), phone: '+84 274 3743898', email: 'communications@vsip.com.vn', website: 'https://www.vsip.com.vn/en/', channels: ['Email', 'Phone']},
-    media: project.images.map((url, i) => ({id: `${project.slug}-image-${i}`, type: i === 0 ? 'hero' : 'gallery', title: l('Hình ảnh dự án do VSIP công bố', 'Project imagery published by VSIP'), url, approved: true})),
+    media: project.images.map((url, i) => ({id: `${project.slug}-image-${i}`, type: i === 0 ? 'hero' : 'gallery', title: url.startsWith('/images/') ? l('Ảnh minh họa – không phải ảnh thực tế dự án', 'Illustration – not an actual project photograph', '示意图，非项目实景') : l('Hình ảnh từ đơn vị phát triển dự án', 'Image published by the project developer', '项目开发商公布的图片'), url, approved: true})),
     documents: [{id: sourceId, title: l('Nguồn: trang dự án chính thức VSIP', 'Source: official VSIP project page', '来源：VSIP 官方项目页面'), category: 'presentation', issuer: l('VSIP Group', 'VSIP Group'), language: 'en', visibility: 'public', verificationStatus: 'reviewed', sourceUrl: project.url}],
     sourceLanguage: 'en', sourceDocumentId: sourceId, dataOwner: 'VSIP Group (public website)', lastVerifiedAt: retrievedAt, conflicts: [],
   };
 });
+const qtip = parks.find(p => p.slug === 'quang-tri-international-industrial-park-qtip')!;
+qtip.status = 'developing';
+qtip.operator.name = 'VSIP JV / Amata City Bien Hoa / Sumitomo Corporation';
+qtip.operator.ownership = l('Liên doanh VSIP JV, Amata City Biên Hòa và Sumitomo Corporation.', 'Joint venture of VSIP JV, Amata City Bien Hoa and Sumitomo Corporation.', 'VSIP JV、Amata City Bien Hoa 与住友商事合资。');
+qtip.documents.push({id:'qtip-sumitomo',title:l('QTIP – thông tin từ Sumitomo', 'QTIP – Sumitomo project information', 'QTIP — 住友商事项目信息'),category:'presentation',issuer:l('Sumitomo Corporation','Sumitomo Corporation'),language:'en',visibility:'public',verificationStatus:'reviewed',sourceUrl:'https://sumitomocorp-indpark.com/en/industrial_park/quang_tri/'});
 export const vsipThaiBinh = parks.find(p => p.slug === 'vsip-thai-binh')!;
 // Project-level inventory, never invented individual plots, factory units or prices.
 export const assets: IndustrialAsset[] = parks.filter(p => (p.availability[0].available.value ?? 0) > 0).map((park, index) => ({

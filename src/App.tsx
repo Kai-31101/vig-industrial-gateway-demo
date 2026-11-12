@@ -768,7 +768,7 @@ function HomePage() {
             value={keyword} onChange={e=>setKeyword(e.target.value)}
             onKeyDown={e=>{if(e.key==="Enter")navigate(`/industrial-parks?q=${encodeURIComponent(keyword.trim())}`)}}
             placeholder={
-              ui(language, "Tìm KCN, tỉnh, ngành hoặc loại tài sản...", "Search park, province, industry or asset type...")
+              ui(language, "Tìm KCN, tỉnh, ngành hoặc loại mặt bằng...", "Search park, province, industry or asset type...")
             }
           />
         </div>
@@ -926,7 +926,7 @@ function ParkCard({ park,featured=false }: { park: IndustrialParkProfile;feature
             {available?.value != null ? <SourceValue value={available} compact /> : <span>{ui(language, "Liên hệ xác nhận", "Contact for availability")}</span>}
           </div>
         </div>
-        <div className="park-asset-count"><Building2 size={14} aria-hidden="true"/><span>{language === "zh" ? `${assetCount} 个资产` : ui(language, `${assetCount} tài sản`, `${assetCount} assets`)}</span></div>
+        <div className="park-asset-count"><Building2 size={14} aria-hidden="true"/><span>{language === "zh" ? `${assetCount} 个资产` : ui(language, `${assetCount} mặt bằng`, `${assetCount} assets`)}</span></div>
         <div className="industries">
           {park.suitableIndustries.slice(0, 3).map((x) => (
             <span key={x}>{industryLabel(x, language)}</span>
@@ -1206,7 +1206,7 @@ function ParkDetailPage() {
             className={activeParkTab === "assets" ? "active" : ""}
             onClick={() => setActiveParkTab("assets")}
           >
-            <PackageSearch /> {ui(language, "Tài sản", "Assets")}
+            <PackageSearch /> {ui(language, "Mặt bằng", "Assets")}
             <span>{linked.length}</span>
           </button>
         </div>
@@ -1859,7 +1859,7 @@ function AssetsPage() {
           </div>
         ) : (
           <Empty
-            title={ui(language, "Chưa có tài sản phù hợp", "No matching assets")}
+            title={ui(language, "Chưa có mặt bằng phù hợp", "No matching assets")}
             text={ui(language, "Vui lòng chọn loại hình khác hoặc gửi yêu cầu tìm mặt bằng.", "Choose another asset type or submit a supply request.")}
             action={<><button className="button primary" onClick={() => setParams({},{replace:true})}>{ui(language,"Xóa bộ lọc","Clear filters")}</button><Link className="button outline" to="/find-supply">{ui(language,"Gửi yêu cầu","Send inquiry")}</Link></>}
           />
@@ -2092,7 +2092,7 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
                 "location",
                 isSupply
                   ? ui(language, "Tỉnh/thành hoặc khu vực mong muốn", "Preferred location")
-                  : ui(language, "Vị trí tài sản", "Asset location"),
+                  : ui(language, "Vị trí mặt bằng", "Asset location"),
               )}{" "}
               {field(
                 "areaMin",
@@ -2992,7 +2992,7 @@ function RequestDetail() {
                         </p>
                         <span>
                           <Check />{" "}
-                          {ui(language, "Khớp khu vực, ngành và loại tài sản", "Region, industry and asset-type match")}
+                          {ui(language, "Khớp khu vực, ngành và loại mặt bằng", "Region, industry and asset-type match")}
                         </span>
                       </div>
                     </article>

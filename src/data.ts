@@ -199,7 +199,7 @@ const originalAssets: IndustrialAsset[] = parks.slice(0, 10).map((park, index) =
   type: index % 3 === 0 ? 'ready_built_factory' : index % 4 === 0 ? 'build_to_suit' : 'industrial_land', area: index % 3 === 0 ? 12000 + index * 500 : 2.5 + index, unit: index % 3 === 0 ? 'm²' : 'ha',
   transaction: 'lease', price: index === 0 ? s<number>(null, 'USD/m²', 'vsip-vi-2026', 'not_disclosed') : s(78 + index * 3, 'USD/m²/term', 'vig-demo-fixture'), availableFrom: `2027-${String((index % 9) + 1).padStart(2, '0')}-01`, powerMva: 4 + index,
   industries: park.suitableIndustries.slice(0, 3), featured: index < 4, image: park.media[0]?.url || hero,
-  description: l('Tài sản công nghiệp với hạ tầng đồng bộ và kết nối logistics thuận lợi.', 'Industrial asset with integrated infrastructure and logistics access.'),
+  description: l('Mặt bằng công nghiệp với hạ tầng đồng bộ và kết nối logistics thuận lợi.', 'Industrial asset with integrated infrastructure and logistics access.'),
 }));
 
 const supplementalAssets: IndustrialAsset[] = parks.flatMap((park, parkIndex) => {

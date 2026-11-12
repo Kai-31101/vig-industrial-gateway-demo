@@ -54,7 +54,7 @@ describe('implemented UI flows',()=>{
     expect(screen.queryByRole('heading',{name:'Ưu đãi đầu tư'})).toBeNull();
     expect(screen.queryByRole('button',{name:/Nhân lực/})).toBeNull();
     expect(screen.queryByRole('heading',{name:'Mức lương tham khảo'})).toBeNull();
-    fireEvent.click(screen.getByRole('button',{name:/Tài sản 0/}));
+    fireEvent.click(screen.getByRole('button',{name:/Mặt bằng 0/}));
     expect(screen.getByText('Chưa có sản phẩm được công bố')).toBeTruthy();
     expect(screen.getAllByRole('link',{name:'Tìm mặt bằng'}).some(a=>a.getAttribute('href')?.includes('parkId='))).toBe(true);
   });

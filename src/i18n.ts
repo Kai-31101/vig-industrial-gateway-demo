@@ -1,6 +1,16 @@
 import type { Language } from "./types";
 
 const zh: Record<string, string> = {
+  "Available land": "可用土地",
+  "Contact to confirm": "请联系确认",
+  "Land details and sources": "土地详情与数据来源",
+  "Developer": "开发商",
+  "Workforce and local economy": "劳动力与地方经济",
+  "Documents and sources": "文件与来源",
+  "Investment conditions": "投资条件",
+  "Restricted industries": "限制行业",
+  "Park, province, industry…": "园区、省市、行业…",
+
   "Select language": "选择语言",
   "Open menu": "打开菜单",
   "Close menu": "关闭菜单",

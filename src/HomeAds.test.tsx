@@ -4,9 +4,20 @@ import {act,cleanup,fireEvent,render,screen,within} from '@testing-library/react
 import {MemoryRouter} from 'react-router-dom';
 import {AppProvider} from './AppContext';
 import {HomeAds} from './HomeAds';
-afterEach(()=>{cleanup();vi.useRealTimers();});
+afterEach(()=>{cleanup();vi.useRealTimers();vi.unstubAllGlobals();});
 const setup=()=>render(<AppProvider><MemoryRouter><HomeAds placement="top"/><HomeAds placement="bottom"/></MemoryRouter></AppProvider>);
 describe('homepage advertisement carousels',()=>{
+ it('pauses offscreen and waits a complete interval after becoming visible',()=>{
+  vi.useFakeTimers();
+  const callbacks:((entries:{isIntersecting:boolean}[])=>void)[]=[];
+  vi.stubGlobal('IntersectionObserver',class {constructor(callback:(entries:{isIntersecting:boolean}[])=>void){callbacks.push(callback)}observe(){}disconnect(){}});
+  setup();const first=screen.getByRole('region',{name:'Banner top 1'});
+  act(()=>callbacks[0]([{isIntersecting:false}]));
+  act(()=>vi.advanceTimersByTime(9000));expect(within(first).getByRole('img').getAttribute('src')).toContain('industrial-1.jpg');
+  act(()=>callbacks[0]([{isIntersecting:true}]));
+  act(()=>vi.advanceTimersByTime(2999));expect(within(first).getByRole('img').getAttribute('src')).toContain('industrial-1.jpg');
+  act(()=>vi.advanceTimersByTime(1));expect(within(first).getByRole('img').getAttribute('src')).toContain('industrial-3.jpg');
+ });
  it('renders two banners in each location and rotates independently every three seconds',()=>{
   vi.useFakeTimers();setup();
   expect(screen.getAllByRole('img')).toHaveLength(4);

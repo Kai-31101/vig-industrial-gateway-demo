@@ -1,3 +1,4 @@
+import {useMobile,MobileMenu,MobileActionBar,MobileDisclosure,PublicScrollRestore} from './MobileUX';
 import {AdminLogin} from './admin/AdminLogin';
 import {PackageCards} from './PackageCards';
 import {HomeAds} from './HomeAds';
@@ -10,7 +11,7 @@ import {sortParksByCompleteness} from './parkCompleteness';
 import {ConnectionDetail,ConnectionDashboard,ExpoDirectoryAdmin} from './admin/Connections';
 import {successfulConnection} from './connectionLogic';
 import {validPhone} from './admin/model';
-import { CSSProperties, FormEvent, ReactNode, useMemo, useState, useRef } from "react";
+import { CSSProperties, FormEvent, ReactNode, useMemo, useState, useRef, useEffect } from "react";
 import {
   BrowserRouter,
   Link,
@@ -432,6 +433,8 @@ function LanguageToggle({ compact = false }: { compact?: boolean }) {
 }
 
 function Header() {
+  const mobile=useMobile();const menuTrigger=useRef<HTMLButtonElement>(null);
+  const closeMenu=()=>{setOpen(false);menuTrigger.current?.focus()};
   const { language } = useApp();
   const [open, setOpen] = useState(false);
   const location = useLocation();
@@ -460,6 +463,8 @@ function Header() {
         </Link>
         <button
           className="mobile-menu"
+          ref={menuTrigger}
+          aria-expanded={open}
           aria-label={
             open
               ? ui(language, "Đóng trình đơn", "Close menu")
@@ -469,7 +474,7 @@ function Header() {
         >
           {open ? <X /> : <Menu />}
         </button>
-        <nav className={open ? "nav open" : "nav"}>
+        <nav className={!mobile && open ? "nav open" : "nav"}>
           {nav.map(([path, label]) => (
             <Link
               key={path}
@@ -484,6 +489,9 @@ function Header() {
             <LanguageToggle />
           </div>
         </nav>
+        {mobile&&<MobileMenu open={open} close={closeMenu} label={ui(language,"Đóng trình đơn","Close menu")}>
+          {nav.map(([path,label])=><Link key={path} to={path} onClick={closeMenu}>{label}</Link>)}<LanguageToggle/>
+        </MobileMenu>}
         <div className="header-actions">
           <LanguageToggle />
 
@@ -665,6 +673,7 @@ function FloatingParkChat() {
 function PublicShell({ children }: { children: ReactNode }) {
   return (
     <>
+      <PublicScrollRestore/>
       <Header />
       <main>{children}</main>
       <Footer />
@@ -674,6 +683,7 @@ function PublicShell({ children }: { children: ReactNode }) {
 }
 
 function HomePage() {
+  const mobile=useMobile();
   const [keyword,setKeyword]=useState("");
   const { language, parks, assets, requests } = useApp();
   const navigate = useNavigate();
@@ -706,7 +716,7 @@ function HomePage() {
                   : undefined
             }
           >
-            {language === "vi" ? (
+            {mobile ? emptyCopy(language,"Tìm khu công nghiệp phù hợp","Find your industrial location","寻找合适的工业园区") : language === "vi" ? (
               <>
                 <span>HẠ TẦNG XÚC TIẾN</span>
                 <span>ĐẦU TƯ CÔNG NGHIỆP</span>
@@ -725,6 +735,8 @@ function HomePage() {
                 ? "数据驱动 · AI智能匹配"
                 : "Powered by Data. Matched by AI."}
           </p>
+          {mobile&&<form className="mobile-home-search" onSubmit={e=>{e.preventDefault();navigate(`/industrial-parks?q=${encodeURIComponent(keyword.trim())}`)}}><input aria-label={ui(language,"Tìm kiếm công nghiệp","Industrial search")} placeholder={ui(language,"Tên KCN, tỉnh, ngành…","Park, province, industry…")} value={keyword} onChange={e=>setKeyword(e.target.value)}/><button type="submit">{ui(language,"Tìm kiếm","Search")}</button></form>}
+          {mobile&&<div className="mobile-home-links"><Link to="/find-supply">{ui(language,"Tìm mặt bằng","Find supply")}</Link><Link to="/find-demand">{ui(language,"Tìm khách thuê/mua","Find demand")}</Link></div>}
           <div className="hero-actions">
             <Link className="button gold" to="/industrial-parks">
               {ui(language, "Tra cứu khu công nghiệp", "Explore supply")}
@@ -756,7 +768,7 @@ function HomePage() {
           </div>
         </div>
       </section>
-      <section className="search-band">
+      <section className="search-band desktop-home-search">
         <div>
           <Search />
           <input
@@ -773,7 +785,7 @@ function HomePage() {
         </button>
       </section>
       <HomeAds placement="top" />
-      <section className="page section">
+      <section className="page section home-featured">
         <SectionTitle
           eyebrow={ui(language, "LỚP DỮ LIỆU CÔNG NGHIỆP", "INDUSTRIAL DATA LAYER")}
           title={
@@ -783,9 +795,9 @@ function HomePage() {
             ui(language, "Dữ liệu được chuẩn hóa, có nguồn, đơn vị và thời điểm xác minh.", "Standardised data with sources, units and verification dates.")
           }
         />
-        <div className="park-grid">
+        <div className="park-grid mobile-swipe" role="list" aria-label={ui(language,"KCN nổi bật","Featured parks")}>
           {featured.map((p) => (
-            <ParkCard key={p.id} park={p} />
+            <ParkCard key={p.id} park={p} featured />
           ))}
         </div>
         <div className="center">
@@ -886,12 +898,12 @@ function ParkStatusBadge({park}:{park:IndustrialParkProfile}) {
   </span>;
 }
 
-function ParkCard({ park }: { park: IndustrialParkProfile }) {
+function ParkCard({ park,featured=false }: { park: IndustrialParkProfile;featured?:boolean }) {
   const { language } = useApp();
   const available = park.availability[0]?.available;
   return (
-    <article className="park-card">
-      <Link to={`/industrial-parks/${park.slug}`} className="park-image">
+    <article className="park-card" role={featured?"listitem":undefined}>
+      <Link to={`/industrial-parks/${park.slug}`} className="park-image" tabIndex={-1} aria-hidden="true">
         <SafeImage fallbackIllustration src={park.media.find(m => m.approved)?.url} alt={tr(park.name, language)} />
 
       </Link>
@@ -960,7 +972,7 @@ function ParksPage() {
   ));
   return (
     <PublicShell>
-      <div className="page page-top">
+      <div className="page page-top park-directory">
         <div className="page-heading">
           <span>{ui(language, "LỚP DỮ LIỆU CÔNG NGHIỆP", "INDUSTRIAL DATA LAYER")}</span>
           <h1>
@@ -970,7 +982,7 @@ function ParksPage() {
             {ui(language, "Tra cứu vị trí, quỹ đất, hạ tầng kỹ thuật, khả năng kết nối và hồ sơ pháp lý của từng khu công nghiệp.", "Explore industrial supply through standardised, source-aware profiles.")}
           </p>
         </div>
-        <DiscoveryFilters/><div className="filter-panel">
+        <DiscoveryFilters resultCount={filtered.length}/><div className="filter-panel desktop-park-filters">
           <label>
             <Search size={17} />
             <input
@@ -1022,7 +1034,7 @@ function ParksPage() {
             <option value="planned">{tr(labels.planned, language)}</option>
           </select>
         </div>
-        <div className="result-bar">
+        <div className="result-bar" id="directory-results" tabIndex={-1}>
           <b>
             {filtered.length}{" "}
             {ui(language, "khu công nghiệp", "industrial parks")}
@@ -1046,7 +1058,7 @@ function ParksPage() {
             text={
               ui(language, "Vui lòng điều chỉnh từ khóa hoặc bộ lọc.", "Try changing your filters.")
             }
-            action={<button className="button primary" onClick={() => {setParams({},{replace:true});}}>{ui(language,"Xóa bộ lọc","Clear filters")}</button>}
+            action={<><button className="button primary" onClick={() => {setParams({},{replace:true});}}>{ui(language,"Xóa bộ lọc","Clear filters")}</button><Link className="button outline" to="/find-supply">{ui(language,"Gửi yêu cầu","Send inquiry")}</Link></>}
           />
         )}
       </div>
@@ -1081,12 +1093,15 @@ function ContactModal({type,park}:{type:string;park:IndustrialParkProfile;close:
   return <Navigate replace to={`/find-supply?parkId=${encodeURIComponent(park.id)}&support=${type==='Meeting'?'meeting':'inquiry'}`} />;
 }
 function ParkDetailPage() {
+  const mobile=useMobile();
   const { slug } = useParams();
   const { language, parks, assets, openParkChat } = useApp();
   const [modal, setModal] = useState("");
   const [activeParkTab, setActiveParkTab] = useState<"information" | "assets">(
-    "information",
+    ()=>(sessionStorage.getItem(`park-tab:${slug}:${language}`)==="assets"?"assets":"information"),
   );
+  const tabKey=useRef(`park-tab:${slug}:${language}`);
+  useEffect(()=>{const key=`park-tab:${slug}:${language}`;if(tabKey.current!==key){tabKey.current=key;setActiveParkTab(sessionStorage.getItem(key)==="assets"?"assets":"information");}else sessionStorage.setItem(key,activeParkTab)},[slug,language,activeParkTab]);
   const [activeSection, setActiveSection] = useState("overview");
   const [previewParams] = useSearchParams();
   const previewMode = import.meta.env.DEV ? previewParams.get("demoState") : null;
@@ -1111,11 +1126,16 @@ function ParkDetailPage() {
   const publicDocs = park.documents;
   const scrollToSection = (id: string) => {
     setActiveSection(id);
-    document.getElementById(id)?.scrollIntoView({
+    const target=document.getElementById(id);
+    target?.querySelectorAll('details').forEach(detail=>detail.open=true);
+    target?.scrollIntoView({
       behavior: "smooth",
       block: "start",
     });
   };
+  const showPhotos=()=>{setActiveParkTab("information");requestAnimationFrame(()=>requestAnimationFrame(()=>{scrollToSection("media");const gallery=document.getElementById("media");gallery?.setAttribute("tabindex","-1");gallery?.focus({preventScroll:true})}))};
+  const landRecords=park.availability.filter(item=>item.type==="industrial_land");
+  const mobileMetrics=[{label:ui(language,"Tổng diện tích","Total area"),value:park.totalArea},{label:ui(language,"Đất còn trống","Available land"),value:landRecords.length===1?landRecords[0].available:undefined},{label:ui(language,"Điện","Electricity"),value:park.utilities.find(u=>u.key==="electricity")?.capacity},{label:ui(language,"Cấp nước","Water"),value:park.utilities.find(u=>u.key==="water")?.capacity}];
   const sectionNavItems = [
     ["overview", ui(language, "Tổng quan", "Overview")],
     ["connectivity", ui(language, "Kết nối", "Connectivity")],
@@ -1127,6 +1147,11 @@ function ParkDetailPage() {
   ].filter(([id]) => visibleSections[id]);
   return (
     <PublicShell>
+      {mobile&&<section className="mobile-park-summary page">
+        <div className="breadcrumbs"><Link to="/industrial-parks">{ui(language,"Khu công nghiệp","Industrial parks")}</Link><ChevronRight size={14}/><span>{park.province}</span></div>
+        <div className="mobile-park-identity">{approvedMedia.length>0?<button onClick={showPhotos} aria-label={emptyCopy(language,`Xem ${approvedMedia.length} ảnh`,`View photos (${approvedMedia.length})`,`查看图片 (${approvedMedia.length})`)}><SafeImage src={approvedMedia[0].url} alt=""/></button>:<div className="mobile-photo-placeholder"/>}<div><ParkStatusBadge park={park}/><h1>{tr(park.name,language)}</h1><p>{tr(park.address,language)}</p></div></div>
+        <div className="mobile-profile-metrics">{mobileMetrics.map(item=><div key={item.label}><small>{item.label}</small><strong>{item.value?displaySourced(item.value,language):ui(language,"Liên hệ xác nhận","Contact to confirm")}</strong></div>)}</div>
+      </section>}
       <div className="detail-hero">
         <SafeImage fallbackIllustration src={approvedMedia[0]?.url} alt={tr(park.name, language)} />
         <div className="detail-shade" />
@@ -1206,14 +1231,14 @@ function ParkDetailPage() {
             </button>
           ))}
         </aside>
-        <section className="key-facts adaptive-key-facts">
+        <section className="key-facts adaptive-key-facts"><MobileDisclosure title={ui(language,"Thông tin quỹ đất và nguồn dữ liệu","Land details and sources")}>
           <FactGroup facts={[
             {label:ui(language,"Tổng diện tích","Total area"),source:park.totalArea},
             {label:ui(language,"Đất công nghiệp","Industrial land"),source:park.industrialLandArea},
             {label:ui(language,"Diện tích sẵn sàng","Available area"),source:park.availability[0]?.available},
             {label:ui(language,"Lô tối thiểu","Minimum plot"),source:park.availability[0]?.minimumPlot},
           ]} />
-        </section>
+        </MobileDisclosure></section>
         <section id="overview" className={`detail-grid ${!hasValue(park.operator.overview) && !safeUrl(park.operator.website) ? 'overview-sparse' : ''}`}>
           <div className="content-card wide">
             <SectionTitle
@@ -1230,7 +1255,7 @@ function ParkDetailPage() {
               {label:ui(language,"Giai đoạn","Phase"),value:park.phases[0] ? tr(park.phases[0].name,language) : null},
             ]} />
           </div>
-          <aside className="content-card operator-card">
+          <aside className="content-card operator-card"><MobileDisclosure title={ui(language,"Đơn vị phát triển","Developer")}>
             <span>{park.logoText}</span>
             <h3>{dataText(park.operator.name, language)}</h3>
             <p>{tr(park.operator.overview, language)}</p>
@@ -1238,7 +1263,7 @@ function ParkDetailPage() {
               {ui(language, "Website đơn vị phát triển", "Developer website")}
               <ExternalLink size={14} />
             </a>}
-          </aside>
+          </MobileDisclosure></aside>
         </section>
         <OptionalSection show={park.operator.portfolioStats.some(x => hasValue(x.value))} className="profile-stats">
           <SectionTitle
@@ -1399,6 +1424,7 @@ function ParkDetailPage() {
           </div>
         </OptionalSection>
         <OptionalSection show={visibleSections.workforce} id="workforce" className="detail-grid">
+<MobileDisclosure title={ui(language,"Nhân lực và kinh tế địa phương","Workforce and local economy")}>
           <div className="content-card wide">
             <SectionTitle
               eyebrow={ui(language, "BỐI CẢNH ĐỊA PHƯƠNG", "PROVINCIAL CONTEXT")}
@@ -1431,7 +1457,8 @@ function ParkDetailPage() {
               <p>{ui(language, "Chưa có dữ liệu", "Not available")}</p>
             )}
           </aside>}
-        </OptionalSection>
+        </MobileDisclosure>
+</OptionalSection>
         <OptionalSection show={visibleSections.incentives} id="incentives">
           <SectionTitle
             eyebrow={ui(language, "ƯU ĐÃI", "INCENTIVES")}
@@ -1480,7 +1507,7 @@ function ParkDetailPage() {
             }
           />
           {linked.length ? (
-            <div className="asset-grid">
+            <div className="asset-grid profile-assets">
               {linked.map((a) => (
                 <AssetCard key={a.id} asset={a} />
               ))}
@@ -1498,6 +1525,7 @@ function ParkDetailPage() {
           )}
         </section>
         <OptionalSection show={park.process.length > 0}>
+<MobileDisclosure title={ui(language,"Quy trình đầu tư","Investment process")}>
           <SectionTitle
             eyebrow={ui(language, "QUY TRÌNH ĐẦU TƯ", "INVESTMENT PROCESS")}
             title={
@@ -1521,7 +1549,8 @@ function ParkDetailPage() {
               </article>
             ))}
           </div>
-        </OptionalSection>
+        </MobileDisclosure>
+</OptionalSection>
         <OptionalSection show={[park.logistics.portCapacityDwt,park.logistics.cargoThroughput,park.logistics.shippingRoutes,park.logistics.indicativeCosts].some(hasValue)} className="detail-grid">
           <div className="content-card wide">
             <SectionTitle
@@ -1574,6 +1603,7 @@ function ParkDetailPage() {
             </small>
           </aside>}
         </OptionalSection>
+        {mobile&&(park.restrictedIndustries.length>0||hasValue(park.environmentalConditions))&&<section className="content-card mobile-restrictions"><h3>{ui(language,"Điều kiện đầu tư","Investment conditions")}</h3>{park.restrictedIndustries.length>0&&<p><b>{ui(language,"Ngành hạn chế","Restricted industries")}: </b>{park.restrictedIndustries.map(x=>industryLabel(x,language)).join(', ')}</p>}<p>{tr(park.environmentalConditions,language)}</p></section>}
         <OptionalSection show={Boolean(park.industryNote) || [park.suitableIndustries,park.sustainability,park.community].some(hasValue)} className="triple">
           {(park.suitableIndustries.length > 0 || park.industryNote) && <div className="content-card">
             <h3>
@@ -1647,7 +1677,7 @@ function ParkDetailPage() {
               ui(language, "Hồ sơ pháp lý và tài liệu dự án", "Legal evidence and verification")
             }
           />
-          <div className="doc-list">
+          <MobileDisclosure title={ui(language,"Hồ sơ pháp lý và tài liệu","Documents and sources")}><div className="doc-list">
             {publicDocs.map((d) => (
               <article key={d.id}>
                 <span
@@ -1687,7 +1717,7 @@ function ParkDetailPage() {
                 ) : <span className="document-unavailable">{emptyCopy(language,"Chưa có bản tải xuống","Download not available","暂无下载文件")}</span>}
               </article>
             ))}
-          </div>
+          </div></MobileDisclosure>
         </OptionalSection>
         <section className="contact-card">
           <div>
@@ -1720,6 +1750,7 @@ function ParkDetailPage() {
       {modal && (
         <ContactModal type={modal} park={park} close={() => setModal("")} />
       )}
+    <MobileActionBar><button className="button primary" onClick={()=>setModal("Inquiry")}><Send size={16}/>{ui(language,"Gửi yêu cầu","Inquiry")}</button><button data-chat onClick={()=>openParkChat(park.id)}><MessageCircle size={16}/>{ui(language,"Trao đổi","Chat")}</button><button onClick={()=>setModal("Meeting")}><Users size={16}/>{ui(language,"Đặt lịch","Meeting")}</button></MobileActionBar>
     </PublicShell>
   );
 }
@@ -1730,28 +1761,19 @@ function AssetCard({
   asset: ReturnType<typeof useApp>["assets"][number];
 }) {
   const { language, parks, openParkChat } = useApp();
-  const navigate = useNavigate();
   const park = parks.find((p) => p.id === asset.parkId);
   const requestUrl = `/find-supply?${new URLSearchParams({
     parkId: asset.parkId,
     assetId: asset.id,
   }).toString()}`;
   return (
-      <article
-        className="asset-card"
-        role="link"
-        tabIndex={0}
-        onClick={() => navigate(`/assets/${asset.id}`)}
-        onKeyDown={(event) => {
-          if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); navigate(`/assets/${asset.id}`); }
-        }}
-      >
+      <article className="asset-card">
         <div className="asset-card-image">
           <SafeImage fallbackIllustration src={asset.image} alt={tr(asset.name, language)} />
         </div>
         <div className="asset-card-body">
           <Badge value={asset.type} tone="blue" />
-          <h3>{tr(asset.name, language)}</h3>
+          <h3><Link to={`/assets/${asset.id}`}>{tr(asset.name, language)}</Link></h3>
           <p>
             <MapPin size={14} />
             {park ? tr(park.name, language) : emptyCopy(language,"Chưa có KCN liên kết","Linked park unavailable","关联园区暂不可用")}
@@ -1794,7 +1816,7 @@ function AssetsPage() {
   ];
   return (
     <PublicShell>
-      <div className="page page-top">
+      <div className="page page-top asset-directory">
         <div className="page-heading">
           <span>{ui(language, "BẤT ĐỘNG SẢN CÔNG NGHIỆP", "INDUSTRIAL ASSETS")}</span>
           <h1>
@@ -1804,7 +1826,7 @@ function AssetsPage() {
             {ui(language, "Quỹ đất công nghiệp, nhà xưởng xây sẵn, kho vận và giải pháp xây theo yêu cầu.", "Land, factories, warehouses and build-to-suit solutions.")}
           </p>
         </div>
-        <DiscoveryFilters asset/><div
+        <DiscoveryFilters asset resultCount={filtered.length}/><div
           className="filter-tabs"
           role="group"
           aria-label={ui(language, "Lọc loại hình bất động sản", "Filter asset type")}
@@ -1829,7 +1851,7 @@ function AssetsPage() {
             );
           })}
         </div>
-        <div className="asset-result-bar">
+        <div className="asset-result-bar" id="directory-results" tabIndex={-1}>
           <b>
             {filtered.length} {ui(language, "bất động sản công nghiệp", "industrial assets")}
           </b>
@@ -1845,7 +1867,7 @@ function AssetsPage() {
           <Empty
             title={ui(language, "Chưa có tài sản phù hợp", "No matching assets")}
             text={ui(language, "Vui lòng chọn loại hình khác hoặc gửi yêu cầu tìm mặt bằng.", "Choose another asset type or submit a supply request.")}
-            action={<button className="button primary" onClick={() => setType("all")}>{ui(language,"Xóa bộ lọc","Clear filters")}</button>}
+            action={<><button className="button primary" onClick={() => setParams({},{replace:true})}>{ui(language,"Xóa bộ lọc","Clear filters")}</button><Link className="button outline" to="/find-supply">{ui(language,"Gửi yêu cầu","Send inquiry")}</Link></>}
           />
         )}
       </div>
@@ -1853,6 +1875,7 @@ function AssetsPage() {
   );
 }
 function AssetDetailPage() {
+  const mobile=useMobile();
   const { id } = useParams();
   const { assets, parks, language, openParkChat } = useApp();
   const [params] = useSearchParams();
@@ -1862,26 +1885,27 @@ function AssetDetailPage() {
   if (!asset) return <PublicShell><div className="page page-top"><DetailUnavailable to="/assets" label={ui(language,"Bất động sản công nghiệp","Assets")} /></div></PublicShell>;
   const park = mode === "orphan" ? undefined : parks.find(p => p.id === asset.parkId);
   const requestUrl = park ? `/find-supply?${new URLSearchParams({parkId:park.id,assetId:asset.id})}` : "/find-supply";
-  return <PublicShell><div className="page page-top">
+  return <PublicShell><div className="page page-top asset-detail-page">
     <div className="breadcrumbs"><Link to="/assets">{ui(language,"Bất động sản công nghiệp","Assets")}</Link><ChevronRight size={14}/><span>{tr(asset.name,language)}</span></div>
     <div className="asset-detail">
       <SafeImage fallbackIllustration src={asset.image} alt={tr(asset.name,language)} />
       <div><Badge value={asset.type}/><h1>{tr(asset.name,language)}</h1>
         {park ? <p><MapPin size={16}/><Link to={`/industrial-parks/${park.slug}`}>{tr(park.name,language)}</Link></p> : <p className="missing-summary">{emptyCopy(language,"Chưa xác định được KCN liên kết. VIG có thể hỗ trợ tìm mặt bằng.","The linked park is unavailable. VIG can help find a property.","关联园区暂不可用，VIG可协助寻找场地。")}</p>}
-        {hasValue(asset.description) && <p>{tr(asset.description,language)}</p>}
+        {!mobile&&hasValue(asset.description)&&<p>{tr(asset.description,language)}</p>}
         <FactGroup facts={[
           {label:asset.listingKind === "project_inventory" ? ui(language,"Quỹ đất công bố toàn dự án","Published project inventory") : ui(language,"Diện tích chào thuê","Area"),value:asset.area,unit:asset.unit},
           {label:ui(language,"Đơn giá tham khảo","Price"),value:assetPriceText(asset,language)},
           {label:ui(language,"Thời điểm bàn giao","Available from"),value:asset.availableFrom},
           {label:ui(language,"Công suất điện","Power"),value:asset.powerMva,unit:"MVA"},
         ]}/>
+        {mobile && hasValue(asset.description) && <p>{tr(asset.description,language)}</p>}
         <div className="asset-detail-actions">
           {park && <button className="button outline" type="button" onClick={() => openParkChat(park.id,asset.id)}><MessageCircle/>{ui(language,"Trao đổi với KCN","Chat with park")}</button>}
           <Link className="button primary" to={requestUrl}><Send/>{park ? ui(language,"Gửi yêu cầu trực tiếp","Direct Request") : ui(language,"Tìm mặt bằng","Find Supply")}</Link>
         </div>
       </div>
     </div>
-  </div></PublicShell>;
+  </div><MobileActionBar><Link className="button primary" to={requestUrl}><Send size={16}/>{ui(language,"Gửi yêu cầu","Inquiry")}</Link>{park&&<button data-chat onClick={()=>openParkChat(park.id,asset.id)}><MessageCircle size={16}/>{ui(language,"Trao đổi","Chat")}</button>}</MobileActionBar></PublicShell>;
 }
 
 const emptyForm = {
@@ -1902,6 +1926,7 @@ const emptyForm = {
   requirements: "",
 };
 function RequestFormPage({ kind }: { kind: RequestKind }) {
+  const mobile=useMobile();
   const { language, createRequest, parks, assets } = useApp();
   const admin = useAdmin();
   const servicePackages = admin.store.packages.filter(p=>p.kinds.includes(kind));
@@ -2027,7 +2052,7 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
               : ui(language, "TÌM KHÁCH THUÊ/MUA", "FIND DEMAND")}
           </span>
           <h1>
-            {isSupply
+            {mobile ? (isSupply?emptyCopy(language,"Gửi yêu cầu tìm mặt bằng","Send a property request","提交选址需求"):emptyCopy(language,"Gửi thông tin chào thuê","Offer your property","提交出租信息")) : isSupply
               ? ui(language, "Tìm khu công nghiệp, đất, nhà xưởng hoặc kho phù hợp", "Find an industrial park, land, factory or warehouse")
               : ui(language, "Tìm khách thuê hoặc bên nhận chuyển nhượng phù hợp", "Find the right tenant or buyer")}
           </h1>

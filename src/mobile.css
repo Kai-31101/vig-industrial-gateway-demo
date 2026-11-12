@@ -45,3 +45,7 @@
   .request-form .form-grid>label:has(select) {grid-column:1 / -1}
   .request-form .form-grid>label:has(select)>span {min-height:0}
 }
+@media(max-width:359px) {
+  .request-form .form-grid>label:has(input[type=date]) {grid-column:1 / -1}
+  .request-form .form-grid>label:has(input[type=date])>span {min-height:0}
+}

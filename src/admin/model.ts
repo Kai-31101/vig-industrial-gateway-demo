@@ -59,7 +59,7 @@ export function contentErrors(data:Content):Record<string,string> {
     if(Array.isArray(value))value.forEach((v,i)=>visit(v,`${path}.${i}`));
     else if(value&&typeof value==='object')Object.entries(value).forEach(([k,v])=>visit(v,path?`${path}.${k}`:k));
   };visit(data,'');
-  const allowed:Record<string,string[]>={status:['operational','developing','planned'],region:['North','Central','South'],transaction:['lease','sale'],type:['industrial_land','ready_built_factory','warehouse','build_to_suit']};
+  const allowed:Record<string,string[]>={status:['operational','developing','planned','unknown'],region:['North','Central','South'],transaction:['lease','sale'],type:['industrial_land','ready_built_factory','warehouse','build_to_suit']};
   Object.entries(allowed).forEach(([key,options])=>{const v=(data as unknown as Record<string,unknown>)[key];if(v&& !options.includes(String(v)))errors[key]='selection'});
   if(isPark(data)){
     if(data.slug&&!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(data.slug))errors.slug='slug';

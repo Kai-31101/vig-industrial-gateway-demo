@@ -11,7 +11,7 @@ import {fieldLabels} from './fieldLabels';
 import {StatePanel,SafeImage} from '../EmptyStates';
 import type {IndustrialParkProfile,IndustrialAsset} from '../types';
 
-export const enumOptions:Record<string,string[]>={status:['operational','developing','planned'],region:['North','Central','South'],transaction:['lease','sale'],transactionModes:['lease','sale'],disclosureStatus:['public','not_disclosed','not_available'],verificationStatus:['unverified','reviewed','verified'],visibility:['admin_only','public'],sourceLanguage:['vi','en','zh'],language:['vi','en','zh','multi'],category:['brochure','presentation','masterplan','establishment_decision','enterprise_registration','legal_approval'],priceMode:['specific','negotiable','not_available']};
+export const enumOptions:Record<string,string[]>={status:['operational','developing','planned','unknown'],region:['North','Central','South'],transaction:['lease','sale'],transactionModes:['lease','sale'],disclosureStatus:['public','not_disclosed','not_available'],verificationStatus:['unverified','reviewed','verified'],visibility:['admin_only','public'],sourceLanguage:['vi','en','zh'],language:['vi','en','zh','multi'],category:['brochure','presentation','masterplan','establishment_decision','enterprise_registration','legal_approval'],priceMode:['specific','negotiable','not_available']};
 const typeOptions=(path:string)=>path.startsWith('connectivity')?['port','airport','road','rail','city','logistics']:path.startsWith('media')?['hero','gallery','site_photo','masterplan','map','video']:['industrial_land','ready_built_factory','warehouse','build_to_suit'];
 export function blank(value:unknown,key=''):any {
   if(value===null||value===undefined)return null;
@@ -27,7 +27,24 @@ const localized=(v:unknown):v is {vi:string;en:string;zh?:string}=>!!v&&typeof v
 function auditPreview(value:string,canReadDocuments:boolean){if(canReadDocuments)return value;try{const data=JSON.parse(value);if(data&&typeof data==='object'&&Array.isArray(data.documents))data.documents=data.documents.map((d:{title:unknown;verificationStatus:unknown})=>({title:d.title,verificationStatus:d.verificationStatus}));return JSON.stringify(data,null,2)}catch{return value}}
 const prefix:Record<string,string>={operator:'',provinceProfile:'',workforce:'',logistics:'',contact:'',phases:'',availability:'',connectivity:'',utilities:'',incentives:'',process:'',documents:'',media:''};
 function labelFor(path:string,language:'vi'|'en'|'zh') {const clean=path.replace(/\.\d+/g,''),index=language==='vi'?0:language==='en'?1:2;let label=fieldLabels[clean]||fieldLabels[clean.split('.').at(-1)!]||fieldLabels[`asset.${clean}`];if(!label){const [first,...rest]=clean.split('.');if(first in prefix)label=fieldLabels[rest.join('.')];}return label?.[index]||({vi:'Tiếng Việt',en:'English',zh:'中文',value:language==='vi'?'Giá trị':language==='en'?'Value':'数值',unit:language==='vi'?'Đơn vị':language==='en'?'Unit':'单位',id:'ID',_rowId:language==='vi'?'Mã dòng':language==='en'?'Row ID':'行编号',key:language==='vi'?'Mã loại':language==='en'?'Type key':'类型编码',pricingBasis:language==='vi'?'Đơn vị định giá':language==='en'?'Pricing basis':'计价单位',imageApproved:language==='vi'?'Ảnh đã duyệt':language==='en'?'Approved image':'图片已审核',priceMode:language==='vi'?'Chế độ giá':language==='en'?'Price mode':'价格模式'} as Record<string,string>)[clean.split('.').at(-1)!]||clean.split('.').at(-1)!;}
-const templates:Record<string,unknown>={...Object.fromEntries(Object.entries(parks[0]).filter(([,v])=>Array.isArray(v)).map(([k,v])=>[k,(v as unknown[])[0]])), 'operator.portfolioStats':parks[0].operator.portfolioStats[0], 'workforce.salaryBenchmark':parks[0].workforce.salaryBenchmark[0],'logistics.shippingRoutes':parks[0].logistics.shippingRoutes[0],'logistics.indicativeCosts':parks[0].logistics.indicativeCosts[0],'incentives.schedule':parks[0].incentives[0]?.schedule[0]};
+// Editor shapes are independent of sparse public-source records.
+const emptyLocalized = {vi:'',en:'',zh:''};
+const emptySourced = {value:null,unit:'',verificationStatus:'unverified',disclosureStatus:'not_available'};
+const templates:Record<string,unknown>={
+  ...Object.fromEntries(Object.entries(parks[0]).filter(([,v])=>Array.isArray(v)).map(([k,v])=>[k,(v as unknown[])[0]])),
+  phases:{name:emptyLocalized,status:'unknown',area:emptySourced,availableFrom:''},
+  connectivity:{type:'road',name:emptyLocalized,distanceKm:emptySourced,travelTime:emptyLocalized,status:'planned'},
+  utilities:{key:'electricity',label:emptyLocalized,capacity:emptySourced,note:emptyLocalized},
+  amenities:emptyLocalized,sustainability:emptyLocalized,community:emptyLocalized,
+  tenants:{name:'',origin:'',sector:'',displayAllowed:false},
+  incentives:{name:emptyLocalized,schedule:[],eligibility:emptyLocalized,effectiveDate:'',sourceDocumentId:''},
+  process:{order:1,title:emptyLocalized,authority:emptyLocalized,duration:emptyLocalized,output:emptyLocalized},
+  'operator.portfolioStats':{label:emptyLocalized,value:emptySourced},
+  'workforce.salaryBenchmark':{role:emptyLocalized,rangeUsd:''},
+  'logistics.shippingRoutes':{destination:'',time:'',frequency:''},
+  'logistics.indicativeCosts':{container:'',usd:emptySourced},
+  'incentives.schedule':{label:emptyLocalized,rate:'',years:''},
+};
 function Field({path,value,onChange,errors,disabled=false}:{path:string;value:any;onChange:(v:any)=>void;errors:Record<string,string>;disabled?:boolean}){
   const {language}=useApp(),a=useAdmin(),t=useText();const label=labelFor(path,language),key=path.split('.').at(-1)!,clean=path.replace(/\.\d+/g,'');
   const privileged=['verificationStatus','visibility','approved','imageApproved','verifiedBy','lastVerifiedAt'].includes(key);

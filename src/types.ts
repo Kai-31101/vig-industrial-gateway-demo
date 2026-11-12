@@ -15,7 +15,7 @@ export interface SourcedValue<T> {
   calculated?: boolean;
 }
 
-export type ParkStatus = 'operational' | 'developing' | 'planned';
+export type ParkStatus = 'unknown' | 'operational' | 'developing' | 'planned';
 export type PublicationStatus = 'draft' | 'in_review' | 'published' | 'archived';
 
 export interface ParkPhase { name: LocalizedText; status: ParkStatus; area: SourcedValue<number>; availableFrom?: string; }
@@ -47,7 +47,7 @@ export interface IndustrialParkProfile {
   conflicts?: { field: string; primary: string; secondary: string; sources: string[] }[];
 }
 
-export interface IndustrialAsset { id: string; parkId: string; name: LocalizedText; type: ParkAvailability['type']; area: number; unit: 'ha' | 'm²'; transaction: 'lease' | 'sale'; price: SourcedValue<number>; availableFrom: string; powerMva?: number; industries: string[]; featured: boolean; image: string; description: LocalizedText; }
+export interface IndustrialAsset { listingKind?: 'project_inventory'; id: string; parkId: string; name: LocalizedText; type: ParkAvailability['type']; area: number; unit: 'ha' | 'm²'; transaction: 'lease' | 'sale'; price: SourcedValue<number>; availableFrom: string; powerMva?: number; industries: string[]; featured: boolean; image: string; description: LocalizedText; }
 export type RequestKind = 'find_demand' | 'find_supply';
 export interface IndustrialAsset { imageApproved?: boolean; priceMode?: 'specific' | 'negotiable' | 'not_available'; pricingBasis?: string; }
 export type RequestStatus = 'submitted' | 'under_review' | 'verified' | 'matching' | 'connection_scheduled' | 'closed' | 'rejected';

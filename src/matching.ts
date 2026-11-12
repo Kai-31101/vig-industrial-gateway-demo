@@ -12,6 +12,6 @@ export function candidateChecks(r:IndustrialRequest,p:IndustrialParkProfile,asse
   {key:'location',state:(location===norm(p.province)?'matched':region[location]?region[location]===p.region?'matched':'unmatched':'unknown') as MatchState},
   {key:'industry',state:(!industry||['not specified','chưa xác định'].includes(industry)?'unknown':p.restrictedIndustries.some(i=>norm(i)===industry)?'unmatched':p.suitableIndustries.some(i=>norm(i)===industry)?'matched':'unknown') as MatchState},
   {key:'type',state:(!type?'unknown':sameType.length?'matched':stock.length?'unmatched':'unknown') as MatchState},
-  {key:'area',state:(!validRange||!sameType.length?'unknown':sameType.some(a=>{const area=a.area*(a.unit==='ha'?10000:1);return area>=r.areaMin&&area<=r.areaMax})?'matched':sameType.some(a=>a.area>0)?'unmatched':'unknown') as MatchState},
+  {key:'area',state:(!validRange||!sameType.length||sameType.some(a=>a.listingKind==='project_inventory')?'unknown':sameType.some(a=>{const area=a.area*(a.unit==='ha'?10000:1);return area>=r.areaMin&&area<=r.areaMax})?'matched':sameType.some(a=>a.area>0)?'unmatched':'unknown') as MatchState},
  ];
 }

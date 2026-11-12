@@ -2,6 +2,7 @@ import type {Language} from '../types';
 const options:Record<string,[string,string,string]>={
   submitted:['Đã tiếp nhận','Submitted','已提交'],under_review:['Đang xác minh','Under review','核实中'],matching:['Đang ghép nối','Matching','匹配中'],connection_scheduled:['Đã hẹn kết nối','Connection scheduled','已安排对接'],closed:['Đã đóng','Closed','已关闭'],rejected:['Từ chối','Rejected','已拒绝'],roads:['Đường nội bộ','Internal roads','内部道路'],
   draft:['Bản nháp','Draft','草稿'],in_review:['Chờ duyệt','In review','待审核'],approved:['Đã duyệt','Approved','已审核'],published:['Đã công bố','Published','已发布'],
+  unknown:['Chưa xác nhận trạng thái','Status not confirmed','状态尚未确认'],
   operational:['Đang hoạt động','Operational','运营中'],developing:['Đang phát triển','Developing','开发中'],planned:['Quy hoạch','Planned','规划中'],construction:['Đang xây dựng','Under construction','建设中'],
   North:['Miền Bắc','North','北部'],Central:['Miền Trung','Central','中部'],South:['Miền Nam','South','南部'],
   lease:['Cho thuê','Lease','出租'],sale:['Bán','Sale','出售'],industrial_land:['Đất công nghiệp','Industrial land','工业用地'],ready_built_factory:['Nhà xưởng xây sẵn','Ready-built factory','现成厂房'],warehouse:['Kho','Warehouse','仓库'],build_to_suit:['Xây theo yêu cầu','Build to suit','按需建设'],

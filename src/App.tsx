@@ -243,6 +243,7 @@ const standardGroupLabels: Record<string, LocalizedText> = {
   data_governance: tx("Nguồn và quản trị dữ liệu", "Data governance"),
 };
 const labels: Record<string, LocalizedText> = {
+  unknown: tx("Chưa xác nhận trạng thái", "Status not confirmed"),
   operational: tx("Đang hoạt động", "Operational"),
   developing: tx("Đang phát triển", "Developing"),
   planned: tx("Quy hoạch", "Planned"),
@@ -496,16 +497,6 @@ function Footer() {
           </span>
         </div>
         <div className="arobid-partner">
-          <div className="footer-operator">
-            <span>
-              {ui(language, "Quản lý và vận hành bởi", "Managed & Operated by")}
-            </span>
-            <img
-              className="vcbc-logo"
-              src="/images/vcbc-logo.png"
-              alt="VCBC - Vietnam-China Business Council"
-            />
-          </div>
           <div className="arobid-powered-row">
             <span>
               {ui(language, "Được phát triển bởi", "Powered by")}
@@ -1112,6 +1103,7 @@ function ParkDetailPage() {
             </span>}
           </div>
           <h1>{tr(park.name, language)}</h1>
+          {park.documents[0]?.sourceUrl && <p><a href={park.documents[0].sourceUrl} target="_blank" rel="noreferrer">{ui(language,"Nguồn: VSIP • Truy cập 12/11/2026", "Source: VSIP • Retrieved 12 Nov 2026")}</a></p>}
           <p>
             <MapPin size={18} />
             {tr(park.address, language)}
@@ -1840,8 +1832,9 @@ function AssetDetailPage() {
       <div><Badge value={asset.type}/><h1>{tr(asset.name,language)}</h1>
         {park ? <p><MapPin size={16}/><Link to={`/industrial-parks/${park.slug}`}>{tr(park.name,language)}</Link></p> : <p className="missing-summary">{emptyCopy(language,"Chưa xác định được KCN liên kết. VIG có thể hỗ trợ tìm mặt bằng.","The linked park is unavailable. VIG can help find a property.","关联园区暂不可用，VIG可协助寻找场地。")}</p>}
         {hasValue(asset.description) && <p>{tr(asset.description,language)}</p>}
+        {park?.documents[0]?.sourceUrl && <p><a href={park.documents[0].sourceUrl} target="_blank" rel="noreferrer">{ui(language,"Nguồn: VSIP • Truy cập 12/11/2026", "Source: VSIP • Retrieved 12 Nov 2026")}</a></p>}
         <FactGroup facts={[
-          {label:ui(language,"Diện tích chào thuê","Area"),value:asset.area,unit:asset.unit},
+          {label:asset.listingKind === "project_inventory" ? ui(language,"Quỹ đất công bố toàn dự án","Published project inventory") : ui(language,"Diện tích chào thuê","Area"),value:asset.area,unit:asset.unit},
           {label:ui(language,"Đơn giá tham khảo","Price"),value:assetPriceText(asset,language)},
           {label:ui(language,"Thời điểm bàn giao","Available from"),value:asset.availableFrom},
           {label:ui(language,"Công suất điện","Power"),value:asset.powerMva,unit:"MVA"},
@@ -1889,10 +1882,10 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
       : "",
     industrialParkName: selectedPark?.name.en || "",
     location: selectedPark?.province || "",
-    areaMin: selectedAsset
+    areaMin: selectedAsset && selectedAsset.listingKind !== "project_inventory"
       ? String(selectedAsset.unit === "ha" ? selectedAsset.area * 10000 : selectedAsset.area)
       : "",
-    areaMax: selectedAsset
+    areaMax: selectedAsset && selectedAsset.listingKind !== "project_inventory"
       ? String(selectedAsset.unit === "ha" ? selectedAsset.area * 10000 : selectedAsset.area)
       : "",
     transaction: selectedAsset?.transaction || "lease",

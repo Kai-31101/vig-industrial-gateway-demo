@@ -686,13 +686,10 @@ function PublicShell({ children }: { children: ReactNode }) {
 function HomePage() {
   const mobile=useMobile();
   const [keyword,setKeyword]=useState("");
-  const { language, parks, assets, requests } = useApp();
+  const { language, parks, assets } = useApp();
   const navigate = useNavigate();
   const publishedParks = sortParksByCompleteness(parks.filter(p=>p.publicationStatus==="published"));
   const featured = publishedParks.slice(0, 12);
-  const completedConnections = requests.filter(
-    successfulConnection,
-  ).length;
   return (
     <PublicShell>
       <section className="hero">
@@ -758,12 +755,6 @@ function HomePage() {
               <b>{assets.length}</b>
               <span>
                 {ui(language, "BĐS công nghiệp mẫu", "demo assets")}
-              </span>
-            </div>
-            <div>
-              <b>{completedConnections}</b>
-              <span>
-                {ui(language, "kết nối thành công", "completed connections")}
               </span>
             </div>
           </div>

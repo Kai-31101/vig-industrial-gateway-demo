@@ -1,0 +1,1020 @@
+[
+  {
+    "slug": "vsip-thai-binh",
+    "retrievedAt": "2026-11-12",
+    "infrastructureSource": "https://www.vsip.com.vn/en/project/vsip-thai-binh-2/",
+    "electricity": {
+      "value": 126,
+      "unit": "MVA"
+    },
+    "water": 16500,
+    "wastewater": 9200,
+    "gateways": [
+      {
+        "type": "airport",
+        "vi": "Cát Bi",
+        "en": "Cat Bi",
+        "km": 44
+      },
+      {
+        "type": "port",
+        "vi": "Lạch Huyện",
+        "en": "Lach Huyen",
+        "km": 65
+      }
+    ],
+    "industries": [],
+    "industrySource": "https://www.vsip.com.vn/en/project/vsip-thai-binh-2/",
+    "industryIssuer": "VSIP Group",
+    "industryBasis": "target_sectors",
+    "contact": {
+      "officeVi": "VSIP Thái Bình",
+      "officeEn": "VSIP Thai Binh",
+      "phone": "+84 227 3856 868",
+      "email": "north.marketing@vsip.com.vn",
+      "addressVi": "43 Lê Quý Đôn, xã Thái Thụy, tỉnh Hưng Yên",
+      "addressEn": "43 Le Quy Don Street, Thai Thuy Commune, Hung Yen",
+      "sourceUrl": "https://www.singchamvn.org/membership_sponsor/gold-sponsors/",
+      "scope": "project",
+      "issuer": "SingCham Vietnam – VSIP sponsor listing"
+    }
+  },
+  {
+    "slug": "quang-tri-international-industrial-park-qtip",
+    "retrievedAt": "2026-11-12",
+    "infrastructureSource": "https://www.vsip.com.vn/en/project/quang-tri-international-industrial-park-qtip/",
+    "electricity": {
+      "value": 150,
+      "unit": "MVA"
+    },
+    "water": 28000,
+    "wastewater": 22000,
+    "gateways": [
+      {
+        "type": "airport",
+        "vi": "Phú Bài",
+        "en": "Phu Bai",
+        "km": 60
+      },
+      {
+        "type": "port",
+        "vi": "Mỹ Thủy",
+        "en": "My Thuy",
+        "km": 15
+      }
+    ],
+    "industries": [
+      "Textiles",
+      "Garments",
+      "Footwear",
+      "Packaging",
+      "Printing",
+      "Furniture",
+      "Food and beverage"
+    ],
+    "industrySource": "https://www.linkedin.com/posts/vsip-official_vsip-vsipvietnam-kcnquangtri-activity-7141285314156814336-GeKZ",
+    "industryIssuer": "VSIP Group",
+    "industryBasis": "target_sectors",
+    "contact": {
+      "officeVi": "KCN Quốc tế Quảng Trị",
+      "officeEn": "Quang Tri Industrial Park",
+      "phone": "+84 233 222 1118",
+      "email": "marketing.dept@qtip.com.vn",
+      "addressVi": "102A Lê Duẩn, khu phố 9, xã Diên Sanh, Quảng Trị",
+      "addressEn": "102A Le Duan, Quarter 9, Dien Sanh Commune, Quang Tri",
+      "sourceUrl": "https://www.singchamvn.org/membership_sponsor/gold-sponsors/",
+      "scope": "project",
+      "issuer": "SingCham Vietnam – VSIP sponsor listing"
+    }
+  },
+  {
+    "slug": "vsip-bac-ninh-i",
+    "retrievedAt": "2026-11-12",
+    "infrastructureSource": "https://www.vsip.com.vn/en/project/vsip-bac-ninh-i/",
+    "electricity": {
+      "value": 22,
+      "unit": "kV"
+    },
+    "water": 23000,
+    "wastewater": 18500,
+    "gateways": [
+      {
+        "type": "airport",
+        "vi": "Nội Bài",
+        "en": "Noi Bai",
+        "km": 40
+      },
+      {
+        "type": "port",
+        "vi": "Hải Phòng",
+        "en": "Hai Phong",
+        "km": 120
+      }
+    ],
+    "industries": [
+      "High-tech manufacturing",
+      "Electronic components",
+      "Logistics",
+      "Supporting industries"
+    ],
+    "industrySource": "https://www.vsip.com.vn/en/project/vsip-bac-ninh-i/",
+    "industryIssuer": "VSIP Group",
+    "industryBasis": "target_sectors",
+    "contact": {
+      "officeVi": "VSIP Bắc Ninh",
+      "officeEn": "VSIP Bac Ninh",
+      "phone": "+84 222 3765 666",
+      "email": "north.marketing@vsip.com.vn",
+      "addressVi": "1 đường Hữu Nghị, VSIP Bắc Ninh, phường Từ Sơn",
+      "addressEn": "1 Huu Nghi Road, VSIP Bac Ninh, Tu Son Ward",
+      "sourceUrl": "https://www.vsip.com.vn/en/contact/",
+      "scope": "project",
+      "issuer": "VSIP Group"
+    }
+  },
+  {
+    "slug": "vsip-bac-ninh-ii",
+    "retrievedAt": "2026-11-12",
+    "infrastructureSource": "https://www.vsip.com.vn/en/project/vsip-bac-ninh-ii-2/",
+    "electricity": {
+      "value": 22,
+      "unit": "kV"
+    },
+    "water": 25000,
+    "wastewater": 23000,
+    "gateways": [
+      {
+        "type": "airport",
+        "vi": "Nội Bài",
+        "en": "Noi Bai",
+        "km": 14
+      },
+      {
+        "type": "port",
+        "vi": "Hải Phòng",
+        "en": "Hai Phong",
+        "km": 140
+      }
+    ],
+    "industries": [
+      "Electronic components",
+      "Medical devices",
+      "Precision engineering",
+      "Research and development"
+    ],
+    "industrySource": "https://www.vsip.com.vn/en/project/vsip-bac-ninh-ii-2/",
+    "industryIssuer": "VSIP Group",
+    "industryBasis": "target_sectors",
+    "contact": {
+      "officeVi": "VSIP Bắc Ninh",
+      "officeEn": "VSIP Bac Ninh",
+      "phone": "+84 222 3765 666",
+      "email": "north.marketing@vsip.com.vn",
+      "addressVi": "1 đường Hữu Nghị, VSIP Bắc Ninh, phường Từ Sơn",
+      "addressEn": "1 Huu Nghi Road, VSIP Bac Ninh, Tu Son Ward",
+      "sourceUrl": "https://www.vsip.com.vn/en/contact/",
+      "scope": "regional",
+      "issuer": "VSIP Group"
+    }
+  },
+  {
+    "slug": "vsip-binh-dinh",
+    "retrievedAt": "2026-11-12",
+    "infrastructureSource": "https://www.vsip.com.vn/en/project/vsip-binh-dinh-4/",
+    "electricity": {
+      "value": 170,
+      "unit": "MW"
+    },
+    "water": 50000,
+    "wastewater": 32000,
+    "gateways": [
+      {
+        "type": "airport",
+        "vi": "Phù Cát",
+        "en": "Phu Cat",
+        "km": null
+      },
+      {
+        "type": "port",
+        "vi": "Quy Nhơn",
+        "en": "Quy Nhon",
+        "km": null
+      }
+    ],
+    "industries": [
+      "Electronics",
+      "Electrical equipment",
+      "Automotive",
+      "Mechanical engineering",
+      "Supporting industries",
+      "Textiles",
+      "Garments",
+      "Footwear",
+      "Food and beverage",
+      "Logistics",
+      "Warehousing"
+    ],
+    "industrySource": "https://investvietnam.gov.vn/en/industrial-zones.pd/information-about-becamex-binh-dinh-industrial-park.html",
+    "industryIssuer": "Invest Vietnam",
+    "industryBasis": "target_sectors",
+    "contact": {
+      "officeVi": "Becamex VSIP Bình Định",
+      "officeEn": "Becamex VSIP Binh Dinh",
+      "phone": "+84 788 09 79 79",
+      "email": "digitalmarketing@becamexbinhdinh.com.vn",
+      "addressVi": "Block B14, lô B07–B09, đường N, Hiệp Vinh 1B, Canh Vinh, Gia Lai",
+      "addressEn": "Block B14, Lots B07–B09, N Street, Hiep Vinh 1B, Canh Vinh, Gia Lai",
+      "sourceUrl": "https://www.vsip.com.vn/en/contact/",
+      "scope": "project",
+      "issuer": "VSIP Group"
+    }
+  },
+  {
+    "slug": "vsip-can-tho",
+    "retrievedAt": "2026-11-12",
+    "infrastructureSource": "https://www.vsip.com.vn/en/project/vsip-can-tho-2/",
+    "electricity": {
+      "value": 110,
+      "unit": "MVA"
+    },
+    "water": 15000,
+    "wastewater": 12000,
+    "gateways": [
+      {
+        "type": "airport",
+        "vi": "Cần Thơ",
+        "en": "Can Tho",
+        "km": 50
+      },
+      {
+        "type": "port",
+        "vi": "Thốt Nốt",
+        "en": "Thot Not",
+        "km": 5
+      }
+    ],
+    "industries": [
+      "Light manufacturing",
+      "High-tech manufacturing",
+      "Food processing",
+      "Logistics"
+    ],
+    "industrySource": "https://www.vsip.com.vn/en/project/vsip-can-tho-2/",
+    "industryIssuer": "VSIP Group",
+    "industryBasis": "target_sectors",
+    "contact": {
+      "officeVi": "VSIP Cần Thơ",
+      "officeEn": "VSIP Can Tho",
+      "phone": "+84 813 068 968",
+      "email": "vsip.cantho@vsip.com.vn",
+      "addressVi": "Ấp Vĩnh Qui, xã Vĩnh Trinh, TP. Cần Thơ",
+      "addressEn": "Vinh Qui Hamlet, Vinh Trinh Commune, Can Tho City",
+      "sourceUrl": "https://www.vsip.com.vn/en/project/vsip-can-tho-2/",
+      "scope": "project",
+      "issuer": "VSIP Group"
+    }
+  },
+  {
+    "slug": "vsip-ha-tinh",
+    "retrievedAt": "2026-11-12",
+    "infrastructureSource": "https://www.vsip.com.vn/en/project/vsip-ha-tinh-2/",
+    "electricity": {
+      "value": 126,
+      "unit": "MVA"
+    },
+    "water": 28000,
+    "wastewater": 22000,
+    "gateways": [
+      {
+        "type": "airport",
+        "vi": "Vinh",
+        "en": "Vinh",
+        "km": 59
+      },
+      {
+        "type": "port",
+        "vi": "Vũng Áng",
+        "en": "Vung Ang",
+        "km": 93
+      }
+    ],
+    "industries": [
+      "Electronics",
+      "Household appliances",
+      "Textiles",
+      "Garments",
+      "Footwear",
+      "EV batteries",
+      "Solar technology",
+      "Metal and steel",
+      "Automotive components",
+      "Food processing",
+      "Logistics"
+    ],
+    "industrySource": "https://www.vsip.com.vn/en/project/vsip-ha-tinh-2/",
+    "industryIssuer": "VSIP Group",
+    "industryBasis": "target_sectors",
+    "contact": {
+      "officeVi": "VSIP Hà Tĩnh",
+      "officeEn": "VSIP Ha Tinh",
+      "phone": "+84 917 31 18 18",
+      "email": "marketing_na@vsip.com.vn",
+      "addressVi": "KCN Bắc Thạch Hà giai đoạn 1, Thạch Liên và Việt Tiến (địa danh theo nguồn)",
+      "addressEn": "Bac Thach Ha IP phase 1, Thach Lien and Viet Tien (source address)",
+      "sourceUrl": "https://www.singchamvn.org/membership_sponsor/gold-sponsors/",
+      "scope": "project",
+      "issuer": "SingCham Vietnam – VSIP sponsor listing"
+    }
+  },
+  {
+    "slug": "vsip-hai-duong",
+    "retrievedAt": "2026-11-12",
+    "infrastructureSource": "https://www.vsip.com.vn/en/project/vsip-hai-duong-4/",
+    "electricity": {
+      "value": 22,
+      "unit": "kV"
+    },
+    "water": 12000,
+    "wastewater": 4950,
+    "gateways": [
+      {
+        "type": "airport",
+        "vi": "Nội Bài",
+        "en": "Noi Bai",
+        "km": 70
+      },
+      {
+        "type": "port",
+        "vi": "Hải Phòng",
+        "en": "Hai Phong",
+        "km": 65
+      }
+    ],
+    "industries": [
+      "Electronics",
+      "Mechanical engineering",
+      "Food processing",
+      "Supporting industries"
+    ],
+    "industrySource": "https://www.vsip.com.vn/en/project/vsip-hai-duong-4/",
+    "industryIssuer": "VSIP Group",
+    "industryBasis": "existing_sectors",
+    "contact": {
+      "officeVi": "VSIP Hải Dương",
+      "officeEn": "VSIP Hai Duong",
+      "phone": "+84 220 3789 668",
+      "email": "north.marketing@vsip.com.vn",
+      "addressVi": "Cẩm Điền, Cẩm Giàng, Hải Dương (địa danh theo nguồn)",
+      "addressEn": "Cam Dien, Cam Giang, Hai Duong (source address)",
+      "sourceUrl": "https://www.vsip.com.vn/en/contact/",
+      "scope": "project",
+      "issuer": "VSIP Group"
+    }
+  },
+  {
+    "slug": "vsip-hai-phong-i",
+    "retrievedAt": "2026-11-12",
+    "infrastructureSource": "https://www.vsip.com.vn/en/project/vsip-hai-phong-i-2/",
+    "electricity": {
+      "value": 189,
+      "unit": "MVA"
+    },
+    "water": 15000,
+    "wastewater": 9950,
+    "gateways": [
+      {
+        "type": "airport",
+        "vi": "Cát Bi",
+        "en": "Cat Bi",
+        "km": 15
+      },
+      {
+        "type": "port",
+        "vi": "Lạch Huyện",
+        "en": "Lach Huyen",
+        "km": 35
+      }
+    ],
+    "industries": [
+      "High-tech manufacturing",
+      "Clean manufacturing",
+      "Logistics"
+    ],
+    "industrySource": "https://www.sembcorp.com/vn/en/our-solutions-in-vietnam/integrated-urban-solutions/urban-development/industrial-space/vsip-hai-phong/",
+    "industryIssuer": "Sembcorp",
+    "industryBasis": "target_sectors",
+    "contact": {
+      "officeVi": "VSIP Hải Phòng",
+      "officeEn": "VSIP Hai Phong",
+      "phone": "+84 225 3959 868",
+      "email": "north.marketing@vsip.com.vn",
+      "addressVi": "Văn phòng điều hành VSIP Hải Phòng, An Lư, Thủy Nguyên (địa danh theo nguồn)",
+      "addressEn": "VSIP Hai Phong Administration Office, An Lu, Thuy Nguyen (source address)",
+      "sourceUrl": "https://www.vsip.com.vn/en/contact/",
+      "scope": "project",
+      "issuer": "VSIP Group"
+    }
+  },
+  {
+    "slug": "vsip-hai-phong-ii",
+    "retrievedAt": "2026-11-12",
+    "infrastructureSource": "https://www.vsip.com.vn/en/project/vsip-hai-phong-ii-2/",
+    "electricity": {
+      "value": 126,
+      "unit": "MVA"
+    },
+    "water": 28000,
+    "wastewater": 14200,
+    "gateways": [
+      {
+        "type": "airport",
+        "vi": "Cát Bi",
+        "en": "Cat Bi",
+        "km": 35
+      },
+      {
+        "type": "port",
+        "vi": "Lạch Huyện",
+        "en": "Lach Huyen",
+        "km": 55
+      }
+    ],
+    "industries": [
+      "High-tech manufacturing",
+      "Supporting industries",
+      "Clean energy"
+    ],
+    "industrySource": "https://www.vsip.com.vn/en/project/vsip-hai-phong-ii-2/",
+    "industryIssuer": "VSIP Group",
+    "industryBasis": "target_sectors",
+    "contact": {
+      "officeVi": "VSIP Hải Phòng",
+      "officeEn": "VSIP Hai Phong",
+      "phone": "+84 225 3959 868",
+      "email": "north.marketing@vsip.com.vn",
+      "addressVi": "Văn phòng điều hành VSIP Hải Phòng, An Lư, Thủy Nguyên (địa danh theo nguồn)",
+      "addressEn": "VSIP Hai Phong Administration Office, An Lu, Thuy Nguyen (source address)",
+      "sourceUrl": "https://www.vsip.com.vn/en/contact/",
+      "scope": "regional",
+      "issuer": "VSIP Group"
+    }
+  },
+  {
+    "slug": "vsip-i-binh-duong",
+    "retrievedAt": "2026-11-12",
+    "infrastructureSource": "https://www.vsip.com.vn/en/project/vsip-binh-duong-2/",
+    "electricity": {
+      "value": 141,
+      "unit": "MVA"
+    },
+    "water": 40000,
+    "wastewater": 30000,
+    "gateways": [
+      {
+        "type": "airport",
+        "vi": "Tân Sơn Nhất",
+        "en": "Tan Son Nhat",
+        "km": 20
+      },
+      {
+        "type": "port",
+        "vi": "Cát Lái",
+        "en": "Cat Lai",
+        "km": 28
+      }
+    ],
+    "industries": [
+      "Electronics",
+      "Pharmaceuticals",
+      "Consumer goods"
+    ],
+    "industrySource": "https://www.edb.gov.sg/content/dam/edb-en/business-insights/insights/grow-your-manufacturing-footprint-in-sea-with-the-vietnam-singapore-industrial-parks/sma-sembcorp-infographic.pdf",
+    "industryIssuer": "Singapore EDB / Sembcorp (2022)",
+    "industryBasis": "target_sectors",
+    "contact": {
+      "officeVi": "VSIP Bình Dương",
+      "officeEn": "VSIP Binh Duong",
+      "phone": "+84 274 3743 898",
+      "email": "marketing@vsip.com.vn",
+      "addressVi": "8 Đại lộ Hữu Nghị, phường Bình Hòa, TP.HCM",
+      "addressEn": "8 Huu Nghi Boulevard, Binh Hoa Ward, HCMC",
+      "sourceUrl": "https://www.vsip.com.vn/en/contact/",
+      "scope": "project",
+      "issuer": "VSIP Group"
+    }
+  },
+  {
+    "slug": "vsip-ii-binh-duong",
+    "retrievedAt": "2026-11-12",
+    "infrastructureSource": "https://www.vsip.com.vn/en/project/vsip-ii-binh-duong/",
+    "electricity": {
+      "value": 263,
+      "unit": "MVA"
+    },
+    "water": "VSIP II: 20,000; expansion: 50,000",
+    "wastewater": "VSIP II: 12,000; expansion: 41,000",
+    "gateways": [
+      {
+        "type": "airport",
+        "vi": "Tân Sơn Nhất",
+        "en": "Tan Son Nhat",
+        "km": 40
+      },
+      {
+        "type": "port",
+        "vi": "Cát Lái",
+        "en": "Cat Lai",
+        "km": 48
+      }
+    ],
+    "industries": [
+      "Electronics",
+      "Pharmaceuticals",
+      "Consumer goods"
+    ],
+    "industrySource": "https://www.edb.gov.sg/content/dam/edb-en/business-insights/insights/grow-your-manufacturing-footprint-in-sea-with-the-vietnam-singapore-industrial-parks/sma-sembcorp-infographic.pdf",
+    "industryIssuer": "Singapore EDB / Sembcorp (2022)",
+    "industryBasis": "target_sectors",
+    "contact": {
+      "officeVi": "VSIP Bình Dương",
+      "officeEn": "VSIP Binh Duong",
+      "phone": "+84 274 3743 898",
+      "email": "marketing@vsip.com.vn",
+      "addressVi": "8 Đại lộ Hữu Nghị, phường Bình Hòa, TP.HCM",
+      "addressEn": "8 Huu Nghi Boulevard, Binh Hoa Ward, HCMC",
+      "sourceUrl": "https://www.vsip.com.vn/en/contact/",
+      "scope": "regional",
+      "issuer": "VSIP Group"
+    }
+  },
+  {
+    "slug": "vsip-iii-binh-duong",
+    "retrievedAt": "2026-11-12",
+    "infrastructureSource": "https://www.vsip.com.vn/en/project/vsip-iii-binh-duong-5/",
+    "electricity": {
+      "value": 504,
+      "unit": "MVA"
+    },
+    "water": 50000,
+    "wastewater": 42000,
+    "gateways": [
+      {
+        "type": "airport",
+        "vi": "Tân Sơn Nhất",
+        "en": "Tan Son Nhat",
+        "km": 45
+      },
+      {
+        "type": "port",
+        "vi": "Cát Lái",
+        "en": "Cat Lai",
+        "km": 50
+      }
+    ],
+    "industries": [
+      "High-tech manufacturing",
+      "Semiconductors"
+    ],
+    "industrySource": "https://www.vsip.com.vn/en/project/vsip-iii-binh-duong-5/",
+    "industryIssuer": "VSIP Group",
+    "industryBasis": "target_sectors",
+    "contact": {
+      "officeVi": "VSIP Bình Dương",
+      "officeEn": "VSIP Binh Duong",
+      "phone": "+84 274 3743 898",
+      "email": "marketing@vsip.com.vn",
+      "addressVi": "8 Đại lộ Hữu Nghị, phường Bình Hòa, TP.HCM",
+      "addressEn": "8 Huu Nghi Boulevard, Binh Hoa Ward, HCMC",
+      "sourceUrl": "https://www.vsip.com.vn/en/contact/",
+      "scope": "regional",
+      "issuer": "VSIP Group"
+    }
+  },
+  {
+    "slug": "vsip-lang-son",
+    "retrievedAt": "2026-11-12",
+    "infrastructureSource": "https://www.vsip.com.vn/en/project/vsip-lang-son-2/",
+    "electricity": {
+      "value": 22,
+      "unit": "kV"
+    },
+    "water": 15500,
+    "wastewater": 8500,
+    "gateways": [
+      {
+        "type": "airport",
+        "vi": "Nội Bài",
+        "en": "Noi Bai",
+        "km": 90
+      },
+      {
+        "type": "port",
+        "vi": "Lạch Huyện",
+        "en": "Lach Huyen",
+        "km": 150
+      }
+    ],
+    "industries": [
+      "Renewable energy",
+      "Logistics",
+      "Electronics",
+      "Automotive",
+      "Food and beverage"
+    ],
+    "industrySource": "https://www.vsip.com.vn/en/project/vsip-lang-son-2/",
+    "industryIssuer": "VSIP Group",
+    "industryBasis": "target_sectors",
+    "contact": {
+      "officeVi": "VSIP Lạng Sơn",
+      "officeEn": "VSIP Lang Son",
+      "phone": "+84 946 05 05 20",
+      "email": "tuan.cp@vsip.com.vn",
+      "addressVi": "Thôn Tân Hoa, xã Hữu Lũng, tỉnh Lạng Sơn",
+      "addressEn": "Tan Hoa Village, Huu Lung Commune, Lang Son",
+      "sourceUrl": "https://www.singchamvn.org/membership_sponsor/gold-sponsors/",
+      "scope": "project",
+      "issuer": "SingCham Vietnam – VSIP sponsor listing"
+    }
+  },
+  {
+    "slug": "vsip-nam-dinh",
+    "retrievedAt": "2026-11-12",
+    "infrastructureSource": "https://www.vsip.com.vn/en/project/vsip-nam-dinh-2/",
+    "electricity": {
+      "value": 126,
+      "unit": "MVA"
+    },
+    "water": 10000,
+    "wastewater": 6000,
+    "gateways": [
+      {
+        "type": "airport",
+        "vi": "Cát Bi",
+        "en": "Cat Bi",
+        "km": 95
+      },
+      {
+        "type": "port",
+        "vi": "Lạch Huyện",
+        "en": "Lach Huyen",
+        "km": 115
+      }
+    ],
+    "industries": [
+      "Electronics",
+      "Electrical equipment",
+      "Mechanical engineering",
+      "Supporting industries",
+      "High-tech manufacturing",
+      "Consumer goods",
+      "Food processing"
+    ],
+    "industrySource": "https://www.vsip.com.vn/en/project/vsip-nam-dinh-2/",
+    "industryIssuer": "VSIP Group",
+    "industryBasis": "target_sectors",
+    "contact": {
+      "officeVi": "VSIP Nam Định",
+      "officeEn": "VSIP Nam Dinh",
+      "phone": "+84 228 3988 686",
+      "email": "north.marketing@vsip.com.vn",
+      "addressVi": "73 Chu Văn An, phường Nam Định, tỉnh Ninh Bình",
+      "addressEn": "73 Chu Van An Street, Nam Dinh Ward, Ninh Binh",
+      "sourceUrl": "https://www.singchamvn.org/membership_sponsor/gold-sponsors/",
+      "scope": "project",
+      "issuer": "SingCham Vietnam – VSIP sponsor listing"
+    }
+  },
+  {
+    "slug": "vsip-nghe-an-i",
+    "retrievedAt": "2026-11-12",
+    "infrastructureSource": "https://www.vsip.com.vn/en/project/5504/",
+    "electricity": {
+      "value": 252,
+      "unit": "MVA"
+    },
+    "water": 35000,
+    "wastewater": 28000,
+    "gateways": [
+      {
+        "type": "airport",
+        "vi": "Vinh",
+        "en": "Vinh",
+        "km": 3
+      },
+      {
+        "type": "port",
+        "vi": "Cửa Lò",
+        "en": "Cua Lo",
+        "km": 15
+      }
+    ],
+    "industries": [
+      "Electronics",
+      "Precision engineering",
+      "Garments",
+      "Consumer goods",
+      "Supporting industries"
+    ],
+    "industrySource": "https://www.vsip.com.vn/en/project/5504/",
+    "industryIssuer": "VSIP Group",
+    "industryBasis": "existing_sectors",
+    "contact": {
+      "officeVi": "VSIP Nghệ An",
+      "officeEn": "VSIP Nghe An",
+      "phone": "+84 917 31 18 18",
+      "email": "marketing_na@vsip.com.vn",
+      "addressVi": "8 đường Hữu Nghị, VSIP Nghệ An, Hưng Tây, Hưng Nguyên (địa danh theo nguồn)",
+      "addressEn": "8 Huu Nghi Road, VSIP Nghe An, Hung Tay, Hung Nguyen (source address)",
+      "sourceUrl": "https://www.vsip.com.vn/en/contact/",
+      "scope": "project",
+      "issuer": "VSIP Group"
+    }
+  },
+  {
+    "slug": "vsip-nghe-an-ii",
+    "retrievedAt": "2026-11-12",
+    "infrastructureSource": "https://www.vsip.com.vn/en/project/vsip-nghe-an-ii-2/",
+    "electricity": {
+      "value": 206,
+      "unit": "MVA"
+    },
+    "water": 26000,
+    "wastewater": 17000,
+    "gateways": [
+      {
+        "type": "airport",
+        "vi": "Vinh",
+        "en": "Vinh",
+        "km": 35
+      },
+      {
+        "type": "port",
+        "vi": "Cửa Lò",
+        "en": "Cua Lo",
+        "km": 23
+      }
+    ],
+    "industries": [
+      "Garments",
+      "Consumer goods",
+      "Food processing",
+      "Food and beverage",
+      "Electrical equipment",
+      "Electronics",
+      "Packaging",
+      "Automotive components",
+      "Building materials"
+    ],
+    "industrySource": "https://www.vsip.com.vn/en/project/vsip-nghe-an-ii-2/",
+    "industryIssuer": "VSIP Group",
+    "industryBasis": "target_sectors",
+    "contact": {
+      "officeVi": "VSIP Nghệ An",
+      "officeEn": "VSIP Nghe An",
+      "phone": "+84 917 31 18 18",
+      "email": "marketing_na@vsip.com.vn",
+      "addressVi": "8 đường Hữu Nghị, VSIP Nghệ An, Hưng Tây, Hưng Nguyên (địa danh theo nguồn)",
+      "addressEn": "8 Huu Nghi Road, VSIP Nghe An, Hung Tay, Hung Nguyen (source address)",
+      "sourceUrl": "https://www.vsip.com.vn/en/contact/",
+      "scope": "regional",
+      "issuer": "VSIP Group"
+    }
+  },
+  {
+    "slug": "vsip-nghe-an-iii",
+    "retrievedAt": "2026-11-12",
+    "infrastructureSource": "https://www.vsip.com.vn/en/project/vsip-nghe-an-iii-2/",
+    "electricity": {
+      "value": 126,
+      "unit": "MVA"
+    },
+    "water": 18000,
+    "wastewater": 12000,
+    "gateways": [
+      {
+        "type": "airport",
+        "vi": "Vinh",
+        "en": "Vinh",
+        "km": 8
+      },
+      {
+        "type": "port",
+        "vi": "Cửa Lò",
+        "en": "Cua Lo",
+        "km": 18
+      }
+    ],
+    "industries": [
+      "Electronics",
+      "Automotive components",
+      "Pharmaceuticals",
+      "Garments",
+      "Food and beverage",
+      "Consumer goods",
+      "Supporting industries"
+    ],
+    "industrySource": "https://www.vsip.com.vn/en/project/vsip-nghe-an-iii-2/",
+    "industryIssuer": "VSIP Group",
+    "industryBasis": "target_sectors",
+    "contact": {
+      "officeVi": "VSIP Nghệ An",
+      "officeEn": "VSIP Nghe An",
+      "phone": "+84 917 31 18 18",
+      "email": "marketing_na@vsip.com.vn",
+      "addressVi": "8 đường Hữu Nghị, VSIP Nghệ An, Hưng Tây, Hưng Nguyên (địa danh theo nguồn)",
+      "addressEn": "8 Huu Nghi Road, VSIP Nghe An, Hung Tay, Hung Nguyen (source address)",
+      "sourceUrl": "https://www.vsip.com.vn/en/contact/",
+      "scope": "regional",
+      "issuer": "VSIP Group"
+    }
+  },
+  {
+    "slug": "vsip-nghe-an-iv",
+    "retrievedAt": "2026-11-12",
+    "infrastructureSource": "https://www.vsip.com.vn/en/project/vsip-nghe-an-iv-2/",
+    "electricity": {
+      "value": 206,
+      "unit": "MVA"
+    },
+    "water": 4000,
+    "wastewater": 2000,
+    "gateways": [
+      {
+        "type": "airport",
+        "vi": "Vinh",
+        "en": "Vinh",
+        "km": 32
+      },
+      {
+        "type": "port",
+        "vi": "Cửa Lò",
+        "en": "Cua Lo",
+        "km": 20
+      }
+    ],
+    "industries": [
+      "Electronics",
+      "Food processing",
+      "Consumer goods",
+      "Automotive components",
+      "Supporting industries"
+    ],
+    "industrySource": "https://www.vsip.com.vn/en/project/vsip-nghe-an-iv-2/",
+    "industryIssuer": "VSIP Group",
+    "industryBasis": "target_sectors",
+    "contact": {
+      "officeVi": "VSIP Nghệ An",
+      "officeEn": "VSIP Nghe An",
+      "phone": "+84 917 31 18 18",
+      "email": "marketing_na@vsip.com.vn",
+      "addressVi": "8 đường Hữu Nghị, VSIP Nghệ An, Hưng Tây, Hưng Nguyên (địa danh theo nguồn)",
+      "addressEn": "8 Huu Nghi Road, VSIP Nghe An, Hung Tay, Hung Nguyen (source address)",
+      "sourceUrl": "https://www.vsip.com.vn/en/contact/",
+      "scope": "regional",
+      "issuer": "VSIP Group"
+    }
+  },
+  {
+    "slug": "vsip-quang-ngai-i",
+    "retrievedAt": "2026-11-12",
+    "infrastructureSource": "https://www.vsip.com.vn/en/project/vsip-quang-ngai-i-2/",
+    "electricity": {
+      "value": "22 kV / 380 V",
+      "unit": ""
+    },
+    "water": 30000,
+    "wastewater": 24000,
+    "gateways": [
+      {
+        "type": "airport",
+        "vi": "Chu Lai",
+        "en": "Chu Lai",
+        "km": 33
+      },
+      {
+        "type": "port",
+        "vi": "Dung Quất",
+        "en": "Dung Quat",
+        "km": 28
+      }
+    ],
+    "industries": [
+      "Footwear",
+      "Textiles",
+      "Furniture",
+      "Medical devices",
+      "Supporting industries"
+    ],
+    "industrySource": "https://www.vsip.com.vn/en/project/vsip-quang-ngai-i-2/",
+    "industryIssuer": "VSIP Group",
+    "industryBasis": "existing_sectors",
+    "contact": {
+      "officeVi": "VSIP Quảng Ngãi",
+      "officeEn": "VSIP Quang Ngai",
+      "phone": "+84 255 373 6666",
+      "email": "marketing.qn@vsip.com.vn",
+      "addressVi": "8 Đại lộ Hữu Nghị, VSIP, Tịnh Phong, Sơn Tịnh (địa danh theo nguồn)",
+      "addressEn": "8 Huu Nghi Boulevard, VSIP, Tinh Phong, Son Tinh (source address)",
+      "sourceUrl": "https://www.vsip.com.vn/en/contact/",
+      "scope": "project",
+      "issuer": "VSIP Group"
+    }
+  },
+  {
+    "slug": "vsip-quang-ngai-ii",
+    "retrievedAt": "2026-11-12",
+    "infrastructureSource": "https://www.vsip.com.vn/en/project/vsip-quang-ngai-ii-2/",
+    "electricity": {
+      "value": "22 kV / 380 V",
+      "unit": ""
+    },
+    "water": 25000,
+    "wastewater": 19800,
+    "gateways": [
+      {
+        "type": "airport",
+        "vi": "Chu Lai",
+        "en": "Chu Lai",
+        "km": 30
+      },
+      {
+        "type": "port",
+        "vi": "Dung Quất",
+        "en": "Dung Quat",
+        "km": 25
+      }
+    ],
+    "industries": [
+      "Textiles",
+      "Garments",
+      "Footwear",
+      "Furniture",
+      "Electronics",
+      "Automotive components"
+    ],
+    "industrySource": "https://www.sembcorp.com/news-and-insights/news/2024/sembcorp-strengthens-its-vietnam-singapore-industrial-parks-portfolio-in-vietnam/",
+    "industryIssuer": "Sembcorp (2024)",
+    "industryBasis": "target_sectors",
+    "contact": {
+      "officeVi": "VSIP Quảng Ngãi",
+      "officeEn": "VSIP Quang Ngai",
+      "phone": "+84 255 373 6666",
+      "email": "marketing.qn@vsip.com.vn",
+      "addressVi": "8 Đại lộ Hữu Nghị, VSIP, Tịnh Phong, Sơn Tịnh (địa danh theo nguồn)",
+      "addressEn": "8 Huu Nghi Boulevard, VSIP, Tinh Phong, Son Tinh (source address)",
+      "sourceUrl": "https://www.vsip.com.vn/en/contact/",
+      "scope": "regional",
+      "issuer": "VSIP Group"
+    }
+  },
+  {
+    "slug": "vsip-quang-ninh",
+    "retrievedAt": "2026-11-12",
+    "infrastructureSource": "https://www.vsip.com.vn/en/project/vsip-quang-ninh-2/",
+    "electricity": {
+      "value": 126,
+      "unit": "MVA"
+    },
+    "water": 23000,
+    "wastewater": 14500,
+    "gateways": [
+      {
+        "type": "airport",
+        "vi": "Cát Bi",
+        "en": "Cat Bi",
+        "km": 13
+      },
+      {
+        "type": "port",
+        "vi": "Lạch Huyện",
+        "en": "Lach Huyen",
+        "km": 25
+      }
+    ],
+    "industries": [
+      "Mechanical engineering",
+      "Electrical equipment",
+      "Electronics",
+      "Pharmaceuticals",
+      "Supporting industries",
+      "Automotive",
+      "Household appliances",
+      "Garments",
+      "Food processing"
+    ],
+    "industrySource": "https://www.vsip.com.vn/en/project/vsip-quang-ninh-2/",
+    "industryIssuer": "VSIP Group",
+    "industryBasis": "target_sectors",
+    "contact": {
+      "officeVi": "VSIP – Tư vấn đầu tư quốc tế",
+      "officeEn": "VSIP – International Investment",
+      "phone": "+84 274 3743898",
+      "email": "invest@vsip.com.vn",
+      "addressVi": "8 Đại lộ Hữu Nghị, phường Bình Hòa, TP.HCM",
+      "addressEn": "8 Huu Nghi Boulevard, Binh Hoa Ward, HCMC",
+      "sourceUrl": "https://www.vsip.com.vn/en/contact/",
+      "scope": "group",
+      "issuer": "VSIP Group"
+    }
+  }
+]

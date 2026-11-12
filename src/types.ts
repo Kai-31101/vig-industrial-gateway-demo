@@ -1,6 +1,6 @@
 export type Language = 'vi' | 'en' | 'zh';
 export interface ParkDocument { documentNumber?: string }
-export interface IndustrialParkProfile { sourceDocumentId?: string }
+export interface IndustrialParkProfile { sourceDocumentId?: string; industrySourceDocumentId?: string; industryNote?: LocalizedText }
 export type LocalizedText = { vi: string; en: string; zh?: string };
 export type VerificationStatus = 'unverified' | 'reviewed' | 'verified';
 export type DisclosureStatus = 'public' | 'not_disclosed' | 'not_available';
@@ -21,12 +21,12 @@ export type PublicationStatus = 'draft' | 'in_review' | 'published' | 'archived'
 export interface ParkPhase { name: LocalizedText; status: ParkStatus; area: SourcedValue<number>; availableFrom?: string; }
 export interface ParkAvailability { type: 'industrial_land' | 'ready_built_factory' | 'warehouse' | 'build_to_suit'; total: SourcedValue<number>; available: SourcedValue<number>; reserved: SourcedValue<number>; occupied: SourcedValue<number>; minimumPlot?: SourcedValue<number>; transactionModes: ('lease' | 'sale')[]; availableFrom?: string; }
 export interface InfrastructureUtility { key: string; label: LocalizedText; capacity: SourcedValue<number | string>; note?: LocalizedText; }
-export interface ConnectivityPoint { type: 'port' | 'airport' | 'road' | 'rail' | 'city' | 'logistics'; name: LocalizedText; distanceKm?: SourcedValue<number>; travelTime?: LocalizedText; status: 'operational' | 'construction' | 'planned'; completionYear?: number; details?: LocalizedText; }
+export interface ConnectivityPoint { type: 'port' | 'airport' | 'road' | 'rail' | 'city' | 'logistics'; name: LocalizedText; distanceKm?: SourcedValue<number>; travelTime?: LocalizedText; status: 'unknown' | 'operational' | 'construction' | 'planned'; completionYear?: number; details?: LocalizedText; }
 export interface InvestmentIncentive { name: LocalizedText; schedule: { label: LocalizedText; rate: string; years: string }[]; eligibility: LocalizedText; effectiveDate: string; sourceDocumentId: string; }
 export interface InvestmentProcessStep { order: number; title: LocalizedText; authority: LocalizedText; duration: LocalizedText; payment?: string; output: LocalizedText; }
 export interface ParkDocument { id: string; title: LocalizedText; category: 'brochure' | 'presentation' | 'masterplan' | 'establishment_decision' | 'enterprise_registration' | 'legal_approval'; issuer: LocalizedText; issueDate?: string; language: Language | 'multi'; version?: string; visibility: 'public' | 'verified_member' | 'admin_only'; verificationStatus: VerificationStatus; sourceUrl?: string; }
 export interface ParkMedia { id: string; type: 'hero' | 'gallery' | 'site_photo' | 'masterplan' | 'map' | 'video'; title: LocalizedText; url: string; capturedAt?: string; approved: boolean; }
-export interface ParkContact { office: LocalizedText; address: LocalizedText; person: string; title: LocalizedText; phone: string; email: string; website: string; channels: string[]; }
+export interface ParkContact { sourceDocumentId?: string; scope?: 'project' | 'regional' | 'group'; office: LocalizedText; address: LocalizedText; person: string; title: LocalizedText; phone: string; email: string; website: string; channels: string[]; }
 export interface IndustrialParkOperator { name: string; overview: LocalizedText; ownership: LocalizedText; establishedYear: number; website: string; portfolioStats: { label: LocalizedText; value: SourcedValue<number> }[]; certifications: string[]; }
 export interface ProvinceEconomicProfile { province: LocalizedText; population: SourcedValue<number>; grdp: SourcedValue<number>; growthRate: SourcedValue<number>; wageZone: string; context: LocalizedText; }
 export interface WorkforceProfile { laborForce: SourcedValue<number>; skilledLabor: SourcedValue<number>; catchmentRadiusKm: number; catchmentPopulation: SourcedValue<number>; trainingInstitutions: string[]; salaryBenchmark: { role: LocalizedText; rangeUsd: string }[]; }

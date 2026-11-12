@@ -66,6 +66,14 @@ describe('implemented UI flows',()=>{
     expect(screen.getByText('Chưa có sản phẩm được công bố')).toBeTruthy();
     expect(screen.getAllByRole('link',{name:'Tìm mặt bằng'}).some(a=>a.getAttribute('href')?.includes('parkId='))).toBe(true);
   });
+  it('renders published contact links and sector provenance on the project page',()=>{
+    window.location.hash='#/industrial-parks/vsip-can-tho';render(<App/>);
+    expect(screen.getByRole('link',{name:'vsip.cantho@vsip.com.vn'}).getAttribute('href')).toBe('mailto:vsip.cantho@vsip.com.vn');
+    expect(screen.getByRole('link',{name:'+84 813 068 968'}).getAttribute('href')).toBe('tel:+84813068968');
+    expect(screen.getByRole('heading',{name:'Ngành nghề thu hút'})).toBeTruthy();
+    expect(screen.getAllByRole('link',{name:'Xem nguồn công bố'})).toHaveLength(3);
+    expect(screen.getByText(/Thông số theo công bố của chủ đầu tư/)).toBeTruthy();
+  });
   it('handles an asset whose park is unavailable without a direct supplier CTA',()=>{
     window.location.hash='#/assets/asset-1?demoState=orphan';
     render(<App/>);

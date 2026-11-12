@@ -4067,3 +4067,8 @@ td small {
 .detail-hero > .illustrated-image .illustration-label { left:auto; right:18px; bottom:14px; max-width:300px; }
 .asset-detail > .illustrated-image { min-height:300px; border-radius:7px; }
 .park-meta { flex-wrap:wrap; row-gap:6px; }
+
+.profile-source-note { color:#526473; line-height:1.6; font-size:14px; }
+.profile-source-link { display:inline-block; margin:8px 0 16px; text-decoration:underline; text-underline-offset:3px; }
+.published-contact a { color:inherit; overflow-wrap:anywhere; }
+.published-contact h3 { margin:12px 0 8px; }

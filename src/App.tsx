@@ -103,6 +103,23 @@ const documentLanguageLabel = (value: string, language: Language) => {
   return value === "vi" ? "越南语" : value === "en" ? "英语" : "多语言";
 };
 const industryVi: Record<string, string> = {
+  "Renewable energy": "Năng lượng tái tạo",
+  "High-tech manufacturing": "Sản xuất công nghệ cao",
+  "Clean manufacturing": "Sản xuất sạch",
+  "Light manufacturing": "Công nghiệp nhẹ",
+  "Clean energy": "Năng lượng sạch",
+  "Mechanical engineering": "Cơ khí chế tạo",
+  "Consumer goods": "Hàng tiêu dùng",
+  "Food and beverage": "Thực phẩm và đồ uống",
+  "Automotive components": "Linh kiện ô tô",
+  "Household appliances": "Thiết bị gia dụng",
+  "EV batteries": "Pin xe điện",
+  "Solar technology": "Công nghệ năng lượng mặt trời",
+  "Metal and steel": "Kim loại và thép",
+  "Research and development": "Nghiên cứu và phát triển",
+  "Building materials": "Vật liệu xây dựng",
+  "Printing": "In ấn",
+
   Electronics: "Điện tử",
   Semiconductors: "Bán dẫn",
   Automotive: "Ô tô và linh kiện",
@@ -159,6 +176,23 @@ const industryVi: Record<string, string> = {
   "Supply chain": "Chuỗi cung ứng",
 };
 const industryZh: Record<string, string> = {
+  "Renewable energy": "可再生能源",
+  "High-tech manufacturing": "高科技制造",
+  "Clean manufacturing": "清洁制造",
+  "Light manufacturing": "轻工业",
+  "Clean energy": "清洁能源",
+  "Mechanical engineering": "机械制造",
+  "Consumer goods": "消费品",
+  "Food and beverage": "食品饮料",
+  "Automotive components": "汽车零部件",
+  "Household appliances": "家用电器",
+  "EV batteries": "电动汽车电池",
+  "Solar technology": "太阳能技术",
+  "Metal and steel": "金属和钢铁",
+  "Research and development": "研发",
+  "Building materials": "建筑材料",
+  "Printing": "印刷",
+
   Electronics: "电子产业",
   Semiconductors: "半导体",
   Automotive: "汽车及零部件",
@@ -839,6 +873,12 @@ function HomePage() {
   );
 }
 
+function ParkSourceLink({park,sourceId}:{park:IndustrialParkProfile;sourceId?:string}) {
+  const {language}=useApp();
+  const doc=park.documents.find(d=>d.id===sourceId);
+  return doc?.visibility==='public' && safeUrl(doc.sourceUrl) ? <a className="profile-source-link" href={doc.sourceUrl} target="_blank" rel="noreferrer">{ui(language,"Xem nguồn công bố", "View published source")}</a> : null;
+}
+
 function ParkCard({ park }: { park: IndustrialParkProfile }) {
   const { language } = useApp();
   const available = park.availability[0]?.available;
@@ -1348,6 +1388,8 @@ function ParkDetailPage() {
               ui(language, "Hạ tầng và tiện ích đồng bộ", "Integrated infrastructure and utilities")
             }
           />
+          <p className="profile-source-note">{ui(language,"Thông số theo công bố của chủ đầu tư; nguồn không xác nhận toàn bộ công suất đã vận hành hoặc còn sẵn cho khách thuê. Công suất theo giai đoạn/phần mở rộng được giữ riêng.","Developer-published specifications; the source does not confirm that all capacity is operational or available to tenants. Phase and expansion capacities remain separate.")}</p>
+          <ParkSourceLink park={park} sourceId={park.utilities[0]?.capacity.sourceDocumentId}/>
           <FactGroup facts={park.utilities.map(u => ({label:tr(u.label,language),source:u.capacity}))} />
           <div className="pill-list">
             {park.amenities.map((x) => (
@@ -1534,11 +1576,13 @@ function ParkDetailPage() {
             </small>
           </aside>}
         </OptionalSection>
-        <OptionalSection show={[park.suitableIndustries,park.sustainability,park.community].some(hasValue)} className="triple">
-          {park.suitableIndustries.length > 0 && <div className="content-card">
+        <OptionalSection show={Boolean(park.industryNote) || [park.suitableIndustries,park.sustainability,park.community].some(hasValue)} className="triple">
+          {(park.suitableIndustries.length > 0 || park.industryNote) && <div className="content-card">
             <h3>
-              {ui(language, "Ngành phù hợp", "Suitable industries")}
+              {ui(language, "Ngành nghề thu hút", "Industry focus")}
             </h3>
+            {park.industryNote && <p className="profile-source-note">{tr(park.industryNote,language)}</p>}
+            <ParkSourceLink park={park} sourceId={park.industrySourceDocumentId}/>
             <div className="pill-list">
               {park.suitableIndustries.map((x) => (
                 <span key={x}>
@@ -1654,15 +1698,17 @@ function ParkDetailPage() {
         </OptionalSection>
         <section className="contact-card">
           <div>
-            <span>{ui(language, "LIÊN HỆ VIG", "CONTACT VIG")}</span>
+            <span>{ui(language, "LIÊN HỆ ĐẦU TƯ", "INVESTMENT CONTACT")}</span>
             <h2>
               {ui(language, "Quan tâm đến cơ hội đầu tư tại khu công nghiệp này?", "Ready to explore this opportunity?")}
             </h2>
-            <p>
-              {park.contact
-                ? `${tr(park.contact.office, language)} · ${park.contact.email}`
-                : emptyCopy(language,"Chưa có đầu mối liên hệ công khai. VIG sẽ hỗ trợ tiếp nhận nhu cầu của bạn.","No public contact is available. VIG can help receive your requirements.","暂无公开联系人，VIG可协助接收您的需求。")}
-            </p>
+            {park.contact ? <div className="published-contact">
+              <h3>{tr(park.contact.office,language)}</h3>
+              <p>{tr(park.contact.title,language)}</p>
+              <p><a href={`tel:${park.contact.phone.replace(/[^+0-9]/g,'')}`}>{park.contact.phone}</a> · <a href={`mailto:${park.contact.email}`}>{park.contact.email}</a></p>
+              <p>{tr(park.contact.address,language)}</p>
+              <ParkSourceLink park={park} sourceId={park.contact.sourceDocumentId}/>
+            </div> : <p>{ui(language,"Chưa có đầu mối liên hệ công khai.","No public contact is available.")}</p>}
           </div>
           <div>
             <button

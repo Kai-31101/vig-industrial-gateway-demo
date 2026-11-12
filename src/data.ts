@@ -1,6 +1,7 @@
 import type { ExpoProgram, IndustrialAsset, IndustrialParkProfile, LocalizedText, SourcedValue } from './types';
 import { translateToChinese } from './i18n';
 import projects from './vsipProjects.json';
+import { enrichVsipProfiles } from './vsipEnrichment';
 const l = (vi: string, en: string, zh = translateToChinese(en)): LocalizedText => ({ vi, en, zh });
 const retrievedAt = '2026-11-12';
 const unknownText = l('Chưa có dữ liệu', 'Not available', '暂无数据');
@@ -20,11 +21,7 @@ export const parks: IndustrialParkProfile[] = projects.map(project => {
     provinceProfile: {province: l(project.province, project.province), population: s<number>(null, 'people'), grdp: s<number>(null, 'USD billion'), growthRate: s<number>(null, '%'), wageZone: '', context: unknownText},
     workforce: {laborForce: s<number>(null, 'people'), skilledLabor: s<number>(null, 'people'), catchmentRadiusKm: 0, catchmentPopulation: s<number>(null, 'people'), trainingInstitutions: [], salaryBenchmark: []},
     phases: [], availability: [{type: 'industrial_land', total: s(project.industrial, 'ha'), available: s(project.available, 'ha'), reserved: s<number>(null, 'ha'), occupied: s<number>(null, 'ha'), transactionModes: ['lease']}],
-    connectivity: [], utilities: project.slug === 'vsip-thai-binh' ? [
-      {key: 'electricity', label: l('Điện', 'Electricity', '电力'), capacity: s(126, 'MVA')},
-      {key: 'water', label: l('Cấp nước', 'Water supply', '供水'), capacity: s(16500, 'm³/day')},
-      {key: 'wastewater', label: l('Xử lý nước thải', 'Wastewater treatment', '污水处理'), capacity: s(9200, 'm³/day')},
-    ] : [], amenities: [], suitableIndustries: project.slug === 'vsip-nghe-an-i' ? ['Electronics', 'Precision engineering', 'Garments', 'Consumer goods', 'Supporting industries'] : project.slug === 'vsip-iii-binh-duong' ? ['High-tech manufacturing', 'Semiconductors'] : [], restrictedIndustries: [], environmentalConditions: unknownText,
+    connectivity: [], utilities: [], amenities: [], suitableIndustries: [], restrictedIndustries: [], environmentalConditions: unknownText,
     incentives: [], process: [], logistics: {shippingRoutes: [], indicativeCosts: []}, sustainability: [], community: [], tenants: [],
     contact: {office: l('VSIP Group – Phòng Truyền thông', 'VSIP Group – Communications Department'), address: unknownText, person: '', title: l('Đầu mối liên hệ chung của tập đoàn', 'Group contact; not a dedicated project leasing desk'), phone: '+84 274 3743898', email: 'communications@vsip.com.vn', website: 'https://www.vsip.com.vn/en/', channels: ['Email', 'Phone']},
     media: project.images.map((url, i) => ({id: `${project.slug}-image-${i}`, type: i === 0 ? 'hero' : 'gallery', title: url.startsWith('/images/') ? l('Ảnh minh họa – không phải ảnh thực tế dự án', 'Illustration – not an actual project photograph', '示意图，非项目实景') : l('Hình ảnh từ đơn vị phát triển dự án', 'Image published by the project developer', '项目开发商公布的图片'), url, approved: true})),
@@ -37,6 +34,7 @@ qtip.status = 'developing';
 qtip.operator.name = 'VSIP JV / Amata City Bien Hoa / Sumitomo Corporation';
 qtip.operator.ownership = l('Liên doanh VSIP JV, Amata City Biên Hòa và Sumitomo Corporation.', 'Joint venture of VSIP JV, Amata City Bien Hoa and Sumitomo Corporation.', 'VSIP JV、Amata City Bien Hoa 与住友商事合资。');
 qtip.documents.push({id:'qtip-sumitomo',title:l('QTIP – thông tin từ Sumitomo', 'QTIP – Sumitomo project information', 'QTIP — 住友商事项目信息'),category:'presentation',issuer:l('Sumitomo Corporation','Sumitomo Corporation'),language:'en',visibility:'public',verificationStatus:'reviewed',sourceUrl:'https://sumitomocorp-indpark.com/en/industrial_park/quang_tri/'});
+enrichVsipProfiles(parks);
 export const vsipThaiBinh = parks.find(p => p.slug === 'vsip-thai-binh')!;
 // Project-level inventory, never invented individual plots, factory units or prices.
 export const assets: IndustrialAsset[] = parks.filter(p => (p.availability[0].available.value ?? 0) > 0).map((park, index) => ({

@@ -27,7 +27,7 @@ export function AdCarousel({ids,label}:{ids:number[];label:string}) {
   },[]);
   useEffect(()=>{
     if(hover||focus||hidden||reduced)return;
-    const timer=window.setInterval(()=>setIndex(i=>i+1),5000);
+    const timer=window.setInterval(()=>setIndex(i=>i+1),3000);
     return ()=>window.clearInterval(timer);
   },[hover,focus,hidden,reduced,ids.length,index]);
   const id=ids[index%ids.length];

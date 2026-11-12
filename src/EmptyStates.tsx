@@ -47,7 +47,7 @@ export function SafeImage({ src, alt, className = '', fallbackIllustration = fal
   const illustrated = shownSource?.startsWith('/images/industrial-parks/');
   const label = emptyCopy(language,'Ảnh minh họa — không phải ảnh thực tế dự án','Illustration — not an actual project photograph','示意图，非项目实景');
   const picture = shownSource ? <img className={className} src={shownSource} alt={illustrated ? `${alt} — ${label}` : alt} onError={() => setFailedSources(previous => [...previous, shownSource])} /> : null;
-  if (picture && illustrated) return <div className="illustrated-image">{picture}<span className="illustration-label">{label}</span></div>;
+  if (picture && illustrated) return <div className="illustrated-image">{picture}</div>;
   return picture || <div className={`image-fallback ${className}`} role="img" aria-label={emptyCopy(language,'Chưa có hình ảnh được công bố','No published image','暂无公开图片')}>
     <ImageOff aria-hidden="true" /><span>{emptyCopy(language,'Chưa có hình ảnh được công bố','No published image','暂无公开图片')}</span>
   </div>;

@@ -1,3 +1,6 @@
 {
-  "rewrites": [{ "source": "/((?!images/|assets/).*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/assets/asset-:id", "destination": "/index.html" },
+    { "source": "/((?!images/|assets/).*)", "destination": "/index.html" }
+  ]
 }

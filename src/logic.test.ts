@@ -72,11 +72,15 @@ describe("industrial park dataset", () => {
     expect(demos.every((park) => park.media.length >= 2)).toBe(true);
   });
 
-  it("links asset industries and images to their owning park", () => {
+  it("provides at least three assets per park with unique IDs and suitable industries", () => {
+    expect(new Set(assets.map(asset => asset.id)).size).toBe(assets.length);
+    for (const park of parks) {
+      expect(assets.filter(asset => asset.parkId === park.id).length).toBeGreaterThanOrEqual(3);
+    }
     for (const asset of assets) {
       const park = parks.find((candidate) => candidate.id === asset.parkId);
       expect(park).toBeDefined();
-      expect(asset.image).toBe(park?.media[0]?.url);
+      expect(asset.imageApproved || asset.image === park?.media[0]?.url).toBe(true);
       expect(asset.industries).toEqual(park?.suitableIndustries.slice(0, 3));
     }
   });

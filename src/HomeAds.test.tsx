@@ -20,15 +20,15 @@ describe('homepage advertisement carousels',()=>{
   act(()=>vi.advanceTimersByTime(5000));expect(src(first)).toContain('industrial-3.jpg');expect(src(second)).toContain('industrial-6.jpg');
   fireEvent.mouseLeave(first);
   act(()=>vi.advanceTimersByTime(5000));expect(src(first)).toContain('industrial-5.jpg');
+  act(()=>vi.advanceTimersByTime(5000));expect(src(first)).toContain('industrial-1.jpg');
+  expect(first.querySelector('.ad-slide-in')).not.toBeNull();
+  expect(first.querySelector('.ad-slide-out')?.getAttribute('src')).toContain('industrial-5.jpg');
  });
- it('supports manual navigation, pause, focus pause and safe CTAs without dialing the illustrative number',()=>{
+ it('keeps focus pause and safe CTAs without a visible control toolbar',()=>{
   vi.useFakeTimers();setup();
   const first=screen.getByRole('region',{name:'Banner top 1'});const q=within(first);
-  fireEvent.click(q.getByRole('button',{name:'Ảnh trước'}));expect(q.getByRole('img').getAttribute('src')).toContain('industrial-5.jpg');
-  fireEvent.click(q.getByRole('button',{name:'Dừng tự chuyển'}));
-  act(()=>vi.advanceTimersByTime(10000));expect(q.getByRole('img').getAttribute('src')).toContain('industrial-5.jpg');
-  fireEvent.click(q.getByRole('button',{name:'Tiếp tục tự chuyển'}));
-  fireEvent.focus(q.getByRole('link'));act(()=>vi.advanceTimersByTime(5000));expect(q.getByRole('img').getAttribute('src')).toContain('industrial-5.jpg');
+  expect(screen.queryAllByRole('button')).toHaveLength(0);
+  fireEvent.focus(q.getByRole('link'));act(()=>vi.advanceTimersByTime(5000));expect(q.getByRole('img').getAttribute('src')).toContain('industrial-1.jpg');
   expect(q.getByRole('link').getAttribute('href')).toBe('/find-supply');
   expect(screen.getAllByRole('link').every(a=>!a.getAttribute('href')?.startsWith('tel:'))).toBe(true);
  });

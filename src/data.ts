@@ -190,7 +190,7 @@ const basePark = (index: number, definition: DemoParkDefinition): IndustrialPark
 
 export const parks: IndustrialParkProfile[] = [vsipThaiBinh, ...demoParkDefinitions.map((definition, i) => basePark(i + 2, definition))];
 
-export const assets: IndustrialAsset[] = parks.slice(0, 10).map((park, index) => ({
+const originalAssets: IndustrialAsset[] = parks.slice(0, 10).map((park, index) => ({
   id: `asset-${index + 1}`, parkId: park.id, name: l(
     index % 3 === 0 ? `Nhà xưởng xây sẵn ${index + 1}` : `Lô đất công nghiệp ${index + 1}`,
     index % 3 === 0 ? `Ready-built Factory ${index + 1}` : `Industrial Land Plot ${index + 1}`,
@@ -201,6 +201,40 @@ export const assets: IndustrialAsset[] = parks.slice(0, 10).map((park, index) =>
   industries: park.suitableIndustries.slice(0, 3), featured: index < 4, image: park.media[0]?.url || hero,
   description: l('Tài sản công nghiệp với hạ tầng đồng bộ và kết nối logistics thuận lợi.', 'Industrial asset with integrated infrastructure and logistics access.'),
 }));
+
+const supplementalAssets: IndustrialAsset[] = parks.flatMap((park, parkIndex) => {
+  const existing = originalAssets.filter(asset => asset.parkId === park.id);
+  const types = (['industrial_land', 'ready_built_factory', 'warehouse'] as const)
+    .filter(type => !existing.some(asset => asset.type === type))
+    .slice(0, Math.max(0, 3 - existing.length));
+  return types.map((type, index): IndustrialAsset => {
+    const land = type === 'industrial_land';
+    const factory = type === 'ready_built_factory';
+    const code = `${String(parkIndex + 1).padStart(2, '0')}-${index + 1}`;
+    const title = land ? l('Lô đất công nghiệp', 'Industrial Land Plot', '工业用地地块')
+      : factory ? l('Nhà xưởng xây sẵn', 'Ready-built Factory', '现成厂房')
+      : l('Kho logistics', 'Logistics Warehouse', '物流仓库');
+    return {
+      id: `asset-${park.id}-${type}`, parkId: park.id,
+      name: l(`${title.vi} ${code}`, `${title.en} ${code}`, `${title.zh} ${code}`),
+      type, area: land ? 2 + (parkIndex % 6) * 0.5 : (factory ? 6000 : 4000) + (parkIndex % 8) * 1000,
+      unit: land ? 'ha' : 'm²', transaction: 'lease',
+      price: s(land ? 85 + parkIndex * 3 : (factory ? 4.5 : 3.5) + (parkIndex % 6) * 0.25, land ? 'USD/m²/term' : 'USD/m²/month', 'vig-demo-fixture'),
+      priceMode: 'specific', availableFrom: `2027-${String(1 + parkIndex % 6).padStart(2, '0')}-01`,
+      powerMva: land ? 5 : factory ? 2 + parkIndex % 4 : 1,
+      industries: park.suitableIndustries.slice(0, 3), featured: false,
+      image: (land ? park.media[0]?.url : factory ? parkImages.automotive : parkImages.logistics) || hero,
+      imageApproved: true,
+      description: land
+        ? l('Lô đất đã kết nối hạ tầng kỹ thuật, phù hợp xây dựng cơ sở sản xuất theo nhu cầu.', 'Serviced industrial plot suitable for a purpose-built production facility.', '配套基础设施齐全的工业地块，适合按需建设生产设施。')
+        : factory
+          ? l('Nhà xưởng xây sẵn có khu văn phòng, sân xe tải và hệ thống điện phục vụ sản xuất.', 'Ready-built factory with offices, truck access and production power supply.', '配备办公室、卡车通道和生产电力的现成厂房。')
+          : l('Kho logistics có khu bốc dỡ hàng, sân xe container và kết nối giao thông thuận tiện.', 'Logistics warehouse with loading bays, container yard and convenient transport connections.', '配备装卸区、集装箱堆场及便捷交通连接的物流仓库。'),
+    };
+  });
+});
+
+export const assets: IndustrialAsset[] = [...originalAssets, ...supplementalAssets];
 
 export const expos: ExpoProgram[] = [
   {

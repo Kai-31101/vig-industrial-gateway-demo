@@ -450,6 +450,7 @@ function Header() {
       <div className="header-inner">
         <Link to="/home" className="brand">
           <span className="brand-mark">VIG</span>
+          <span className="brand-demo">Demo</span>
           <span>
             <b>Vietnam Industrial Gateway</b>
             <small>
@@ -1194,14 +1195,13 @@ function ParkDetailPage() {
       <div className={`page detail-page ${activeParkTab}`}>
         <aside className="park-section-nav">
           <b>{ui(language, "Nội dung hồ sơ", "Profile sections")}</b>
-          {sectionNavItems.map(([id, label], index) => (
+          {sectionNavItems.map(([id, label]) => (
             <button
               type="button"
               className={activeSection === id ? "active" : ""}
               onClick={() => scrollToSection(id)}
               key={id}
             >
-              <span>{String(index + 1).padStart(2, "0")}</span>
               {label}
             </button>
           ))}
@@ -1217,7 +1217,7 @@ function ParkDetailPage() {
         <section id="overview" className={`detail-grid ${!hasValue(park.operator.overview) && !safeUrl(park.operator.website) ? 'overview-sparse' : ''}`}>
           <div className="content-card wide">
             <SectionTitle
-              eyebrow={ui(language, "01 · HỒ SƠ", "01 · PROFILE")}
+              eyebrow={ui(language, "HỒ SƠ", "PROFILE")}
               title={
                 ui(language, "Tổng quan khu công nghiệp", "Industrial park overview")
               }
@@ -1272,7 +1272,7 @@ function ParkDetailPage() {
         </OptionalSection>
         <OptionalSection show={visibleSections.connectivity} id="connectivity">
           <SectionTitle
-            eyebrow={ui(language, "02 · VỊ TRÍ", "02 · LOCATION")}
+            eyebrow={ui(language, "VỊ TRÍ", "LOCATION")}
             title={
               ui(language, "Vị trí và kết nối chiến lược", "Location and strategic connectivity")
             }
@@ -1336,7 +1336,7 @@ function ParkDetailPage() {
         </OptionalSection>
         <OptionalSection show={approvedMedia.some(m => m.type === "masterplan")}>
           <SectionTitle
-            eyebrow={ui(language, "03 · QUY HOẠCH", "03 · MASTERPLAN")}
+            eyebrow={ui(language, "QUY HOẠCH", "MASTERPLAN")}
             title={
               ui(language, "Quy hoạch mặt bằng và hiện trạng quỹ đất", "Masterplan and land availability")
             }
@@ -1383,7 +1383,7 @@ function ParkDetailPage() {
         </OptionalSection>
         <OptionalSection show={visibleSections.infrastructure} id="infrastructure">
           <SectionTitle
-            eyebrow={ui(language, "04 · HẠ TẦNG", "04 · INFRASTRUCTURE")}
+            eyebrow={ui(language, "HẠ TẦNG", "INFRASTRUCTURE")}
             title={
               ui(language, "Hạ tầng và tiện ích đồng bộ", "Integrated infrastructure and utilities")
             }
@@ -1401,7 +1401,7 @@ function ParkDetailPage() {
         <OptionalSection show={visibleSections.workforce} id="workforce" className="detail-grid">
           <div className="content-card wide">
             <SectionTitle
-              eyebrow={ui(language, "05 · BỐI CẢNH ĐỊA PHƯƠNG", "05 · PROVINCIAL CONTEXT")}
+              eyebrow={ui(language, "BỐI CẢNH ĐỊA PHƯƠNG", "PROVINCIAL CONTEXT")}
               title={
                 ui(language, "Kinh tế địa phương và nguồn nhân lực", "Provincial economy and workforce")
               }
@@ -1434,7 +1434,7 @@ function ParkDetailPage() {
         </OptionalSection>
         <OptionalSection show={visibleSections.incentives} id="incentives">
           <SectionTitle
-            eyebrow={ui(language, "06 · ƯU ĐÃI", "06 · INCENTIVES")}
+            eyebrow={ui(language, "ƯU ĐÃI", "INCENTIVES")}
             title={
               ui(language, "Ưu đãi đầu tư", "Investment incentives")
             }
@@ -1474,7 +1474,7 @@ function ParkDetailPage() {
         </OptionalSection>
         <section className="park-assets-panel">
           <SectionTitle
-            eyebrow={ui(language, "07 · SẢN PHẨM SẴN CÓ", "07 · AVAILABILITY")}
+            eyebrow={ui(language, "SẢN PHẨM SẴN CÓ", "AVAILABILITY")}
             title={
               ui(language, "Quỹ đất và nhà xưởng đang chào thuê", "Available land and industrial assets")
             }
@@ -1499,7 +1499,7 @@ function ParkDetailPage() {
         </section>
         <OptionalSection show={park.process.length > 0}>
           <SectionTitle
-            eyebrow={ui(language, "08 · QUY TRÌNH ĐẦU TƯ", "08 · INVESTMENT PROCESS")}
+            eyebrow={ui(language, "QUY TRÌNH ĐẦU TƯ", "INVESTMENT PROCESS")}
             title={
               ui(language, "Quy trình thuê đất và thực hiện thủ tục đầu tư", "Land lease and investment procedure")
             }
@@ -1525,7 +1525,7 @@ function ParkDetailPage() {
         <OptionalSection show={[park.logistics.portCapacityDwt,park.logistics.cargoThroughput,park.logistics.shippingRoutes,park.logistics.indicativeCosts].some(hasValue)} className="detail-grid">
           <div className="content-card wide">
             <SectionTitle
-              eyebrow={ui(language, "09 · LOGISTICS", "09 · LOGISTICS")}
+              eyebrow={ui(language, "LOGISTICS", "LOGISTICS")}
               title={
                 ui(language, "Năng lực kết nối logistics", "Logistics capability")
               }

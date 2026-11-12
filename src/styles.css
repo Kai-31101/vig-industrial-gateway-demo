@@ -93,6 +93,17 @@ b {
   font-weight: 700;
   border: 3px solid #d7a44b;
 }
+.brand-demo {
+  align-self: flex-end;
+  margin-bottom: 3px;
+  padding: 3px 7px;
+  border-radius: 4px;
+  background: #fff4dd;
+  color: #805714;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+}
 .brand span:last-child {
   display: flex;
   flex-direction: column;

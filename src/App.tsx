@@ -1,4 +1,6 @@
-import {isPublicPark,isPublicAsset,leasingIntents,leasingIntentLabel,leasingTeam,validLeasingContext} from './leasing';
+import {BrandLogo} from "./BrandLogo";
+import {industryLabel} from "./industryLabels";
+import {portfolioMode,isPublicPark,isPublicAsset,leasingIntents,leasingIntentLabel,leasingTeam,validLeasingContext} from './leasing';
 import {useMobile,MobileMenu,MobileActionBar,MobileDisclosure,PublicScrollRestore} from './MobileUX';
 import {AdminLogin} from './admin/AdminLogin';
 import {HomeAds} from './HomeAds';
@@ -105,158 +107,6 @@ const documentLanguageLabel = (value: string, language: Language) => {
   if (language !== "zh") return value.toUpperCase();
   return value === "vi" ? "越南语" : value === "en" ? "英语" : "多语言";
 };
-const industryVi: Record<string, string> = {
-  "Renewable energy": "Năng lượng tái tạo",
-  "High-tech manufacturing": "Sản xuất công nghệ cao",
-  "Clean manufacturing": "Sản xuất sạch",
-  "Light manufacturing": "Công nghiệp nhẹ",
-  "Clean energy": "Năng lượng sạch",
-  "Mechanical engineering": "Cơ khí chế tạo",
-  "Consumer goods": "Hàng tiêu dùng",
-  "Food and beverage": "Thực phẩm và đồ uống",
-  "Automotive components": "Linh kiện ô tô",
-  "Household appliances": "Thiết bị gia dụng",
-  "EV batteries": "Pin xe điện",
-  "Solar technology": "Công nghệ năng lượng mặt trời",
-  "Metal and steel": "Kim loại và thép",
-  "Research and development": "Nghiên cứu và phát triển",
-  "Building materials": "Vật liệu xây dựng",
-  "Printing": "In ấn",
-
-  Electronics: "Điện tử",
-  Semiconductors: "Bán dẫn",
-  Automotive: "Ô tô và linh kiện",
-  "Supporting industries": "Công nghiệp hỗ trợ",
-  "Food processing": "Chế biến thực phẩm",
-  Logistics: "Logistics",
-  "Precision engineering": "Cơ khí chính xác",
-  "Data centers": "Trung tâm dữ liệu",
-  "Renewable energy equipment": "Thiết bị năng lượng tái tạo",
-  "Electrical equipment": "Thiết bị điện",
-  "Battery systems": "Hệ thống pin và lưu trữ năng lượng",
-  "Electronic components": "Linh kiện điện tử",
-  "Industrial automation": "Tự động hóa công nghiệp",
-  Pharmaceuticals: "Dược phẩm",
-  "Medical devices": "Thiết bị y tế",
-  Biotechnology: "Công nghệ sinh học",
-  "Laboratory equipment": "Thiết bị phòng thí nghiệm",
-  "Industrial machinery": "Máy móc công nghiệp",
-  "Metal fabrication": "Gia công kim loại",
-  "Advanced materials": "Vật liệu công nghệ cao",
-  "Industrial components": "Linh kiện công nghiệp",
-  "Construction technology": "Công nghệ xây dựng",
-  Textiles: "Dệt",
-  Garments: "May mặc",
-  Footwear: "Da giày",
-  Packaging: "Bao bì",
-  "Smart electronics": "Điện tử thông minh",
-  Beverages: "Đồ uống",
-  "Cold-chain logistics": "Logistics chuỗi lạnh",
-  Furniture: "Nội thất",
-  "Engineered wood": "Gỗ kỹ thuật",
-  "Agricultural machinery": "Máy nông nghiệp",
-  "Seafood processing": "Chế biến thủy sản",
-  "Cold storage": "Kho lạnh",
-  "Marine logistics": "Logistics hàng hải",
-  Robotics: "Robot công nghiệp",
-  "Consumer electronics": "Điện tử tiêu dùng",
-  "Aerospace components": "Linh kiện hàng không",
-  "Engineered rubber": "Cao su kỹ thuật",
-  Warehousing: "Kho vận",
-  "Solar equipment": "Thiết bị điện mặt trời",
-  "Agricultural processing": "Chế biến nông sản",
-  "Port logistics": "Logistics cảng",
-  "Offshore energy equipment": "Thiết bị năng lượng ngoài khơi",
-  "Steel fabrication": "Gia công kết cấu thép",
-  "Rice processing": "Chế biến lúa gạo",
-  "Food biotechnology": "Công nghệ sinh học thực phẩm",
-  Biomaterials: "Vật liệu sinh học",
-  "Biomass energy": "Năng lượng sinh khối",
-  "Sustainable packaging": "Bao bì bền vững",
-  "Aquaculture processing": "Chế biến thủy sản nuôi trồng",
-  "Animal feed": "Thức ăn chăn nuôi",
-  "Export logistics": "Logistics xuất khẩu",
-  "Supply chain": "Chuỗi cung ứng",
-};
-const industryZh: Record<string, string> = {
-  "Renewable energy": "可再生能源",
-  "High-tech manufacturing": "高科技制造",
-  "Clean manufacturing": "清洁制造",
-  "Light manufacturing": "轻工业",
-  "Clean energy": "清洁能源",
-  "Mechanical engineering": "机械制造",
-  "Consumer goods": "消费品",
-  "Food and beverage": "食品饮料",
-  "Automotive components": "汽车零部件",
-  "Household appliances": "家用电器",
-  "EV batteries": "电动汽车电池",
-  "Solar technology": "太阳能技术",
-  "Metal and steel": "金属和钢铁",
-  "Research and development": "研发",
-  "Building materials": "建筑材料",
-  "Printing": "印刷",
-
-  Electronics: "电子产业",
-  Semiconductors: "半导体",
-  Automotive: "汽车及零部件",
-  "Supporting industries": "配套产业",
-  "Food processing": "食品加工",
-  Logistics: "物流",
-  "Precision engineering": "精密工程",
-  "Data centers": "数据中心",
-  "Renewable energy equipment": "可再生能源设备",
-  "Electrical equipment": "电气设备",
-  "Battery systems": "电池与储能系统",
-  "Electronic components": "电子元件",
-  "Industrial automation": "工业自动化",
-  Pharmaceuticals: "制药",
-  "Medical devices": "医疗器械",
-  Biotechnology: "生物技术",
-  "Laboratory equipment": "实验室设备",
-  "Industrial machinery": "工业机械",
-  "Metal fabrication": "金属加工",
-  "Advanced materials": "先进材料",
-  "Industrial components": "工业零部件",
-  "Construction technology": "建筑技术",
-  Textiles: "纺织",
-  Garments: "服装",
-  Footwear: "鞋类",
-  Packaging: "包装",
-  "Smart electronics": "智能电子",
-  Beverages: "饮料",
-  "Cold-chain logistics": "冷链物流",
-  Furniture: "家具",
-  "Engineered wood": "工程木材",
-  "Agricultural machinery": "农业机械",
-  "Seafood processing": "水产品加工",
-  "Cold storage": "冷库",
-  "Marine logistics": "海运物流",
-  Robotics: "工业机器人",
-  "Consumer electronics": "消费电子",
-  "Aerospace components": "航空航天零部件",
-  "Engineered rubber": "工程橡胶",
-  Warehousing: "仓储",
-  "Solar equipment": "太阳能设备",
-  "Agricultural processing": "农产品加工",
-  "Port logistics": "港口物流",
-  "Offshore energy equipment": "海上能源设备",
-  "Steel fabrication": "钢结构加工",
-  "Rice processing": "稻米加工",
-  "Food biotechnology": "食品生物技术",
-  Biomaterials: "生物材料",
-  "Biomass energy": "生物质能源",
-  "Sustainable packaging": "可持续包装",
-  "Aquaculture processing": "水产养殖加工",
-  "Animal feed": "动物饲料",
-  "Export logistics": "出口物流",
-  "Supply chain": "供应链",
-};
-const industryLabel = (value: string, language: Language) =>
-  language === "vi"
-    ? industryVi[value] || value
-    : language === "zh"
-      ? industryZh[value] || value
-      : value;
 const standardGroupLabels: Record<string, LocalizedText> = {
   identity: tx("Thông tin nhận diện", "Identity"),
   operator: tx("Đơn vị phát triển/vận hành", "Developer and operator"),
@@ -450,8 +300,7 @@ function Header() {
     <header className="header">
       <div className="header-inner">
         <Link to="/home" className="brand">
-          <span className="brand-mark">VSIP</span>
-          <span className="brand-demo">Demo</span>
+          <BrandLogo />
           <span>
             <b>Vietnam Singapore Industrial Park</b>
             <small>
@@ -507,7 +356,7 @@ function Footer() {
       <div className="footer-grid">
         <div>
           <div className="brand footer-brand">
-            <span className="brand-mark">VSIP</span>
+            <BrandLogo />
             <span>
               <b>Vietnam Singapore Industrial Park</b>
             </span>
@@ -590,7 +439,7 @@ function FloatingParkChat() {
                     onClick={() => openParkChat(parkId)}
                     key={parkId}
                   >
-                    <span>{park.logoText}</span>
+                    <BrandLogo compact />
                     <span>
                       <b>{tr(park.name, language)}</b>
                       <small>{ui(language, "Khu công nghiệp", "Industrial park")}</small>
@@ -604,7 +453,7 @@ function FloatingParkChat() {
           <div className="floating-chat-screen">
             <header>
               <div>
-                <span>{activePark.logoText}</span>
+                <BrandLogo compact />
                 <div>
                   <b>{tr(activePark.name, language)}</b>
                   <small>{leasingTeam(language)}</small>
@@ -1202,17 +1051,17 @@ function ParkDetailPage() {
               {label:ui(language,"Giai đoạn","Phase"),value:park.phases[0] ? tr(park.phases[0].name,language) : null},
             ]} />
           </div>
-          <aside className="content-card operator-card"><MobileDisclosure title={ui(language,"Đơn vị phát triển","Developer")}>
-            <span>{park.logoText}</span>
+          {portfolioMode !== "demo" && <aside className="content-card operator-card"><MobileDisclosure title={ui(language,"Đơn vị phát triển","Developer")}>
+            <BrandLogo compact />
             <h3>{dataText(park.operator.name, language)}</h3>
             <p>{tr(park.operator.overview, language)}</p>
             {safeUrl(park.operator.website) && <a href={park.operator.website} target="_blank" rel="noreferrer">
               {ui(language, "Website đơn vị phát triển", "Developer website")}
               <ExternalLink size={14} />
             </a>}
-          </MobileDisclosure></aside>
+          </MobileDisclosure></aside>}
         </section>
-        <OptionalSection show={park.operator.portfolioStats.some(x => hasValue(x.value))} className="profile-stats">
+        <OptionalSection show={portfolioMode !== "demo" && park.operator.portfolioStats.some(x => hasValue(x.value))} className="profile-stats">
           <SectionTitle
             eyebrow={ui(language, "NĂNG LỰC ĐƠN VỊ PHÁT TRIỂN", "OPERATOR TRACK RECORD")}
             title={
@@ -1252,7 +1101,7 @@ function ParkDetailPage() {
           <div className="connect-grid">
             {park.coordinates && <div className="map-panel">
               <div className="map-rings">
-                <span className="map-point park">VSIP</span>
+                <span className="map-point park"><BrandLogo compact /></span>
                 <span className="map-point port">
                   <Ship /> {ui(language, "Cảng biển", "Port")}
                 </span>
@@ -1674,7 +1523,7 @@ function ParkDetailPage() {
             </h2>
             {park.contact ? <div className="published-contact">
               <h3>{tr(park.contact.office,language)}</h3>
-              <p>{leasingTeam(language)} VSIP</p>
+              <p>{language === "en" ? `VSIP ${leasingTeam(language)}` : `${leasingTeam(language)} VSIP`}</p>
               <p><a href={`tel:${park.contact.phone.replace(/[^+0-9]/g,'')}`}>{park.contact.phone}</a> · <a href={`mailto:${park.contact.email}`}>{park.contact.email}</a></p>
               <p>{tr(park.contact.address,language)}</p>
             </div> : <p>{ui(language,"Chưa có đầu mối liên hệ công khai.","No public contact is available.")}</p>}
@@ -1986,7 +1835,7 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
   const field = (key: keyof typeof form, label: string, type = "text") => (
     <label data-field={key} className={errors[key] ? "invalid" : ""}>
       <span>{label} *</span>
-      {choices[key]?<select value={form[key]} onChange={e=>update(key,e.target.value)}><option value="">{ui(language,"Chọn thông tin","Choose an option")}</option>{choices[key]!.map(value=><option key={value} value={value}>{key==='assetType'?tr(labels[value as keyof typeof labels],language):key==='industry'?industryLabel(value,language):dataText(value,language)}</option>)}</select>:<input
+      {choices[key]?<select value={form[key]} onChange={e=>update(key,e.target.value)}><option value="">{ui(language,"Chọn thông tin","Choose an option")}</option>{choices[key]!.map(value=><option key={value} value={value}>{key==='assetType'?tr(labels[value as keyof typeof labels],language):key==='industry'?industryLabel(value,language):key==='location'?ui(language,({North:'Miền Bắc',Central:'Miền Trung',South:'Miền Nam','Not specified':'Chưa xác định'} as Record<string,string>)[value]||value,value):dataText(value,language)}</option>)}</select>:<input
         type={type}
         value={form[key]}
         onChange={(e) => update(key, e.target.value)}
@@ -2104,7 +1953,7 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
           </div>
           <div className="form-section leasing-intents">
             <h2>{emptyCopy(language,'3. Nội dung cần hỗ trợ','3. How can we help?','3. 您需要什么帮助？')}</h2>
-            <p>{leasingTeam(language)} VSIP</p>
+            <p>{language === "en" ? `VSIP ${leasingTeam(language)}` : `${leasingTeam(language)} VSIP`}</p>
             {leasingIntents.map(intent=><label key={intent}><input type="radio" name="leasing-intent" value={intent} checked={form.service===intent} onChange={()=>update('service',intent)}/>{leasingIntentLabel(intent,language)}</label>)}
             {form.service==='Meeting / Connection'&&<p role="note">{emptyCopy(language,'Yêu cầu khảo sát cần được Bộ phận Tiếp thị & Cho thuê xác nhận; đây chưa phải lịch hẹn.','The Marketing & Leasing Department must confirm your site visit request; this is not a confirmed appointment.','实地考察申请需由市场推广与租赁部确认，尚不代表已预约成功。')}</p>}
           </div>
@@ -2134,7 +1983,7 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
             </div>
           ))}
           <small>
-            {ui(language, "Phiên bản demo mô phỏng tiếp nhận nhu cầu thuê; không gửi dữ liệu ra ngoài hoặc xác nhận lịch khảo sát.", "The demo does not execute transactions, payments or live meetings.")}
+            {ui(language, "Phiên bản demo mô phỏng tiếp nhận nhu cầu thuê; không gửi dữ liệu ra ngoài hoặc xác nhận lịch khảo sát.", "This demo simulates leasing enquiries; it sends no data externally and does not confirm site visits.")}
           </small>
         </aside>
       </div>
@@ -2248,7 +2097,7 @@ function AdminShell({ children }: { children: ReactNode }) {
     <div className="admin-shell">
       <aside className="admin-sidebar">
         <Link to={firstAdminPage(admin.current,admin.store.matrix)} className="admin-brand">
-          <span>VSIP</span>
+          <BrandLogo compact />
           <div>
             <b>VSIP Admin</b>
             <small>{ui(language, "Trung tâm vận hành", "Operations Console")}</small>

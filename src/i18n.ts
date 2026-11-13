@@ -1,6 +1,16 @@
 import type { Language } from "./types";
 
 const zh: Record<string, string> = {
+  "Sent (simulation)": "已发送（模拟）",
+  "Failed": "发送失败",
+  "Sending": "发送中",
+  "Simulation": "模拟",
+  "Labour catchment": "劳动力覆盖范围",
+  "Date not specified": "交付日期未确定",
+  "Specific price": "具体价格",
+  "Choose a mode": "请选择方式",
+  "Budget / price mode": "预算 / 价格方式",
+  "Choose an option": "请选择",
   "Visit being arranged": "正在安排考察",
   "Compare park locations, land and infrastructure.": "比较园区位置、土地和基础设施。",
   "Choose another asset type or send a leasing enquiry.": "请选择其他物业类型或提交租赁咨询。",
@@ -369,7 +379,7 @@ const zh: Record<string, string> = {
   Service: "服务",
   "Source conflict requires review": "来源数据冲突，需审核",
   SUBMITTED: "已提交",
-  "The demo does not execute transactions, payments or live meetings.": "演示版不执行真实交易、付款或在线会议。",
+  "This demo simulates leasing enquiries; it sends no data externally and does not confirm site visits.": "此演示模拟接收租赁需求，不向外部发送数据，也不确认实地考察预约。",
   "This checklist shows which profile data groups are present against the standard; no score or percentage is used.": "该检查表对照标准显示档案已包含的数据组，不使用分数或百分比。",
   "This industrial park profile does not exist.": "该工业园区档案不存在。",
   "This information has not been provided.": "尚未提供此信息。",

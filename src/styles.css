@@ -641,6 +641,7 @@ b {
   background: linear-gradient(140deg, #0c5579, #0f766e);
 }
 .funnel-card > svg {
+  margin-inline-end: 8px;
   color: #f2c66f;
   width: 38px;
   height: 38px;

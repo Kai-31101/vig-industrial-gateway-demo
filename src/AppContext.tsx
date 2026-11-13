@@ -1,3 +1,4 @@
+import {validLeasingContext,isPublicPark,isPublicAsset} from './leasing';
 import { createContext, useContext, useMemo, useState, useRef, useEffect } from 'react';
 import {candidateChecks} from './matching';
 import {validOutcome} from './connectionLogic';
@@ -47,13 +48,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [chatOpen, setChatOpen] = useState(false);
   const [chatThreads, setChatThreads] = useState<Record<string, ParkChatMessage[]>>({});
   const createRequest = (input: NewRequest) => {
+    if(!validLeasingContext(input,parks,assets)) throw new Error("Unsupported leasing enquiry context");
     const id = `VSIP-${crypto.randomUUID().slice(0,8).toUpperCase()}`;
     const next:IndustrialRequest[]=[...requestRef.current, { ...input, id, revision:1, direction:'inbound', status: 'submitted', submittedAt: now(), assignedTo: 'Unassigned', activities: [{ id: crypto.randomUUID(), at: now(), actor: 'System', action: { vi: 'Đã tiếp nhận yêu cầu', en: 'Request submitted' } }] }];
     requestRef.current=next;setRequests(next);setOwnRequestIds(ids=>[...ids,id]);
     return id;
   };
   const transitionRequest = (id: string, to: RequestStatus, reason?: string, outcome?:ConnectionOutcome, expectedRevision?:number, actor='VSIP Admin', selectedParkId?:string) => {
-    const current = requestRef.current.find(r => r.id === id); if (role!=='admin'||!current || expectedRevision!==(current.revision||1)||!canTransition(current.status, to) || (to === 'rejected' && !reason?.trim())||(to==='closed'&&!validOutcome(outcome))||(to==='connection_scheduled'&&(!reason?.trim()||!parks.some(p=>p.id===selectedParkId&&p.publicationStatus==='published'&&(!current.parkId||current.parkId===p.id)&&!candidateChecks(current,p,assets).some(c=>c.state==='unmatched'))))) return false;
+    const current = requestRef.current.find(r => r.id === id); if (role!=='admin'||!current || expectedRevision!==(current.revision||1)||!canTransition(current.status, to) || (to === 'rejected' && !reason?.trim())||(to==='closed'&&!validOutcome(outcome))||(to==='connection_scheduled'&&(!reason?.trim()||!parks.some(p=>p.id===selectedParkId&&isPublicPark(p)&&(!current.parkId||current.parkId===p.id)&&!candidateChecks(current,p,assets).some(c=>c.state==='unmatched'))))) return false;
     const next=requestRef.current.map(r => r.id === id ? { ...r, status: to, revision:(r.revision||1)+1, outcome:to==='closed'?outcome:r.outcome,selectedParkId:selectedParkId||r.selectedParkId,coordinationNote:to==='connection_scheduled'?reason:r.coordinationNote,rejectionReason: to === 'rejected' ? reason : r.rejectionReason, activities: [...r.activities, { id: crypto.randomUUID(), at: now(), actor, action: { vi: `Chuyển trạng thái sang ${to}${reason?': '+reason:''}`, en: `Status changed to ${to}${reason?': '+reason:''}` } }] } : r);
     requestRef.current=next;setRequests(next);return true;
   };
@@ -61,16 +63,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const updateParkPublication = (id: string, status: PublicationStatus) => setParks(list => list.map(p => p.id === id ? { ...p, publicationStatus: status } : p));
   const openParkChat = (parkId: string, assetId?:string) => {
     const park = parks.find(candidate => candidate.id === parkId);
-    if (!park||park.publicationStatus!=='published'||assetId&&!assets.some(a=>a.id===assetId&&a.parkId===parkId)) return;
+    if (!park||!isPublicPark(park)||assetId&&!assets.some(a=>a.id===assetId&&a.parkId===parkId&&isPublicAsset(a,parks))) return;
     setChatThreads(threads => threads[parkId] ? threads : {
       ...threads,
       [parkId]: [{
         id: crypto.randomUUID(),
         sender: 'supplier', at:now(),status:'sent',
         text: {
-          vi: `Xin chào, chúng tôi là bộ phận tư vấn của ${park.name.vi}. Bạn cần thông tin về quỹ đất, nhà xưởng hay hạ tầng kỹ thuật?`,
-          en: `Hello, this is the advisory team at ${park.name.en}. How can we help with land, factories, or infrastructure?`,
-          zh: `您好，我们是${park.name.zh || park.name.en}的咨询团队。您需要了解土地、厂房还是基础设施？`,
+          vi: `Xin chào, đây là Bộ phận Tiếp thị & Cho thuê VSIP (mô phỏng), hỗ trợ thông tin về ${park.name.vi}. Bạn cần thông tin về quỹ đất, nhà xưởng hay hạ tầng kỹ thuật?`,
+          en: `Hello, this is the VSIP Marketing & Leasing Department (simulated), discussing ${park.name.en}. How can we help with land, factories, or infrastructure?`,
+          zh: `您好，这里是VSIP市场推广与租赁部（模拟），为您介绍${park.name.zh || park.name.en}。您需要了解土地、厂房还是基础设施？`,
         },
       }],
     });
@@ -92,13 +94,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     },700));
   };
   const sendParkChatMessage = (text:string,fail=false)=>{
-    const value=text.trim();if(!value||!chatParkId||!parks.some(p=>p.id===chatParkId&&p.publicationStatus==='published'))return;
+    const value=text.trim();if(!value||!chatParkId||!parks.some(p=>p.id===chatParkId&&isPublicPark(p)))return;
     const id=crypto.randomUUID(),parkId=chatParkId;
     setChatThreads(threads=>({...threads,[parkId]:[...(threads[parkId]||[]),{id,sender:'user',text:{vi:value,en:value,zh:value},at:now(),status:'sending'}]}));
     deliver(parkId,id,fail);
   };
   const retryParkChatMessage=(id:string)=>{
-    if(!chatParkId||pendingChat.current.has(id)||!parks.some(p=>p.id===chatParkId&&p.publicationStatus==='published'))return;
+    if(!chatParkId||pendingChat.current.has(id)||!parks.some(p=>p.id===chatParkId&&isPublicPark(p)))return;
     const message=chatThreads[chatParkId]?.find(m=>m.id===id);
     if(message?.status!=='failed')return;
     setChatThreads(threads=>({...threads,[chatParkId]:threads[chatParkId].map(m=>m.id===id?{...m,status:'sending'}:m)}));

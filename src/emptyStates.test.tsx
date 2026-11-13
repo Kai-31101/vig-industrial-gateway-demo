@@ -56,7 +56,7 @@ describe('implemented UI flows',()=>{
     expect(screen.queryByRole('heading',{name:'Mức lương tham khảo'})).toBeNull();
     fireEvent.click(screen.getByRole('button',{name:/Mặt bằng 0/}));
     expect(screen.getByText('Chưa có sản phẩm được công bố')).toBeTruthy();
-    expect(screen.getAllByRole('link',{name:'Tìm mặt bằng'}).some(a=>a.getAttribute('href')?.includes('parkId='))).toBe(true);
+    expect(screen.getAllByRole('link',{name:'Tư vấn thuê'}).some(a=>a.getAttribute('href')?.includes('parkId='))).toBe(true);
   });
   it('handles an asset whose park is unavailable without a direct supplier CTA',()=>{
     window.location.hash='#/assets/asset-1?demoState=orphan';

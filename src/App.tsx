@@ -1,6 +1,6 @@
+import {isPublicPark,isPublicAsset,leasingIntents,leasingIntentLabel,leasingTeam,validLeasingContext} from './leasing';
 import {useMobile,MobileMenu,MobileActionBar,MobileDisclosure,PublicScrollRestore} from './MobileUX';
 import {AdminLogin} from './admin/AdminLogin';
-import {PackageCards} from './PackageCards';
 import {HomeAds} from './HomeAds';
 import {PackageSettings} from './admin/PackageSettings';
 import {PermissionMatrix} from './admin/PermissionMatrix';
@@ -291,8 +291,8 @@ const labels: Record<string, LocalizedText> = {
   submitted: tx("Đã tiếp nhận", "Submitted"),
   under_review: tx("Đang xác minh", "Under review"),
   verified: tx("Đã xác minh", "Verified"),
-  matching: tx("Đang ghép nối", "Matching"),
-  connection_scheduled: tx("Đã hẹn kết nối", "Connection scheduled"),
+  matching: tx("Đang chuẩn bị phương án", "Preparing options"),
+  connection_scheduled: tx("Đang sắp xếp khảo sát", "Visit being arranged"),
   closed: tx("Đã đóng", "Closed"),
   rejected: tx("Từ chối", "Rejected"),
   reviewed: tx("Đã rà soát", "Reviewed"),
@@ -444,9 +444,7 @@ function Header() {
       ui(language, "Khu công nghiệp", "Industrial parks"),
     ],
     ["/assets", ui(language, "BĐS công nghiệp", "Assets")],
-    ["/find-supply", ui(language, "Tìm mặt bằng", "Find supply")],
-    ["/find-demand", ui(language, "Tìm khách thuê/mua", "Find demand")],
-    ["/industrial-expo", ui(language, "Triển lãm công nghiệp", "Industrial Expo")],
+    ["/find-supply", ui(language, "Tư vấn thuê", "Leasing consultation")],
   ];
   return (
     <header className="header">
@@ -457,7 +455,7 @@ function Header() {
           <span>
             <b>Vietnam Singapore Industrial Park</b>
             <small>
-              {ui(language, "Hạ tầng số công nghiệp Việt Nam", "Vietnam industrial digital infrastructure")}
+              {ui(language, "Đất và nhà xưởng công nghiệp cho thuê", "Industrial land and factories for lease")}
             </small>
           </span>
         </Link>
@@ -515,7 +513,7 @@ function Footer() {
             </span>
           </div>
           <p>
-            {ui(language, "Kết nối năng lực công nghiệp Việt Nam với nhu cầu đầu tư và sản xuất toàn cầu.", "Connecting Vietnam’s industrial capacity with global investment and manufacturing demand.")}
+            {ui(language, "Mặt bằng sản xuất cho thuê tại các khu công nghiệp VSIP.", "Manufacturing space for lease in VSIP industrial parks.")}
           </p>
         </div>
         <div>
@@ -526,21 +524,13 @@ function Footer() {
           <Link to="/assets">
             {ui(language, "Bất động sản công nghiệp", "Industrial Assets")}
           </Link>
-          <Link to="/industrial-expo">
-            {ui(language, "Triển lãm công nghiệp", "Industrial Expo")}
-          </Link>
         </div>
         <div>
-          <b>{ui(language, "Kết nối", "Connect")}</b>
+          <b>{emptyCopy(language,"Thuê mặt bằng","Leasing","租赁")}</b>
           <Link to="/find-supply">
-            {ui(language, "Tìm mặt bằng", "Find Supply")}
+            {ui(language, "Tư vấn thuê", "Leasing consultation")}
           </Link>
-          <Link to="/find-demand">
-            {ui(language, "Tìm khách thuê/mua", "Find Demand")}
-          </Link>
-          <span>
-            {ui(language, "Ghép nối chuyên sâu", "Premium Matching")}
-          </span>
+          <Link to="/find-supply?support=meeting">{leasingIntentLabel('Meeting / Connection',language)}</Link>
         </div>
         <div className="arobid-partner">
           <div className="arobid-powered-row">
@@ -600,7 +590,7 @@ function FloatingParkChat() {
                     onClick={() => openParkChat(parkId)}
                     key={parkId}
                   >
-                    <span>{park.logoText.slice(0, 3)}</span>
+                    <span>{park.logoText}</span>
                     <span>
                       <b>{tr(park.name, language)}</b>
                       <small>{ui(language, "Khu công nghiệp", "Industrial park")}</small>
@@ -614,10 +604,10 @@ function FloatingParkChat() {
           <div className="floating-chat-screen">
             <header>
               <div>
-                <span>{activePark.logoText.slice(0, 3)}</span>
+                <span>{activePark.logoText}</span>
                 <div>
                   <b>{tr(activePark.name, language)}</b>
-                  <small><i /> {ui(language, "Đơn vị cung cấp · Trực tuyến", "Supplier · Online")}</small>
+                  <small>{leasingTeam(language)}</small>
                 </div>
               </div>
               <div>
@@ -636,7 +626,7 @@ function FloatingParkChat() {
                 </div>
               ))}
             </div>
-            <label className="chat-failure-demo"><input type="checkbox" checked={failNext} onChange={e=>setFailNext(e.target.checked)}/>{ui(language,"Mô phỏng lỗi gửi tin tiếp theo","Simulate next message failure")}</label>
+            {import.meta.env.DEV && <label className="chat-failure-demo"><input type="checkbox" checked={failNext} onChange={e=>setFailNext(e.target.checked)}/>{ui(language,"Mô phỏng lỗi gửi tin tiếp theo","Simulate next message failure")}</label>}
             <form
               className="floating-chat-composer"
               onSubmit={(event) => {
@@ -688,7 +678,7 @@ function HomePage() {
   const [keyword,setKeyword]=useState("");
   const { language, parks, assets } = useApp();
   const navigate = useNavigate();
-  const publishedParks = sortParksByCompleteness(parks.filter(p=>p.publicationStatus==="published"));
+  const publishedParks = sortParksByCompleteness(parks.filter(p=>isPublicPark(p)));
   const featured = publishedParks.slice(0, 12);
   return (
     <PublicShell>
@@ -703,7 +693,7 @@ function HomePage() {
         <div className="hero-content">
           <span className="hero-kicker">
             <Sparkles size={16} />
-            {ui(language, "Dữ liệu chuẩn hóa · Kết nối đầu tư", "Data-powered · Intelligently connected")}
+            {ui(language, "Đất công nghiệp · Nhà xưởng cho thuê", "Industrial land · Factories for lease")}
           </span>
           <h1
             className={
@@ -718,20 +708,20 @@ function HomePage() {
           </h1>
           <p>
             {language === "vi"
-              ? "Vận hành dựa trên dữ liệu, ghép nối giao dịch bởi AI"
+              ? "Đất và nhà xưởng cho thuê tại các khu công nghiệp VSIP, phục vụ nhu cầu sản xuất của doanh nghiệp."
               : language === "zh"
-                ? "数据驱动 · AI智能匹配"
-                : "Powered by Data. Matched by AI."}
+                ? "VSIP园区提供工业用地和厂房租赁，满足企业生产需求。"
+                : "Industrial land and factories for lease in VSIP parks, supporting your manufacturing requirements."}
           </p>
           {mobile&&<form className="mobile-home-search" onSubmit={e=>{e.preventDefault();navigate(`/industrial-parks?q=${encodeURIComponent(keyword.trim())}`)}}><input aria-label={ui(language,"Tìm kiếm công nghiệp","Industrial search")} placeholder={ui(language,"Tên KCN, tỉnh, ngành…","Park, province, industry…")} value={keyword} onChange={e=>setKeyword(e.target.value)}/><button type="submit">{ui(language,"Tìm kiếm","Search")}</button></form>}
-          {mobile&&<div className="mobile-home-links"><Link to="/find-supply">{ui(language,"Tìm mặt bằng","Find supply")}</Link><Link to="/find-demand">{ui(language,"Tìm khách thuê/mua","Find demand")}</Link></div>}
+          {mobile&&<div className="mobile-home-links"><Link to="/find-supply">{ui(language, "Tư vấn thuê", "Leasing consultation")}</Link><Link to="/assets">{ui(language,"Mặt bằng","Assets")}</Link></div>}
           <div className="hero-actions">
             <Link className="button gold" to="/industrial-parks">
-              {ui(language, "Tra cứu khu công nghiệp", "Explore supply")}
+              {emptyCopy(language,"Xem khu công nghiệp","Explore parks","查看园区")}
               <ArrowRight size={18} />
             </Link>
             <Link className="button ghost" to="/find-supply">
-              {ui(language, "Gửi yêu cầu tìm mặt bằng", "Submit requirement")}
+              {ui(language,"Gửi nhu cầu thuê","Send leasing enquiry")}
             </Link>
           </div>
           <div className="hero-stats">
@@ -742,7 +732,7 @@ function HomePage() {
               </span>
             </div>
             <div>
-              <b>{assets.length}</b>
+              <b>{assets.filter(a=>isPublicAsset(a,parks)).length}</b>
               <span>
                 {ui(language, "BĐS công nghiệp mẫu", "demo assets")}
               </span>
@@ -769,7 +759,7 @@ function HomePage() {
       <HomeAds placement="top" />
       <section className="page section home-featured">
         <SectionTitle
-          eyebrow={ui(language, "LỚP DỮ LIỆU CÔNG NGHIỆP", "INDUSTRIAL DATA LAYER")}
+          eyebrow={emptyCopy(language,"KHU CÔNG NGHIỆP VSIP","VSIP INDUSTRIAL PARKS","VSIP工业园区")}
           title={
             ui(language, "Hồ sơ khu công nghiệp nổi bật", "Featured industrial park profiles")
           }
@@ -793,40 +783,13 @@ function HomePage() {
       <section className="dark-section">
         <div className="page">
           <SectionTitle
-            eyebrow={ui(language, "KẾT NỐI HAI CHIỀU", "TWO-WAY REQUEST")}
+            eyebrow={ui(language, "THUÊ TẠI VSIP", "LEASE WITH VSIP")}
             title={
-              ui(language, "Kết nối nhu cầu thuê, mua và chào thuê", "Two connection directions, one gateway")
+              ui(language, "Mặt bằng phù hợp cho dự án sản xuất", "Space for your manufacturing project")
             }
           />
           <div className="funnel-grid">
-            <div className="funnel-card">
-              <Warehouse />
-              <span>{ui(language, "TÌM KHÁCH THUÊ/MUA", "FIND DEMAND")}</span>
-              <h3>
-                {ui(language, "Tôi có mặt bằng công nghiệp", "I have supply")}
-              </h3>
-              <p>
-                {ui(language, "Tìm khách thuê hoặc bên nhận chuyển nhượng đất, nhà xưởng và kho.", "Find tenants or buyers for land, factories and warehouses.")}
-              </p>
-              <Link to="/find-demand">
-                {ui(language, "Tìm khách thuê/mua", "Find Demand")}{" "}
-                <ArrowRight size={16} />
-              </Link>
-            </div>
-            <div className="funnel-card featured">
-              <PackageSearch />
-              <span>{ui(language, "TÌM MẶT BẰNG", "FIND SUPPLY")}</span>
-              <h3>
-                {ui(language, "Tôi cần tìm mặt bằng", "I need supply")}
-              </h3>
-              <p>
-                {ui(language, "Tìm khu công nghiệp, quỹ đất, nhà xưởng hoặc kho phù hợp với dự án.", "Find the right park, land, factory or warehouse.")}
-              </p>
-              <Link to="/find-supply">
-                {ui(language, "Tìm mặt bằng phù hợp", "Find Supply")}{" "}
-                <ArrowRight size={16} />
-              </Link>
-            </div>
+            {[{type:'industrial_land',icon:Map,title:emptyCopy(language,'Đất công nghiệp cho thuê','Industrial land for lease','工业用地租赁'),description:emptyCopy(language,'Tìm quỹ đất phù hợp để phát triển cơ sở sản xuất.','Explore land for your manufacturing facility.','寻找适合建设生产基地的工业用地。')},{type:'ready_built_factory',icon:Factory,title:emptyCopy(language,'Nhà xưởng xây sẵn cho thuê','Ready-built factories for lease','标准厂房租赁'),description:emptyCopy(language,'Khám phá nhà xưởng phù hợp với nhu cầu sản xuất.','Explore factories for your manufacturing requirements.','寻找符合生产需求的厂房。')}].map(({type,icon:Icon,title,description},i)=><div key={type} className={`funnel-card ${i?'featured':''}`}><Icon/><span>{emptyCopy(language,'THUÊ TẠI VSIP','LEASE WITH VSIP','在VSIP租赁')}</span><h3>{title}</h3><p>{description}</p><Link to={`/assets?type=${type}`}>{emptyCopy(language,'Xem mặt bằng','Explore assets','查看物业')}<ArrowRight size={16}/></Link></div>)}
           </div>
         </div>
       </section>
@@ -834,16 +797,16 @@ function HomePage() {
         <SectionTitle
           eyebrow={ui(language, "QUY TRÌNH VSIP", "HOW VSIP WORKS")}
           title={
-            ui(language, "Từ yêu cầu đầu tư đến kết nối dự án", "From requirement to opportunity")
+            ui(language, "Từ nhu cầu thuê đến khảo sát mặt bằng", "From leasing enquiry to site visit")
           }
         />
         <div className="steps">
           {[
             [Search, ui(language, "Tra cứu", "Search")],
             [FileText, ui(language, "Gửi yêu cầu", "Request")],
-            [Sparkles, ui(language, "Đề xuất", "Matching")],
-            [Handshake, ui(language, "Kết nối", "Connect")],
-            [Users, ui(language, "Trao đổi", "Meeting")],
+            [Building2, ui(language, "Nhận phương án", "Receive options")],
+            [Handshake, ui(language, "Tư vấn thuê", "Leasing consultation")],
+            [Users, ui(language, "Yêu cầu khảo sát", "Site visit request")],
           ].map(([Icon, label], i) => {
             const C = Icon as typeof Search;
             return (
@@ -858,13 +821,13 @@ function HomePage() {
       </section>
       <section className="page section expo-banner">
         <div>
-          <span>{ui(language, "TRIỂN LÃM CÔNG NGHIỆP SỐ", "DIGITAL INDUSTRIAL EXPO")}</span>
+          <span>{ui(language, "KHẢO SÁT KHU CÔNG NGHIỆP", "VISIT AN INDUSTRIAL PARK")}</span>
           <h2>
-            {ui(language, "Mở rộng tiếp cận thị trường toàn cầu", "Expand global market reach")}
+            {ui(language, "Tìm hiểu mặt bằng sản xuất tại VSIP", "Explore manufacturing space at VSIP")}
           </h2>
-          <p>{ui(language, "Trung Quốc · Hàn Quốc · Nhật Bản · Singapore · Toàn cầu–Việt Nam", "China · Korea · Japan · Singapore · Global–Vietnam")}</p>
-          <Link className="button gold" to="/industrial-expo">
-            {ui(language, "Khám phá Expo", "Explore Expo")}
+          <p>{ui(language, "Trao đổi với Bộ phận Tiếp thị & Cho thuê để tư vấn và sắp xếp khảo sát.", "Contact the Marketing & Leasing Department for advice and a site visit request.")}</p>
+          <Link className="button gold" to="/find-supply?support=meeting">
+            {ui(language, "Yêu cầu khảo sát", "Request a site visit")}
           </Link>
         </div>
         <Globe2 size={150} />
@@ -882,7 +845,7 @@ function ParkStatusBadge({park}:{park:IndustrialParkProfile}) {
 
 function ParkCard({ park,featured=false }: { park: IndustrialParkProfile;featured?:boolean }) {
   const { language, assets } = useApp();
-  const assetCount = assets.filter(asset => asset.parkId === park.id).length;
+  const assetCount = assets.filter(asset => asset.parkId === park.id && asset.transaction === "lease").length;
   const available = park.availability[0]?.available;
   return (
     <article className="park-card" role={featured?"listitem":undefined}>
@@ -946,7 +909,7 @@ function ParksPage() {
   );
   const filtered = sortParksByCompleteness(parks.filter(
     (p) =>
-      p.publicationStatus==="published" && matchesParkFilters(p,params) && (!q ||
+      isPublicPark(p) && matchesParkFilters(p,params) && (!q ||
         `${tr(p.name, language)} ${p.province} ${p.suitableIndustries}`
           .toLowerCase()
           .includes(q.toLowerCase())) &&
@@ -958,12 +921,12 @@ function ParksPage() {
     <PublicShell>
       <div className="page page-top park-directory">
         <div className="page-heading">
-          <span>{ui(language, "LỚP DỮ LIỆU CÔNG NGHIỆP", "INDUSTRIAL DATA LAYER")}</span>
+          <span>{emptyCopy(language,"KHU CÔNG NGHIỆP VSIP","VSIP INDUSTRIAL PARKS","VSIP工业园区")}</span>
           <h1>
             {ui(language, "Danh mục khu công nghiệp", "Industrial park directory")}
           </h1>
           <p>
-            {ui(language, "Tra cứu vị trí, quỹ đất, hạ tầng kỹ thuật, khả năng kết nối và hồ sơ pháp lý của từng khu công nghiệp.", "Explore industrial supply through standardised, source-aware profiles.")}
+            {ui(language, "Tra cứu vị trí, quỹ đất, hạ tầng kỹ thuật, khả năng kết nối và hồ sơ pháp lý của từng khu công nghiệp.", "Compare park locations, land and infrastructure.")}
           </p>
         </div>
         <DiscoveryFilters resultCount={filtered.length}/><div className="filter-panel desktop-park-filters">
@@ -1089,7 +1052,7 @@ function ParkDetailPage() {
   const [activeSection, setActiveSection] = useState("overview");
   const [previewParams] = useSearchParams();
   const previewMode = import.meta.env.DEV ? previewParams.get("demoState") : null;
-  const originalPark = parks.find((p) => p.slug === slug && p.publicationStatus==="published");
+  const originalPark = parks.find((p) => p.slug === slug && isPublicPark(p));
   const park = originalPark ? previewPark(originalPark, previewMode) : undefined;
   if (!park)
     return (
@@ -1099,7 +1062,7 @@ function ParkDetailPage() {
         </div>
       </PublicShell>
     );
-  const linked = previewMode ? [] : assets.filter((a) => a.parkId === park.id);
+  const linked = previewMode ? [] : assets.filter((a) => a.parkId === park.id && isPublicAsset(a,parks));
   const approvedMedia = park.media.filter(m => m.approved && m.url.trim());
   const visibleSections: Record<string, boolean> = {
     overview: true, connectivity: Boolean(park.coordinates || park.connectivity.length),
@@ -1172,12 +1135,12 @@ function ParkDetailPage() {
               className="button ghost"
               onClick={() =>
                 setModal(
-                  ui(language, "Yêu cầu cuộc hẹn", "Request meeting"),
+                  "Meeting",
                 )
               }
             >
               <Users size={17} />
-              {ui(language, "Đặt lịch kết nối", "Request meeting")}
+              {leasingIntentLabel('Meeting / Connection',language)}
             </button>
           </div>
         </div>
@@ -1502,9 +1465,9 @@ function ParkDetailPage() {
                 ui(language, "Chưa có sản phẩm được công bố", "No published assets")
               }
               text={
-                ui(language, "Liên hệ VSIP để được hỗ trợ tìm mặt bằng phù hợp.", "Contact VSIP for supply sourcing support.")
+                ui(language, "Liên hệ Bộ phận Tiếp thị & Cho thuê để tư vấn mặt bằng tại khu này.", "Contact the Marketing & Leasing Department for space in this park.")
               }
-              action={<Link className="button primary" to={`/find-supply?parkId=${park.id}`}>{ui(language,"Tìm mặt bằng","Find Supply")}</Link>}
+              action={<Link className="button primary" to={`/find-supply?parkId=${park.id}`}>{ui(language, "Tư vấn thuê", "Leasing consultation")}</Link>}
             />
           )}
         </section>
@@ -1705,13 +1668,13 @@ function ParkDetailPage() {
         </OptionalSection>
         <section className="contact-card">
           <div>
-            <span>{ui(language, "LIÊN HỆ ĐẦU TƯ", "INVESTMENT CONTACT")}</span>
+            <span>{emptyCopy(language,"LIÊN HỆ THUÊ MẶT BẰNG","LEASING CONTACT","租赁联系")}</span>
             <h2>
-              {ui(language, "Quan tâm đến cơ hội đầu tư tại khu công nghiệp này?", "Ready to explore this opportunity?")}
+              {emptyCopy(language,"Quan tâm thuê mặt bằng tại khu này?","Interested in leasing space at this park?","有意租赁本园区物业？")}
             </h2>
             {park.contact ? <div className="published-contact">
               <h3>{tr(park.contact.office,language)}</h3>
-              <p>{tr(park.contact.title,language)}</p>
+              <p>{leasingTeam(language)} VSIP</p>
               <p><a href={`tel:${park.contact.phone.replace(/[^+0-9]/g,'')}`}>{park.contact.phone}</a> · <a href={`mailto:${park.contact.email}`}>{park.contact.email}</a></p>
               <p>{tr(park.contact.address,language)}</p>
             </div> : <p>{ui(language,"Chưa có đầu mối liên hệ công khai.","No public contact is available.")}</p>}
@@ -1724,9 +1687,9 @@ function ParkDetailPage() {
               <Send size={17} />
               {ui(language, "Gửi yêu cầu tư vấn", "Send inquiry")}
             </button>
-            <Link className="button outline" to="/find-supply">
+            <Link className="button outline" to="/assets">
               <PackageSearch size={17} />
-              {ui(language, "Tìm mặt bằng tương tự", "Find Supply")}
+              {ui(language, "Xem mặt bằng cho thuê", "Explore leasing properties")}
             </Link>
           </div>
         </section>
@@ -1734,7 +1697,7 @@ function ParkDetailPage() {
       {modal && (
         <ContactModal type={modal} park={park} close={() => setModal("")} />
       )}
-    <MobileActionBar><button className="button primary" onClick={()=>setModal("Inquiry")}><Send size={16}/>{ui(language,"Gửi yêu cầu","Inquiry")}</button><button data-chat onClick={()=>openParkChat(park.id)}><MessageCircle size={16}/>{ui(language,"Trao đổi","Chat")}</button><button onClick={()=>setModal("Meeting")}><Users size={16}/>{ui(language,"Đặt lịch","Meeting")}</button></MobileActionBar>
+    <MobileActionBar><button className="button primary" onClick={()=>setModal("Inquiry")}><Send size={16}/>{ui(language,"Gửi yêu cầu","Inquiry")}</button><button data-chat onClick={()=>openParkChat(park.id)}><MessageCircle size={16}/>{ui(language,"Trao đổi","Chat")}</button><button onClick={()=>setModal("Meeting")}><Users size={16}/>{emptyCopy(language,"Khảo sát","Site visit","考察")}</button></MobileActionBar>
     </PublicShell>
   );
 }
@@ -1780,7 +1743,7 @@ function AssetCard({
               <MessageCircle /> {ui(language, "Trao đổi", "Chat")}
             </button>
             <Link to={park ? requestUrl : "/find-supply"} onClick={(event) => event.stopPropagation()}>
-              <Send /> {ui(language, "Gửi yêu cầu trực tiếp", "Direct Request")}
+              <Send /> {ui(language, "Hỏi thuê mặt bằng này", "Enquire about this property")}
             </Link>
           </div>
         </div>
@@ -1790,7 +1753,10 @@ function AssetCard({
 function AssetsPage() {
   const { language, assets, parks } = useApp();
   const [params,setParams]=useSearchParams();const type=params.get("type")||"all";const setType=(value:string)=>setParams(old=>{const next=new URLSearchParams(old);if(value==="all")next.delete("type");else next.set("type",value);return next},{replace:true});
-  const filtered = assets.filter((a) => parks.some(p=>p.id===a.parkId&&p.publicationStatus==="published"&&matchesAssetFilters(a,p,params))&&(type === "all" || a.type === type));
+  const [retiredTransaction,setRetiredTransaction]=useState(false);
+  const requestedTransaction=params.get('transaction');
+  useEffect(()=>{if(requestedTransaction && requestedTransaction!=='lease'){setRetiredTransaction(true);setParams(old=>{const next=new URLSearchParams(old);next.delete('transaction');return next},{replace:true})}},[requestedTransaction,setParams]);
+  const filtered = assets.filter((a) => isPublicAsset(a,parks) && parks.some(p=>p.id===a.parkId&&isPublicPark(p)&&matchesAssetFilters(a,p,params))&&(type === "all" || a.type === type));
   const assetTypeFilters = [
     { value: "all", icon: PackageSearch, vi: "Tất cả loại hình", en: "All assets" },
     { value: "industrial_land", icon: Map, vi: "Đất công nghiệp", en: "Industrial land" },
@@ -1804,13 +1770,13 @@ function AssetsPage() {
         <div className="page-heading">
           <span>{ui(language, "BẤT ĐỘNG SẢN CÔNG NGHIỆP", "INDUSTRIAL ASSETS")}</span>
           <h1>
-            {ui(language, "Bất động sản công nghiệp", "Industrial supply")}
+            {ui(language, "Mặt bằng công nghiệp cho thuê", "Industrial assets for lease")}
           </h1>
           <p>
             {ui(language, "Quỹ đất công nghiệp, nhà xưởng xây sẵn, kho vận và giải pháp xây theo yêu cầu.", "Land, factories, warehouses and build-to-suit solutions.")}
           </p>
         </div>
-        <DiscoveryFilters asset resultCount={filtered.length}/><div
+        {retiredTransaction&&<p role="status">{emptyCopy(language,"Bộ lọc giao dịch cũ không còn áp dụng. Danh mục hiện chỉ có mặt bằng cho thuê.","The previous transaction filter is no longer supported. This catalogue contains leasing properties only.","原交易筛选已停用，当前目录仅展示租赁物业。")}</p>}<DiscoveryFilters asset resultCount={filtered.length}/><div
           className="filter-tabs"
           role="group"
           aria-label={ui(language, "Lọc loại hình bất động sản", "Filter asset type")}
@@ -1850,7 +1816,7 @@ function AssetsPage() {
         ) : (
           <Empty
             title={ui(language, "Chưa có mặt bằng phù hợp", "No matching assets")}
-            text={ui(language, "Vui lòng chọn loại hình khác hoặc gửi yêu cầu tìm mặt bằng.", "Choose another asset type or submit a supply request.")}
+            text={ui(language, "Vui lòng chọn loại hình khác hoặc gửi yêu cầu tìm mặt bằng.", "Choose another asset type or send a leasing enquiry.")}
             action={<><button className="button primary" onClick={() => setParams({},{replace:true})}>{ui(language,"Xóa bộ lọc","Clear filters")}</button><Link className="button outline" to="/find-supply">{ui(language,"Gửi yêu cầu","Send inquiry")}</Link></>}
           />
         )}
@@ -1864,7 +1830,7 @@ function AssetDetailPage() {
   const { assets, parks, language, openParkChat } = useApp();
   const [params] = useSearchParams();
   const mode = import.meta.env.DEV ? params.get("demoState") : null;
-  const original = assets.find(a => a.id === id && parks.some(p=>p.id===a.parkId&&p.publicationStatus==="published"));
+  const original = assets.find(a => a.id === id && isPublicAsset(a,parks) && parks.some(p=>p.id===a.parkId&&isPublicPark(p)));
   const asset = original ? previewAsset(original,mode) : undefined;
   if (!asset) return <PublicShell><div className="page page-top"><DetailUnavailable to="/assets" label={ui(language,"Bất động sản công nghiệp","Assets")} /></div></PublicShell>;
   const park = mode === "orphan" ? undefined : parks.find(p => p.id === asset.parkId);
@@ -1884,8 +1850,8 @@ function AssetDetailPage() {
         ]}/>
         {mobile && hasValue(asset.description) && <p>{tr(asset.description,language)}</p>}
         <div className="asset-detail-actions">
-          {park && <button className="button outline" type="button" onClick={() => openParkChat(park.id,asset.id)}><MessageCircle/>{ui(language,"Trao đổi với KCN","Chat with park")}</button>}
-          <Link className="button primary" to={requestUrl}><Send/>{park ? ui(language,"Gửi yêu cầu trực tiếp","Direct Request") : ui(language,"Tìm mặt bằng","Find Supply")}</Link>
+          {park && <button className="button outline" type="button" onClick={() => openParkChat(park.id,asset.id)}><MessageCircle/>{ui(language, "Trao đổi với VSIP", "Chat with VSIP")}</button>}
+          <Link className="button primary" to={requestUrl}><Send/>{park ? ui(language, "Hỏi thuê mặt bằng này", "Enquire about this property") : ui(language, "Tư vấn thuê", "Leasing consultation")}</Link>
         </div>
       </div>
     </div>
@@ -1897,7 +1863,7 @@ const emptyForm = {
   contactName: "",
   email: "",
   phone: "",
-  service: "Premium Matching",
+  service: "Find Supply",
   assetType: "",
   industrialParkName: "",
   location: "",
@@ -1912,13 +1878,12 @@ const emptyForm = {
 function RequestFormPage({ kind }: { kind: RequestKind }) {
   const mobile=useMobile();
   const { language, createRequest, parks, assets } = useApp();
-  const admin = useAdmin();
-  const servicePackages = admin.store.packages.filter(p=>p.kinds.includes(kind));
+
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const selectedAsset = assets.find((asset) => asset.id === searchParams.get("assetId"));
+  const selectedAsset = assets.find((asset) => asset.id === searchParams.get("assetId") && isPublicAsset(asset,parks));
   const selectedPark = parks.find(
-    (park) => park.id === (searchParams.get("parkId") || selectedAsset?.parkId),
+    (park) => park.id === (searchParams.get("parkId") || selectedAsset?.parkId) && isPublicPark(park),
   );
   const [form, setForm] = useState(() => ({
     ...emptyForm,
@@ -1936,7 +1901,7 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
     transaction: selectedAsset?.transaction || "lease",
     industry: selectedAsset?.industries[0] || "",
     availabilityDate: selectedAsset?.availableFrom && selectedAsset.availableFrom>=new Date().toLocaleDateString("en-CA") ? selectedAsset.availableFrom : "",
-    service: searchParams.get("support")==="meeting" ? "Meeting / Connection" : "",
+    service: searchParams.get("support")==="meeting" ? "Meeting / Connection" : "Find Supply",
     requirements: selectedAsset && selectedPark
       ? language === "vi"
         ? `Tôi quan tâm đến ${tr(selectedAsset.name, language)} tại ${tr(selectedPark.name, language)}.`
@@ -1956,18 +1921,18 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
   const update = (k: string, v: string) => setForm((x) => ({ ...x, [k]: v }));
   const choices:Partial<Record<keyof typeof form,string[]>>={
     assetType:['industrial_land','ready_built_factory','warehouse','build_to_suit'],
-    industry:[...new Set(parks.flatMap(p=>p.suitableIndustries)),'Not specified'],
-    location:[...new Set(parks.map(p=>p.province)),...(isSupply?['North','Central','South','Not specified']:[])],
+    industry:[...new Set(parks.filter(isPublicPark).flatMap(p=>p.suitableIndustries)),'Not specified'],
+    location:[...new Set(parks.filter(isPublicPark).map(p=>p.province)),...(isSupply?['North','Central','South','Not specified']:[])],
   };
   function submit(e: FormEvent) {
     e.preventDefault();
     if(submitted.current)return;
     const er: Record<string, string> = {};
-    if(form.service&&!servicePackages.some(p=>p.id===form.service))er.service=emptyCopy(language,'Vui lòng chọn lại gói hỗ trợ.','Please select an available package.','请重新选择可用套餐。');
+    if(!leasingIntents.some(id=>id===form.service))er.service=emptyCopy(language,'Vui lòng chọn lại gói hỗ trợ.','Please select an available package.','请重新选择可用套餐。');
     Object.entries(choices).forEach(([key,options])=>{if(!options?.includes(form[key as keyof typeof form]))er[key]=ui(language,"Vui lòng chọn giá trị trong danh sách","Select a listed option")});
     if(!consent)er.consent=ui(language,"Vui lòng đồng ý sử dụng thông tin","Consent is required");
     if(!validPhone(form.phone))er.phone=ui(language,"Điện thoại cần 8–15 chữ số","Phone must contain 8–15 digits");
-    if((searchParams.has("parkId")&&!selectedPark)||(searchParams.has("assetId")&&!selectedAsset)||(selectedAsset&&selectedPark&&selectedAsset.parkId!==selectedPark.id)||(selectedPark&&selectedPark.publicationStatus!=="published"))er.context=ui(language,"KCN hoặc sản phẩm không còn phù hợp. Hãy mở lại từ danh mục.","Park or asset context is invalid. Reopen from the directory.");
+    if((searchParams.has("parkId")&&!selectedPark)||(searchParams.has("assetId")&&!selectedAsset)||(selectedAsset&&selectedPark&&selectedAsset.parkId!==selectedPark.id)||(selectedPark&&!isPublicPark(selectedPark)))er.context=ui(language,"KCN hoặc sản phẩm không còn phù hợp. Hãy mở lại từ danh mục.","Park or asset context is invalid. Reopen from the directory.");
     [
       "organization",
       "contactName",
@@ -2002,7 +1967,9 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
         ui(language, "Thời điểm bàn giao phải từ hôm nay trở đi", "Date must be in the future");
     setErrors(er);
     if (Object.keys(er).length) return;
-    submitted.current=true;
+    if(!validLeasingContext({kind,transaction:form.transaction as 'lease'|'sale',service:form.service,parkId:selectedPark?.id,assetId:selectedAsset?.id},parks,assets)||searchParams.get('transaction')&&searchParams.get('transaction')!=='lease'){
+      setErrors({context:emptyCopy(language,'Chỉ tiếp nhận nhu cầu thuê mặt bằng trong danh mục demo hiện tại.','Only leasing enquiries for the current demo portfolio are accepted.','仅接受当前演示园区内物业的租赁咨询。')});return;
+    }
     const id = createRequest({
       parkId:selectedPark?.id,assetId:selectedAsset?.id,entrySource:selectedAsset?"asset":selectedPark?"park":"form",consent,
       ...form,
@@ -2013,6 +1980,7 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
       areaMax: +form.areaMax,
       transaction: form.transaction as "lease" | "sale",
     });
+    submitted.current=true;
     navigate(`/request-confirmation/${id}`);
   }
   const field = (key: keyof typeof form, label: string, type = "text") => (
@@ -2032,16 +2000,16 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
         <div className="page">
           <span>
             {isSupply
-              ? ui(language, "TÌM MẶT BẰNG", "FIND SUPPLY")
+              ? emptyCopy(language,"TƯ VẤN THUÊ","LEASING CONSULTATION","租赁咨询")
               : ui(language, "TÌM KHÁCH THUÊ/MUA", "FIND DEMAND")}
           </span>
           <h1>
-            {mobile ? (isSupply?emptyCopy(language,"Gửi yêu cầu tìm mặt bằng","Send a property request","提交选址需求"):emptyCopy(language,"Gửi thông tin chào thuê","Offer your property","提交出租信息")) : isSupply
-              ? ui(language, "Tìm khu công nghiệp, đất, nhà xưởng hoặc kho phù hợp", "Find an industrial park, land, factory or warehouse")
+            {mobile ? (isSupply?emptyCopy(language,"Gửi nhu cầu thuê","Send leasing enquiry","提交租赁咨询"):emptyCopy(language,"Gửi thông tin chào thuê","Offer your property","提交出租信息")) : isSupply
+              ? emptyCopy(language,"Nhu cầu thuê mặt bằng sản xuất tại VSIP","Your manufacturing space requirements at VSIP","您的VSIP生产空间租赁需求")
               : ui(language, "Tìm khách thuê hoặc bên nhận chuyển nhượng phù hợp", "Find the right tenant or buyer")}
           </h1>
           <p>
-            {ui(language, "Đội ngũ VSIP sẽ tiếp nhận, rà soát nhu cầu và hỗ trợ kết nối với các bên phù hợp.", "VSIP Admin will receive, verify and coordinate the connection.")}
+            {ui(language, "Bộ phận Tiếp thị & Cho thuê tiếp nhận nhu cầu thuê mặt bằng tại VSIP.", "The Marketing & Leasing Department handles enquiries for space at VSIP.")}
           </p>
         </div>
       </div>
@@ -2071,7 +2039,7 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
                   <option value="">
                     {ui(language, "Chưa xác định", "Not specified")}
                   </option>
-                  {parks.filter(p=>p.publicationStatus==="published").map((park) => (
+                  {parks.filter(p=>isPublicPark(p)).map((park) => (
                     <option key={park.id} value={park.name.en}>
                       {tr(park.name, language)}
                     </option>
@@ -2094,26 +2062,6 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
                 ui(language, "Diện tích đến (m²)", "Maximum area"),
                 "number",
               )}
-              <label>
-                <span>
-                  {ui(language, "Hình thức giao dịch", "Transaction")} *
-                </span>
-                <select
-                  value={form.transaction}
-                  onChange={(e) => update("transaction", e.target.value)}
-                >
-                  <option value="lease">
-                    {isSupply
-                      ? ui(language, "Thuê", "Lease")
-                      : ui(language, "Cho thuê", "For lease")}
-                  </option>
-                  <option value="sale">
-                    {isSupply
-                      ? ui(language, "Nhận chuyển nhượng", "Purchase")
-                      : ui(language, "Chuyển nhượng", "Sale")}
-                  </option>
-                </select>
-              </label>
               <label><span>{ui(language,"Chế độ giá/ngân sách","Budget / price mode")} *</span><select value={priceMode} onChange={e=>setPriceMode(e.target.value)}><option value="">{ui(language,"Chọn chế độ","Choose a mode")}</option><option value="specific">{ui(language,"Giá cụ thể","Specific price")}</option><option value="negotiable">{ui(language,"Thỏa thuận","Negotiable")}</option><option value="not_specified">{ui(language,"Chưa xác định","Not specified")}</option></select></label>
               {priceMode==="specific"&&<>{field("budgetOrPrice",ui(language,"Số tiền","Amount"),"number")}<label>{ui(language,"Mã tiền tệ","Currency code")}<input value={currency} maxLength={3} onChange={e=>setCurrency(e.target.value.toUpperCase())}/></label><label>{ui(language,"Đơn vị định giá","Pricing basis")}<input value={basis} placeholder={ui(language,"Ví dụ: m²/tháng","Example: m²/month")} onChange={e=>setBasis(e.target.value)}/></label></>}
               {field(
@@ -2154,34 +2102,31 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
               {field("phone", ui(language, "Số điện thoại", "Phone"))}
             </div>
           </div>
-          <div className="form-section">
-            <h2>
-              3.{" "}
-              {ui(language, "Gói hỗ trợ mong muốn", "Preferred service")}
-            </h2>
-            <p>{emptyCopy(language,"Chọn gói phù hợp hoặc gửi yêu cầu mà chưa chọn gói. VSIP sẽ trao đổi phạm vi hỗ trợ sau khi tiếp nhận.","Choose a package or submit without one. VSIP will discuss support scope after receiving your request.","您可选择套餐，也可暂不选择。以下为演示说明；VSIP将在接收需求后协商支持范围。")}</p>
-            <PackageCards packages={servicePackages} language={language} value={form.service} onChange={id=>update("service",id)}/>
-            {form.service&&<button className="button" type="button" onClick={()=>update("service","")}>{emptyCopy(language,"Chưa chọn gói hỗ trợ","Continue without a package","暂不选择套餐")}</button>}
+          <div className="form-section leasing-intents">
+            <h2>{emptyCopy(language,'3. Nội dung cần hỗ trợ','3. How can we help?','3. 您需要什么帮助？')}</h2>
+            <p>{leasingTeam(language)} VSIP</p>
+            {leasingIntents.map(intent=><label key={intent}><input type="radio" name="leasing-intent" value={intent} checked={form.service===intent} onChange={()=>update('service',intent)}/>{leasingIntentLabel(intent,language)}</label>)}
+            {form.service==='Meeting / Connection'&&<p role="note">{emptyCopy(language,'Yêu cầu khảo sát cần được Bộ phận Tiếp thị & Cho thuê xác nhận; đây chưa phải lịch hẹn.','The Marketing & Leasing Department must confirm your site visit request; this is not a confirmed appointment.','实地考察申请需由市场推广与租赁部确认，尚不代表已预约成功。')}</p>}
           </div>
           <label className="consent">
             <input type="checkbox" required checked={consent} onChange={e=>setConsent(e.target.checked)}/>
-            {ui(language, "Tôi đồng ý để VSIP sử dụng thông tin đã cung cấp nhằm hỗ trợ tìm kiếm và kết nối đối tác.", "I agree that VSIP may use this information to coordinate the connection.")}
+            {ui(language, "Tôi đồng ý để VSIP sử dụng thông tin đã cung cấp nhằm phản hồi nhu cầu thuê của tôi.", "I agree that VSIP may use this information to respond to my leasing enquiry.")}
           </label>
           <button className="button primary submit">
             <Send />
-            {ui(language, "Gửi yêu cầu cho VSIP", "Submit request")}
+            {ui(language, "Gửi nhu cầu thuê", "Send leasing enquiry")}
           </button>
         </form>
         <aside className="request-aside">
           <ShieldCheck />
           <h3>
-            {ui(language, "Quy trình hỗ trợ của VSIP", "Admin-assisted workflow")}
+            {ui(language, "Quy trình tư vấn thuê", "Leasing consultation process")}
           </h3>
           {[
             ui(language, "Tiếp nhận yêu cầu", "Receive request"),
             ui(language, "Rà soát và xác minh", "Verify information"),
-            ui(language, "Đề xuất phương án phù hợp", "Match candidates"),
-            ui(language, "Kết nối các bên", "Coordinate connection"),
+            ui(language, "Tư vấn mặt bằng phù hợp", "Propose suitable space"),
+            ui(language, "Tiếp nhận yêu cầu khảo sát", "Receive site visit request"),
           ].map((x, i) => (
             <div key={x}>
               <span>{i + 1}</span>
@@ -2189,7 +2134,7 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
             </div>
           ))}
           <small>
-            {ui(language, "Phiên bản demo chỉ mô phỏng quy trình tiếp nhận và kết nối; không thực hiện giao dịch, thanh toán hoặc tổ chức cuộc họp.", "The demo does not execute transactions, payments or live meetings.")}
+            {ui(language, "Phiên bản demo mô phỏng tiếp nhận nhu cầu thuê; không gửi dữ liệu ra ngoài hoặc xác nhận lịch khảo sát.", "The demo does not execute transactions, payments or live meetings.")}
           </small>
         </aside>
       </div>
@@ -2200,16 +2145,16 @@ function ConfirmationPage() {
   const { id } = useParams();
   const { language, requests, ownRequestIds } = useApp();
   const r = requests.find((x) => x.id === id && ownRequestIds.includes(x.id));
-  if(!r)return <PublicShell><div className="page section"><StatePanel kind="not_found" title={emptyCopy(language,"Không thể xem xác nhận yêu cầu","Request confirmation unavailable","无法查看需求确认")} text={emptyCopy(language,"Không tìm thấy yêu cầu thuộc phiên hiện tại. Dữ liệu demo có thể đã mất sau khi tải lại trang; màn hình này không xác nhận yêu cầu đã được gửi.","No request belonging to this session was found. Demo data may have been reset after a refresh; this screen does not confirm submission.","未找到属于当前会话的需求。刷新后演示数据可能已重置；此页面不代表需求已提交。")} action={<Link className="button primary" to="/find-supply">{ui(language,"Gửi nhu cầu mới","Submit a request")}</Link>}/></div></PublicShell>;
+  if(!r||r.kind!=="find_supply")return <PublicShell><div className="page section"><StatePanel kind="not_found" title={emptyCopy(language,"Không thể xem xác nhận yêu cầu","Request confirmation unavailable","无法查看需求确认")} text={emptyCopy(language,"Không tìm thấy yêu cầu thuộc phiên hiện tại. Dữ liệu demo có thể đã mất sau khi tải lại trang; màn hình này không xác nhận yêu cầu đã được gửi.","No request belonging to this session was found. Demo data may have been reset after a refresh; this screen does not confirm submission.","未找到属于当前会话的需求。刷新后演示数据可能已重置；此页面不代表需求已提交。")} action={<Link className="button primary" to="/find-supply">{ui(language,"Gửi nhu cầu mới","Submit a request")}</Link>}/></div></PublicShell>;
   return (
     <PublicShell>
       <div className="page confirmation">
         <CheckCircle2 />
         <span>
-          {ui(language, "GỬI YÊU CẦU THÀNH CÔNG", "SUBMITTED")}
+          {ui(language, "ĐÃ GHI NHẬN TRONG DEMO", "RECORDED IN DEMO")}
         </span>
         <h1>
-          {ui(language, "VSIP đã tiếp nhận yêu cầu", "VSIP received your request")}
+          {ui(language, "Nhu cầu thuê đã được ghi nhận trong phiên demo", "Your leasing enquiry was recorded in this demo session")}
         </h1>
         <p>
           {ui(language, "Mã tham chiếu", "Reference")}: <b>{id}</b>
@@ -2223,8 +2168,8 @@ function ConfirmationPage() {
               <b>{r.organization}</b>
             </div>
             <div>
-              <small>{ui(language, "Dịch vụ", "Service")}</small>
-              <b>{dataText(r.service, language)}</b>
+              <small>{ui(language, "Nội dung cần hỗ trợ", "Enquiry purpose")}</small>
+              <b>{leasingIntentLabel(r.service, language)}</b>
             </div>
             {r.industrialParkName && (
               <div>
@@ -2239,7 +2184,7 @@ function ConfirmationPage() {
           </div>
         )}
         <p>
-          {ui(language, "VSIP Admin đã được thông báo. Đây là luồng mô phỏng và không gửi dữ liệu ra bên ngoài.", "VSIP Admin has been notified. This is a simulation and no data was transmitted externally.")}
+          {ui(language, "Bản demo không gửi dữ liệu ra bên ngoài. Khi vận hành thực tế, Bộ phận Tiếp thị & Cho thuê sẽ tiếp nhận và phản hồi nhu cầu.", "This demo sends no data externally. In live operation, the Marketing & Leasing Department would receive and respond to your enquiry.")}
         </p>
         <div>
           <Link className="button primary" to="/industrial-parks">
@@ -2252,6 +2197,10 @@ function ConfirmationPage() {
       </div>
     </PublicShell>
   );
+}
+function RetiredPublicFlow({event=false}:{event?:boolean}) {
+  const {language}=useApp();
+  return <PublicShell><div className="page section"><StatePanel title={event?emptyCopy(language,'Thông tin sự kiện chưa được công bố','Event information is not published','活动信息尚未公布'):emptyCopy(language,'Luồng tiếp nhận này đã ngừng','This intake flow has been retired','此受理流程已停用')} text={emptyCopy(language,'Website phục vụ doanh nghiệp tìm thuê mặt bằng tại các KCN VSIP. Không tiếp nhận mặt bằng chào thuê từ bên ngoài.','This website serves businesses seeking space in VSIP parks. External property offerings are not accepted.','本网站为寻找VSIP园区租赁空间的企业服务，不接受外部物业招租信息。')} action={<Link className="button primary" to="/find-supply">{leasingIntentLabel('Find Supply',language)}</Link>}/></div></PublicShell>;
 }
 function ExpoPage(){return <PublicShell><div className="page page-top"><TradeExpoSection/></div></PublicShell>}
 function AdminGuard({ children }: { children: ReactNode }) {
@@ -2730,7 +2679,7 @@ function RequestTable({ requests }: { requests: IndustrialRequest[] }) {
         <thead>
           <tr>
             <th>ID</th>
-            <th>{ui(language, "Loại", "Funnel")}</th>
+            <th>{emptyCopy(language,"Loại yêu cầu","Enquiry type","咨询类型")}</th>
             <th>{ui(language, "Doanh nghiệp", "Organisation")}</th>
             <th>{ui(language, "Tỉnh/thành, khu vực", "Location")}</th>
             <th>{ui(language, "Trạng thái", "Status")}</th>
@@ -2745,8 +2694,8 @@ function RequestTable({ requests }: { requests: IndustrialRequest[] }) {
               </td>
               <td>
                 {r.kind === "find_supply"
-                  ? ui(language, "Tìm mặt bằng", "Find Supply")
-                  : ui(language, "Tìm khách thuê/mua", "Find Demand")}
+                  ? leasingIntentLabel('Find Supply',language)
+                  : emptyCopy(language,"Yêu cầu cũ – chào thuê bên ngoài","Legacy – external property offering","历史记录—外部物业招租")}
               </td>
               <td>
                 <b>{r.organization}</b>
@@ -2793,10 +2742,10 @@ function AdminRequests() {
           <div>
             <span>{ui(language, "QUẢN LÝ YÊU CẦU", "REQUEST MANAGEMENT")}</span>
             <h1>
-              {ui(language, "Quản lý yêu cầu Cung – Cầu", "Supply–Demand request management")}
+              {emptyCopy(language,"Quản lý nhu cầu thuê","Leasing enquiry management","租赁咨询管理")}
             </h1>
             <p>
-              {ui(language, "Tiếp nhận, xác minh, ghép nối và điều phối kết nối.", "Receive, verify, match and coordinate connections.")}
+              {emptyCopy(language,"Bộ phận Tiếp thị & Cho thuê tiếp nhận, tư vấn và sắp xếp khảo sát.","The Marketing & Leasing Department handles enquiries, advice and site visits.","市场推广与租赁部负责咨询、方案建议和考察安排。")}
             </p>
           </div>
         </div>
@@ -3095,7 +3044,7 @@ function AdminParks() {
       <div className="admin-page">
         <div className="admin-title">
           <div>
-            <span>{ui(language, "LỚP DỮ LIỆU CÔNG NGHIỆP", "INDUSTRIAL DATA LAYER")}</span>
+            <span>{emptyCopy(language,"KHU CÔNG NGHIỆP VSIP","VSIP INDUSTRIAL PARKS","VSIP工业园区")}</span>
             <h1>
               {ui(language, "Quản lý hồ sơ khu công nghiệp", "Industrial park data management")}
             </h1>
@@ -3364,14 +3313,14 @@ function AppRoutes() {
       <Route path="/assets/:id" element={<AssetDetailPage />} />
       <Route
         path="/find-demand"
-        element={<RequestFormPage kind="find_demand" />}
+        element={<RetiredPublicFlow />}
       />
       <Route
         path="/find-supply"
         element={<RequestFormPage kind="find_supply" />}
       />
       <Route path="/request-confirmation/:id" element={<ConfirmationPage />} />
-      <Route path="/industrial-expo" element={<ExpoPage />} />
+      <Route path="/industrial-expo" element={<RetiredPublicFlow event />} />
       <Route path="/login" element={<Navigate to="/admin/login" replace/>} />
       <Route path="/admin/login" element={<AdminLogin/>}/>
       <Route path="/admin" element={<AdminEntry/>}/>

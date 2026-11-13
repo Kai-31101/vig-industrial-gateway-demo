@@ -714,7 +714,7 @@ function HomePage() {
                   : undefined
             }
           >
-            {emptyCopy(language,"Khu công nghiệp Việt Nam – Singapore","Vietnam Singapore Industrial Park","越南—新加坡工业园区")}
+            {language === "vi" ? <><span>Khu công nghiệp</span><span>Việt Nam – Singapore</span></> : emptyCopy(language,"","Vietnam Singapore Industrial Park","越南—新加坡工业园区")}
           </h1>
           <p>
             {language === "vi"

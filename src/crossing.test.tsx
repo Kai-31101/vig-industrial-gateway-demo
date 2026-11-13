@@ -13,8 +13,8 @@ describe('Cross-Epic UI contracts',()=>{
   expect(screen.getByDisplayValue('Thái Bình')).toBeTruthy();
  });
  it('unknown confirmation does not announce success or expose a seed contact',()=>{
-  window.location.hash='#/request-confirmation/VIG-2026-001';render(<App/>);
-  expect(screen.queryByText('VIG đã tiếp nhận yêu cầu')).toBeNull();
+  window.location.hash='#/request-confirmation/VSIP-2026-001';render(<App/>);
+  expect(screen.queryByText('VSIP đã tiếp nhận yêu cầu')).toBeNull();
   expect(screen.queryByText('Korea Future Electronics')).toBeNull();
  });
  it('direct request keeps the parent read-only and provides explicit price/date modes',()=>{

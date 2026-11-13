@@ -452,10 +452,10 @@ function Header() {
     <header className="header">
       <div className="header-inner">
         <Link to="/home" className="brand">
-          <span className="brand-mark">VIG</span>
+          <span className="brand-mark">VSIP</span>
           <span className="brand-demo">Demo</span>
           <span>
-            <b>Vietnam Industrial Gateway</b>
+            <b>Vietnam Singapore Industrial Park</b>
             <small>
               {ui(language, "Hạ tầng số công nghiệp Việt Nam", "Vietnam industrial digital infrastructure")}
             </small>
@@ -509,9 +509,9 @@ function Footer() {
       <div className="footer-grid">
         <div>
           <div className="brand footer-brand">
-            <span className="brand-mark">VIG</span>
+            <span className="brand-mark">VSIP</span>
             <span>
-              <b>Vietnam Industrial Gateway</b>
+              <b>Vietnam Singapore Industrial Park</b>
             </span>
           </div>
           <p>
@@ -557,7 +557,7 @@ function Footer() {
         </div>
       </div>
       <div className="copyright">
-        <span>© 2026 Vietnam Industrial Gateway · {ui(language, "Bản demo tương tác", "Interactive demo")}</span>
+        <span>© 2026 Vietnam Singapore Industrial Park · {ui(language, "Bản demo tương tác", "Interactive demo")}</span>
       </div>
     </footer>
   );
@@ -714,17 +714,7 @@ function HomePage() {
                   : undefined
             }
           >
-            {mobile ? emptyCopy(language,"Tìm khu công nghiệp phù hợp","Find your industrial location","寻找合适的工业园区") : language === "vi" ? (
-              <>
-                <span>HẠ TẦNG XÚC TIẾN</span>
-                <span>ĐẦU TƯ CÔNG NGHIỆP</span>
-                <span>VIỆT NAM</span>
-              </>
-            ) : language === "zh" ? (
-              "越南工业投资促进数字基础设施"
-            ) : (
-              "VIETNAM INDUSTRIAL INVESTMENT PROMOTION INFRASTRUCTURE"
-            )}
+            {emptyCopy(language,"Khu công nghiệp Việt Nam – Singapore","Vietnam Singapore Industrial Park","越南—新加坡工业园区")}
           </h1>
           <p>
             {language === "vi"
@@ -842,7 +832,7 @@ function HomePage() {
       </section>
       <section className="page section">
         <SectionTitle
-          eyebrow={ui(language, "QUY TRÌNH VIG", "HOW VIG WORKS")}
+          eyebrow={ui(language, "QUY TRÌNH VSIP", "HOW VSIP WORKS")}
           title={
             ui(language, "Từ yêu cầu đầu tư đến kết nối dự án", "From requirement to opportunity")
           }
@@ -1241,7 +1231,7 @@ function ParkDetailPage() {
                 ui(language, "Tổng quan khu công nghiệp", "Industrial park overview")
               }
             />
-            <p className="lead">{tr(park.summary, language) || emptyCopy(language,"Thông tin giới thiệu đang được bổ sung. Bạn có thể gửi yêu cầu để VIG hỗ trợ.","The overview is not yet available. Send a request for VIG support.","项目介绍暂未提供，可向VIG提交需求。")}</p>
+            <p className="lead">{tr(park.summary, language) || emptyCopy(language,"Thông tin giới thiệu đang được bổ sung. Bạn có thể gửi yêu cầu để VSIP hỗ trợ.","The overview is not yet available. Send a request for VSIP support.","项目介绍暂未提供，可向VSIP提交需求。")}</p>
             <FactGroup facts={[
               {label:ui(language,"Loại hình","Park type"),value:tr(park.parkType,language)},
               {label:ui(language,"Khu kinh tế","Economic zone"),value:tr(park.economicZone,language)},
@@ -1299,7 +1289,7 @@ function ParkDetailPage() {
           <div className="connect-grid">
             {park.coordinates && <div className="map-panel">
               <div className="map-rings">
-                <span className="map-point park">VIG</span>
+                <span className="map-point park">VSIP</span>
                 <span className="map-point port">
                   <Ship /> {ui(language, "Cảng biển", "Port")}
                 </span>
@@ -1512,7 +1502,7 @@ function ParkDetailPage() {
                 ui(language, "Chưa có sản phẩm được công bố", "No published assets")
               }
               text={
-                ui(language, "Liên hệ VIG để được hỗ trợ tìm mặt bằng phù hợp.", "Contact VIG for supply sourcing support.")
+                ui(language, "Liên hệ VSIP để được hỗ trợ tìm mặt bằng phù hợp.", "Contact VSIP for supply sourcing support.")
               }
               action={<Link className="button primary" to={`/find-supply?parkId=${park.id}`}>{ui(language,"Tìm mặt bằng","Find Supply")}</Link>}
             />
@@ -1884,7 +1874,7 @@ function AssetDetailPage() {
     <div className="asset-detail">
       <SafeImage fallbackIllustration src={asset.image} alt={tr(asset.name,language)} />
       <div><Badge value={asset.type}/><h1>{tr(asset.name,language)}</h1>
-        {park ? <p><MapPin size={16}/><Link to={`/industrial-parks/${park.slug}`}>{tr(park.name,language)}</Link></p> : <p className="missing-summary">{emptyCopy(language,"Chưa xác định được KCN liên kết. VIG có thể hỗ trợ tìm mặt bằng.","The linked park is unavailable. VIG can help find a property.","关联园区暂不可用，VIG可协助寻找场地。")}</p>}
+        {park ? <p><MapPin size={16}/><Link to={`/industrial-parks/${park.slug}`}>{tr(park.name,language)}</Link></p> : <p className="missing-summary">{emptyCopy(language,"Chưa xác định được KCN liên kết. VSIP có thể hỗ trợ tìm mặt bằng.","The linked park is unavailable. VSIP can help find a property.","关联园区暂不可用，VSIP可协助寻找场地。")}</p>}
         {!mobile&&hasValue(asset.description)&&<p>{tr(asset.description,language)}</p>}
         <FactGroup facts={[
           {label:asset.listingKind === "project_inventory" ? ui(language,"Quỹ đất công bố toàn dự án","Published project inventory") : ui(language,"Diện tích chào thuê","Area"),value:asset.area,unit:asset.unit},
@@ -2051,7 +2041,7 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
               : ui(language, "Tìm khách thuê hoặc bên nhận chuyển nhượng phù hợp", "Find the right tenant or buyer")}
           </h1>
           <p>
-            {ui(language, "Đội ngũ VIG sẽ tiếp nhận, rà soát nhu cầu và hỗ trợ kết nối với các bên phù hợp.", "VIG Admin will receive, verify and coordinate the connection.")}
+            {ui(language, "Đội ngũ VSIP sẽ tiếp nhận, rà soát nhu cầu và hỗ trợ kết nối với các bên phù hợp.", "VSIP Admin will receive, verify and coordinate the connection.")}
           </p>
         </div>
       </div>
@@ -2169,23 +2159,23 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
               3.{" "}
               {ui(language, "Gói hỗ trợ mong muốn", "Preferred service")}
             </h2>
-            <p>{emptyCopy(language,"Chọn gói phù hợp hoặc gửi yêu cầu mà chưa chọn gói. VIG sẽ trao đổi phạm vi hỗ trợ sau khi tiếp nhận.","Choose a package or submit without one. VIG will discuss support scope after receiving your request.","您可选择套餐，也可暂不选择。以下为演示说明；VIG将在接收需求后协商支持范围。")}</p>
+            <p>{emptyCopy(language,"Chọn gói phù hợp hoặc gửi yêu cầu mà chưa chọn gói. VSIP sẽ trao đổi phạm vi hỗ trợ sau khi tiếp nhận.","Choose a package or submit without one. VSIP will discuss support scope after receiving your request.","您可选择套餐，也可暂不选择。以下为演示说明；VSIP将在接收需求后协商支持范围。")}</p>
             <PackageCards packages={servicePackages} language={language} value={form.service} onChange={id=>update("service",id)}/>
             {form.service&&<button className="button" type="button" onClick={()=>update("service","")}>{emptyCopy(language,"Chưa chọn gói hỗ trợ","Continue without a package","暂不选择套餐")}</button>}
           </div>
           <label className="consent">
             <input type="checkbox" required checked={consent} onChange={e=>setConsent(e.target.checked)}/>
-            {ui(language, "Tôi đồng ý để VIG sử dụng thông tin đã cung cấp nhằm hỗ trợ tìm kiếm và kết nối đối tác.", "I agree that VIG may use this information to coordinate the connection.")}
+            {ui(language, "Tôi đồng ý để VSIP sử dụng thông tin đã cung cấp nhằm hỗ trợ tìm kiếm và kết nối đối tác.", "I agree that VSIP may use this information to coordinate the connection.")}
           </label>
           <button className="button primary submit">
             <Send />
-            {ui(language, "Gửi yêu cầu cho VIG", "Submit request")}
+            {ui(language, "Gửi yêu cầu cho VSIP", "Submit request")}
           </button>
         </form>
         <aside className="request-aside">
           <ShieldCheck />
           <h3>
-            {ui(language, "Quy trình hỗ trợ của VIG", "Admin-assisted workflow")}
+            {ui(language, "Quy trình hỗ trợ của VSIP", "Admin-assisted workflow")}
           </h3>
           {[
             ui(language, "Tiếp nhận yêu cầu", "Receive request"),
@@ -2219,7 +2209,7 @@ function ConfirmationPage() {
           {ui(language, "GỬI YÊU CẦU THÀNH CÔNG", "SUBMITTED")}
         </span>
         <h1>
-          {ui(language, "VIG đã tiếp nhận yêu cầu", "VIG received your request")}
+          {ui(language, "VSIP đã tiếp nhận yêu cầu", "VSIP received your request")}
         </h1>
         <p>
           {ui(language, "Mã tham chiếu", "Reference")}: <b>{id}</b>
@@ -2249,7 +2239,7 @@ function ConfirmationPage() {
           </div>
         )}
         <p>
-          {ui(language, "VIG Admin đã được thông báo. Đây là luồng mô phỏng và không gửi dữ liệu ra bên ngoài.", "VIG Admin has been notified. This is a simulation and no data was transmitted externally.")}
+          {ui(language, "VSIP Admin đã được thông báo. Đây là luồng mô phỏng và không gửi dữ liệu ra bên ngoài.", "VSIP Admin has been notified. This is a simulation and no data was transmitted externally.")}
         </p>
         <div>
           <Link className="button primary" to="/industrial-parks">
@@ -2309,9 +2299,9 @@ function AdminShell({ children }: { children: ReactNode }) {
     <div className="admin-shell">
       <aside className="admin-sidebar">
         <Link to={firstAdminPage(admin.current,admin.store.matrix)} className="admin-brand">
-          <span>VIG</span>
+          <span>VSIP</span>
           <div>
-            <b>VIG Admin</b>
+            <b>VSIP Admin</b>
             <small>{ui(language, "Trung tâm vận hành", "Operations Console")}</small>
           </div>
         </Link>
@@ -2347,7 +2337,7 @@ function AdminShell({ children }: { children: ReactNode }) {
         <header>
           <div>
             <b>
-              {ui(language, "Trung tâm điều hành VIG", "VIG Operations Centre")}
+              {ui(language, "Trung tâm điều hành VSIP", "VSIP Operations Centre")}
             </b>
             <small>
               {ui(language, "Quản trị dữ liệu và kết nối đầu tư", "Industrial data and connections")}
@@ -2430,7 +2420,7 @@ function AdminDashboard() {
       <div className="admin-page">
         <div className="admin-title">
           <div>
-            <span>{ui(language, "VẬN HÀNH VIG", "VIG OPERATIONS")}</span>
+            <span>{ui(language, "VẬN HÀNH VSIP", "VSIP OPERATIONS")}</span>
             <h1>
               {ui(language, "Tổng quan vận hành", "Operations overview")}
             </h1>

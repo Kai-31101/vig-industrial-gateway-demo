@@ -17,9 +17,9 @@ export const packageSeeds:ServicePackage[] = [
     en:copy('Premium Matching','Requirements with specific technical or industry criteria.','Review priority requirements\nUnderstand why each option fits\nChoose partners to connect with','Support evaluation and shortlisting; transaction outcomes are not guaranteed.'),
     zh:copy('深度匹配','适合具有特定技术或行业条件的需求。','梳理优先条件\n了解各选项的匹配理由\n选择拟对接的合作伙伴','协助评估和筛选，不保证交易结果。')}},
   {id:'Supply Sourcing',kinds:['find_supply'],revision:1,content:{
-    vi:copy('Tìm kiếm nguồn cung theo yêu cầu','Doanh nghiệp cần mở rộng lựa chọn mặt bằng.','Tìm kiếm theo khu vực và tiêu chí đã thống nhất\nTổng hợp thông tin để so sánh phương án','VIG hỗ trợ tìm và tổng hợp nguồn cung theo yêu cầu đã làm rõ.'),
-    en:copy('Supply Sourcing','Businesses needing a wider selection of properties.','Search against agreed regions and criteria\nCompare consolidated property information','VIG helps identify and consolidate supply against clarified requirements.'),
-    zh:copy('定向寻源','适合需要扩大物业选择范围的企业。','根据约定区域和条件寻找供应\n汇总信息以比较方案','VIG根据已明确的需求协助寻找并汇总供应。')}},
+    vi:copy('Tìm kiếm nguồn cung theo yêu cầu','Doanh nghiệp cần mở rộng lựa chọn mặt bằng.','Tìm kiếm theo khu vực và tiêu chí đã thống nhất\nTổng hợp thông tin để so sánh phương án','VSIP hỗ trợ tìm và tổng hợp nguồn cung theo yêu cầu đã làm rõ.'),
+    en:copy('Supply Sourcing','Businesses needing a wider selection of properties.','Search against agreed regions and criteria\nCompare consolidated property information','VSIP helps identify and consolidate supply against clarified requirements.'),
+    zh:copy('定向寻源','适合需要扩大物业选择范围的企业。','根据约定区域和条件寻找供应\n汇总信息以比较方案','VSIP根据已明确的需求协助寻找并汇总供应。')}},
   {id:'Market Outreach',kinds:['find_demand'],revision:1,content:{
     vi:copy('Tiếp cận thị trường','Đơn vị có nguồn cung muốn tiếp cận nhóm khách hàng mục tiêu.','Làm rõ ngành và thị trường ưu tiên\nChuẩn bị thông tin giới thiệu mặt bằng\nHỗ trợ tiếp cận đối tác phù hợp','Phạm vi hỗ trợ tiếp cận được trao đổi sau khi tiếp nhận yêu cầu.'),
     en:copy('Market Outreach','Supply owners seeking relevant target markets.','Define priority sectors and markets\nPrepare property introduction information\nSupport relevant partner outreach','Outreach scope is discussed after your request is received.'),

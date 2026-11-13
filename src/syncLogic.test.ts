@@ -7,7 +7,7 @@ import type {IndustrialRequest} from './types';
 import {mockTradeExpos,visibleVigExpos} from './TradeExpoSection';
 import {matchesParkFilters,matchesAssetFilters} from './DiscoveryFilters';
 describe('Crossing synchronization',()=>{
- it('shows only explicitly VIG-owned public expos',()=>{
+ it('shows only explicitly VSIP-owned public expos',()=>{
   expect(visibleVigExpos(mockTradeExpos)).toHaveLength(3);
   expect(visibleVigExpos([{...mockTradeExpos[0],ownerId:''},{...mockTradeExpos[0],isPublic:false}])).toEqual([]);
  });

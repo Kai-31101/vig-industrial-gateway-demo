@@ -88,7 +88,7 @@ export const vsipThaiBinh: IndustrialParkProfile = {
   sustainability: [l('Hạ tầng xử lý nước thải tập trung', 'Central wastewater treatment'), l('Mái nhà xưởng sẵn sàng cho năng lượng mặt trời', 'Solar-ready factory roofs'), l('Phát triển khu công nghiệp xanh', 'Green industrial development')],
   community: [l('Ngày hội cộng đồng VSIP 2026', 'VSIP Community Day 2026'), l('Chương trình cải thiện điều kiện sống cho người lao động', 'Worker and family living-condition programmes')],
   tenants: [{ name: 'Representative electronics tenant', origin: 'Japan', sector: 'Electronics', displayAllowed: true }, { name: 'Representative logistics tenant', origin: 'Singapore', sector: 'Logistics', displayAllowed: true }],
-  contact: { office: l('Văn phòng điều hành VSIP Thái Bình', 'VSIP Thai Binh Administration Office'), address: l('Xã Thái Thụy, tỉnh Hưng Yên', 'Thai Thuy Commune, Hung Yen Province'), person: 'VIG Contact', title: l('Bộ phận Marketing & Dịch vụ khách hàng', 'Marketing & Customer Service'), phone: '(84) 888 766 280', email: 'north.marketing@vsip.com.vn', website: 'www.vsip.com.vn', channels: ['Email', 'Phone', 'Zalo', 'WhatsApp'] },
+  contact: { office: l('Văn phòng điều hành VSIP Thái Bình', 'VSIP Thai Binh Administration Office'), address: l('Xã Thái Thụy, tỉnh Hưng Yên', 'Thai Thuy Commune, Hung Yen Province'), person: 'VSIP Contact', title: l('Bộ phận Marketing & Dịch vụ khách hàng', 'Marketing & Customer Service'), phone: '(84) 888 766 280', email: 'north.marketing@vsip.com.vn', website: 'www.vsip.com.vn', channels: ['Email', 'Phone', 'Zalo', 'WhatsApp'] },
   media: [
     { id: 'media-hero', type: 'hero', title: l('Toàn cảnh khu công nghiệp', 'Industrial park aerial'), url: hero, capturedAt: '2026-06-02', approved: true },
     { id: 'media-masterplan', type: 'masterplan', title: l('Mặt bằng phân khu', 'Park masterplan'), url: hero, capturedAt: '2026-06-02', approved: true },
@@ -99,7 +99,7 @@ export const vsipThaiBinh: IndustrialParkProfile = {
     { id: 'establishment-2023', title: l('Quyết định thành lập KCN', 'Industrial Park Establishment Decision'), category: 'establishment_decision', issuer: l('Thủ tướng Chính phủ', 'Prime Minister of Vietnam'), issueDate: '2023-08-30', language: 'vi', visibility: 'public', verificationStatus: 'verified', sourceUrl: driveFolder },
     { id: 'enterprise-registration', title: l('Giấy chứng nhận đăng ký doanh nghiệp', 'Enterprise Registration Certificate'), category: 'enterprise_registration', issuer: l('Cơ quan đăng ký kinh doanh', 'Business Registration Authority'), language: 'vi', visibility: 'admin_only', verificationStatus: 'verified', sourceUrl: driveFolder },
   ],
-  sourceLanguage: 'vi', dataOwner: 'VIG Data Operations', lastVerifiedAt: '2026-08-19', verifiedBy: 'VIG Admin',
+  sourceLanguage: 'vi', dataOwner: 'VSIP Data Operations', lastVerifiedAt: '2026-08-19', verifiedBy: 'VSIP Admin',
   conflicts: [],
 };
 
@@ -151,7 +151,7 @@ const basePark = (index: number, definition: DemoParkDefinition): IndustrialPark
   const { province } = definition;
   const unavailable = <T,>(unit?: string): SourcedValue<T> => ({ value: null, unit, verificationStatus: 'unverified', disclosureStatus: 'not_available' });
   return {
-    ...vsipThaiBinh, id, slug: id, logoText: 'VIG', name: definition.name,
+    ...vsipThaiBinh, id, slug: id, logoText: 'VSIP', name: definition.name,
     summary: l(
       definition.focus.vi,
       definition.focus.en,
@@ -175,7 +175,7 @@ const basePark = (index: number, definition: DemoParkDefinition): IndustrialPark
       ...vsipThaiBinh.contact!,
       office: l(`Văn phòng điều hành ${definition.name.vi}`, `${definition.name.en} Administration Office`, `${definition.name.zh || translateToChinese(definition.name.en)}管理办公室`),
       address: l(`${province}, Việt Nam`, `${province}, Vietnam`, `${province}, 越南`),
-      person: 'VIG Service Desk',
+      person: 'VSIP Service Desk',
       email: `contact${index}@vig.example`,
       website: 'vig.example',
     },
@@ -183,8 +183,8 @@ const basePark = (index: number, definition: DemoParkDefinition): IndustrialPark
       { id: `media-${id}-hero`, type: 'hero', title: l(`Hình ảnh: ${definition.parkType.vi}`, `View: ${definition.parkType.en}`, `图片：${definition.parkType.zh || translateToChinese(definition.parkType.en)}`), url: parkImages[definition.image], capturedAt: '2026-08-19', approved: true },
       { id: `media-${id}-gallery`, type: 'gallery', title: l('Hạ tầng ngành mục tiêu', 'Target-industry infrastructure'), url: parkImages[definition.galleryImage], capturedAt: '2026-08-19', approved: true },
     ],
-    documents: [{ id: `doc-${id}`, title: l('Tài liệu dự án', 'Project reference'), category: 'legal_approval', issuer: l('VIG', 'VIG'), language: 'multi', visibility: 'public', verificationStatus: 'verified' }],
-    sourceLanguage: 'vi', dataOwner: 'VIG', lastVerifiedAt: '2026-08-19', verifiedBy: 'Admin', publicationStatus: index % 5 === 0 ? 'in_review' : 'published', conflicts: [],
+    documents: [{ id: `doc-${id}`, title: l('Tài liệu dự án', 'Project reference'), category: 'legal_approval', issuer: l('VSIP', 'VSIP'), language: 'multi', visibility: 'public', verificationStatus: 'verified' }],
+    sourceLanguage: 'vi', dataOwner: 'VSIP', lastVerifiedAt: '2026-08-19', verifiedBy: 'Admin', publicationStatus: index % 5 === 0 ? 'in_review' : 'published', conflicts: [],
   };
 };
 

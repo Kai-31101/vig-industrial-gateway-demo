@@ -31,7 +31,7 @@ export interface AdminStore { packages:ServicePackage[]; users:AdminUser[]; invi
 export function initialAdmin(parks:IndustrialParkProfile[],assets:IndustrialAsset[]):AdminStore {
   const now=Date.now();
   return {packages:structuredClone(packageSeeds),matrix:structuredClone(rolePermissions),matrixRevision:1,users:[
-    {id:'sa',name:'VIG Super Admin',email:'superadmin@vig.example',phone:'',role:'SA',account:'active',access:'active',revision:1},
+    {id:'sa',name:'VSIP Super Admin',email:'superadmin@vig.example',phone:'',role:'SA',account:'active',access:'active',revision:1},
     {id:'admin',name:'Nguyễn Lan Anh',email:'admin@vig.example',phone:'0901234567',role:'ADMIN',account:'active',access:'active',revision:1},
     {id:'operator',name:'Phạm An',email:'operator@vig.example',phone:'',role:'OPERATOR',account:'active',access:'active',revision:1},
     {id:'existing',name:'Existing account',email:'existing@vig.example',phone:'',role:null,account:'active',access:'removed',revision:1},

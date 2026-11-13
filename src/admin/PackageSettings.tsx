@@ -15,7 +15,7 @@ export function PackageSettings(){
   const dirty=!!draft&&JSON.stringify(draft.content)!==JSON.stringify(current?.content),stale=draft?.revision!==current?.revision;
   function load(next:string){setId(next);setDraft(structuredClone(a.store.packages.find(p=>p.id===next)));setErrors([]);setMessage('')}
   const labels:Record<keyof PackageCopy,string>={name:t('Tên gói','Package name','套餐名称'),audience:t('Phù hợp với','Who it is for','适用对象'),benefits:t('Lợi ích (mỗi dòng một mục)','Benefits (one per line)','服务优势（每行一项）'),scope:t('Phạm vi hỗ trợ','Support scope','支持范围')};
-  return <Access permission="P22"><div className="admin-page workflow-page"><div className="admin-title"><div><span>VIG ADMIN</span><h1>{t('Nội dung gói hỗ trợ','Package content','服务套餐内容')}</h1></div></div><AdminNotice/>
+  return <Access permission="P22"><div className="admin-page workflow-page"><div className="admin-title"><div><span>VSIP ADMIN</span><h1>{t('Nội dung gói hỗ trợ','Package content','服务套餐内容')}</h1></div></div><AdminNotice/>
     <p>{t('Chỉnh sửa nội dung bằng ba ngôn ngữ. Lưu sẽ cập nhật ngay phần lựa chọn gói trên biểu mẫu.','Edit all three languages. Saving immediately updates package selection on the request forms.','编辑三种语言的内容。保存后立即更新需求表单中的套餐说明。')}</p>
     <label>{t('Gói hỗ trợ','Support package','服务套餐')}<select value={id} disabled={dirty} onChange={e=>load(e.target.value)}>{a.store.packages.map(p=><option key={p.id} value={p.id}>{p.content[lang].name}</option>)}</select></label>
     {!draft?<p>{t('Chưa có gói hỗ trợ.','No packages available.','暂无服务套餐。')}</p>:<>

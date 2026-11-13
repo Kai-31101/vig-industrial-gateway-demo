@@ -3,7 +3,7 @@ import {mergeImported,importSafe} from './repeatedRows';
 import {parks,assets} from '../data';
 import {newContent,blank} from './ContentEditor';
 import {contentErrors,type Draft,type ImportRow,type Content,type ContentKind} from './model';
-export const IMPORT_VERSION='VIG-DEMO-2';
+export const IMPORT_VERSION='VSIP-DEMO-2';
 export const IMPORT_LIMITS={bytes:5*1024*1024,rows:500};
 export function flatten(value:any,path=''):Record<string,unknown>{
   if(Array.isArray(value))return {[path]:value};
@@ -12,7 +12,7 @@ export function flatten(value:any,path=''):Record<string,unknown>{
 }
 export const importColumns={Parks:['action','id',...Object.keys(flatten(parks[0]))],Products:['action','id',...Object.keys(flatten(assets[0]))]};
 function setPath(root:any,path:string,value:unknown,sample:any){const keys=path.split('.');let obj=root,shape=sample;keys.slice(0,-1).forEach((key,index)=>{shape=shape?.[key];if(obj[key]==null)obj[key]=shape&&typeof shape==='object'?blank(shape):/^\d+$/.test(keys[index+1])?[]:{};obj=obj[key]});obj[keys.at(-1)!]=value;}
-export async function templateWorkbook(mode:string,sample=false){const wb=new ExcelJS.Workbook();const info=wb.addWorksheet('Instructions');info.addRows([[IMPORT_VERSION],['DEMO ONLY: 5 MB / 500 rows. Production limits require approval.'],['Empty update cells retain saved values. Import creates drafts only.'],['Parks before Products. Use explicit IDs; no fuzzy name matching.'],['Review full records in VIG before publishing. No verification can be imported.'],['Repeated groups use JSON arrays with stable _rowId (or existing id). Never use row position.'],['Export current drafts to obtain row IDs. Missing rows and empty values are retained; remove only in the draft editor.']]);
+export async function templateWorkbook(mode:string,sample=false){const wb=new ExcelJS.Workbook();const info=wb.addWorksheet('Instructions');info.addRows([[IMPORT_VERSION],['DEMO ONLY: 5 MB / 500 rows. Production limits require approval.'],['Empty update cells retain saved values. Import creates drafts only.'],['Parks before Products. Use explicit IDs; no fuzzy name matching.'],['Review full records in VSIP before publishing. No verification can be imported.'],['Repeated groups use JSON arrays with stable _rowId (or existing id). Never use row position.'],['Export current drafts to obtain row IDs. Missing rows and empty values are retained; remove only in the draft editor.']]);
   for(const name of (mode==='both'?['Parks','Products']:[mode]) as ('Parks'|'Products')[]){const ws=wb.addWorksheet(name);ws.addRow(importColumns[name]);ws.getRow(1).font={bold:true};ws.views=[{state:'frozen',ySplit:1}];ws.columns.forEach(c=>c.width=23);
     if(sample){const row:Record<string,string>={action:'create',id:name==='Parks'?'demo-import-park':'demo-import-product','name.vi':name==='Parks'?'KCN minh họa mới':'Nhà xưởng minh họa','name.en':name==='Parks'?'Demo industrial park':'Demo factory','name.zh':name==='Parks'?'演示园区':'演示厂房',parkId:'demo-import-park'};if(name==='Products'){row.area='12000';row.unit='m²';row.type='ready_built_factory';row.transaction='lease'}ws.addRow(importColumns[name].map(k=>row[k]||''));}
   }return wb;

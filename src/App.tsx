@@ -1839,7 +1839,7 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
   const field = (key: keyof typeof form, label: string, type = "text") => (
     <label data-field={key} className={errors[key] ? "invalid" : ""}>
       <span>{label} *</span>
-      {key==='areaMin'||key==='areaMax'?<AreaInput value={form[key]} onChange={value=>update(key,value)} language={language}/>:choices[key]?<select value={form[key]} onChange={e=>update(key,e.target.value)}><option value="">{ui(language,"Chọn thông tin","Choose an option")}</option>{choices[key]!.map(value=><option key={value} value={value}>{key==='assetType'?tr(labels[value as keyof typeof labels],language):key==='industry'?industryLabel(value,language):key==='location'?ui(language,({North:'Miền Bắc',Central:'Miền Trung',South:'Miền Nam','Not specified':'Chưa xác định'} as Record<string,string>)[value]||value,value):dataText(value,language)}</option>)}</select>:<input
+      {key==='areaMin'||key==='areaMax'||key==='budgetOrPrice'?<AreaInput value={form[key]} onChange={value=>update(key,value)} language={language}/>:choices[key]?<select value={form[key]} onChange={e=>update(key,e.target.value)}><option value="">{ui(language,"Chọn thông tin","Choose an option")}</option>{choices[key]!.map(value=><option key={value} value={value}>{key==='assetType'?tr(labels[value as keyof typeof labels],language):key==='industry'?industryLabel(value,language):key==='location'?ui(language,({North:'Miền Bắc',Central:'Miền Trung',South:'Miền Nam','Not specified':'Chưa xác định'} as Record<string,string>)[value]||value,value):dataText(value,language)}</option>)}</select>:<input
         type={type}
         value={form[key]}
         onChange={(e) => update(key, e.target.value)}

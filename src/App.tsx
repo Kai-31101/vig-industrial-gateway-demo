@@ -1767,7 +1767,9 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
   const [dateUnknown,setDateUnknown]=useState(false);
   const [priceMode,setPriceMode]=useState("");
   const [currency,setCurrency]=useState("USD");
-  const [basis,setBasis]=useState("");
+  const [priceArea,setPriceArea]=useState("m²");
+  const [pricePeriod,setPricePeriod]=useState("month");
+  const basis=`${priceArea}/${pricePeriod}`;
   const [areaUnit,setAreaUnit]=useState<AreaUnit>("m2");
   const changeAreaUnit=(next:AreaUnit)=>{setForm(current=>({...current,areaMin:convertArea(current.areaMin,areaUnit,next),areaMax:convertArea(current.areaMax,areaUnit,next)}));setAreaUnit(next)};
   const update = (k: string, v: string) => setForm((x) => ({ ...x, [k]: v }));
@@ -1800,7 +1802,7 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
         er[k] = ui(language, "Vui lòng nhập thông tin", "Required");
     });
     if(!dateUnknown&&!form.availabilityDate)er.availabilityDate=ui(language,"Chọn ngày hoặc Chưa xác định","Choose a date or Not specified");
-    if(!priceMode||(priceMode==="specific"&&(!(+form.budgetOrPrice>0)||!/^[A-Z]{3}$/.test(currency)||!basis.trim())))er.budgetOrPrice=ui(language,"Chọn chế độ giá; giá cụ thể cần số dương, tiền tệ và đơn vị định giá","Choose a price mode; a specific price needs a positive amount, currency and pricing basis");
+    if(!priceMode||(priceMode==="specific"&&(!(+form.budgetOrPrice>0)||!["VND","USD"].includes(currency)||!["m²","ha"].includes(priceArea)||!["month","year","lease term"].includes(pricePeriod))))er.budgetOrPrice=ui(language,"Chọn chế độ giá; giá cụ thể cần số dương, tiền tệ và đơn vị định giá","Choose a price mode; a specific price needs a positive amount, currency and pricing basis");
     if (form.email && !/^\S+@\S+\.\S+$/.test(form.email))
       er.email =
         ui(language, "Địa chỉ email không hợp lệ", "Invalid email");
@@ -1909,7 +1911,13 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
               {field("areaMin", `${emptyCopy(language,"Diện tích từ","Minimum area","最小面积")} (${areaUnit==='m2'?'m²':areaUnit==='km2'?'km²':'ha'})`)}
               {field("areaMax", `${emptyCopy(language,"Diện tích đến","Maximum area","最大面积")} (${areaUnit==='m2'?'m²':areaUnit==='km2'?'km²':'ha'})`)}
               <label><span>{ui(language,"Chế độ giá/ngân sách","Budget / price mode")} *</span><select value={priceMode} onChange={e=>setPriceMode(e.target.value)}><option value="">{ui(language,"Chọn chế độ","Choose a mode")}</option><option value="specific">{ui(language,"Giá cụ thể","Specific price")}</option><option value="negotiable">{ui(language,"Thỏa thuận","Negotiable")}</option><option value="not_specified">{ui(language,"Chưa xác định","Not specified")}</option></select></label>
-              {priceMode==="specific"&&<>{field("budgetOrPrice",ui(language,"Số tiền","Amount"),"number")}<label>{ui(language,"Mã tiền tệ","Currency code")}<input value={currency} maxLength={3} onChange={e=>setCurrency(e.target.value.toUpperCase())}/></label><label>{ui(language,"Đơn vị định giá","Pricing basis")}<input value={basis} placeholder={ui(language,"Ví dụ: m²/tháng","Example: m²/month")} onChange={e=>setBasis(e.target.value)}/></label></>}
+              {priceMode==="specific"&&<>
+                {field("budgetOrPrice",emptyCopy(language,"Số tiền","Amount","金额"),"number")}
+                <label data-field="currency"><span>{emptyCopy(language,"Tiền tệ","Currency","币种")}</span><select value={currency} onChange={e=>setCurrency(e.target.value)}><option value="VND">VND</option><option value="USD">USD</option></select></label>
+                <label data-field="priceArea"><span>{emptyCopy(language,"Giá theo diện tích","Price per area","计价面积单位")}</span><select value={priceArea} onChange={e=>setPriceArea(e.target.value)}><option value="m²">m²</option><option value="ha">ha</option></select></label>
+                <label data-field="pricePeriod"><span>{emptyCopy(language,"Kỳ tính giá","Pricing period","计价周期")}</span><select value={pricePeriod} onChange={e=>setPricePeriod(e.target.value)}><option value="month">{emptyCopy(language,"Tháng","Month","月")}</option><option value="year">{emptyCopy(language,"Năm","Year","年")}</option><option value="lease term">{emptyCopy(language,"Kỳ thuê","Lease term","租期")}</option></select></label>
+              </>}
+
               {field(
                 "industry",
                 isSupply

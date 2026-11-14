@@ -1,3 +1,4 @@
+import {AreaInput,areaFactors,convertArea,type AreaUnit} from "./AreaInput";
 import {BrandLogo} from "./BrandLogo";
 import {industryLabel} from "./industryLabels";
 import {portfolioMode,isPublicPark,isPublicAsset,leasingIntents,leasingIntentLabel,leasingTeam,validLeasingContext} from './leasing';
@@ -1767,6 +1768,8 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
   const [priceMode,setPriceMode]=useState("");
   const [currency,setCurrency]=useState("USD");
   const [basis,setBasis]=useState("");
+  const [areaUnit,setAreaUnit]=useState<AreaUnit>("m2");
+  const changeAreaUnit=(next:AreaUnit)=>{setForm(current=>({...current,areaMin:convertArea(current.areaMin,areaUnit,next),areaMax:convertArea(current.areaMax,areaUnit,next)}));setAreaUnit(next)};
   const update = (k: string, v: string) => setForm((x) => ({ ...x, [k]: v }));
   const choices:Partial<Record<keyof typeof form,string[]>>={
     assetType:['industrial_land','ready_built_factory','warehouse','build_to_suit'],
@@ -1802,6 +1805,7 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
       er.email =
         ui(language, "Địa chỉ email không hợp lệ", "Invalid email");
     if (
+      !Number.isFinite(+form.areaMin) || !Number.isFinite(+form.areaMax) ||
       +form.areaMin <= 0 ||
       +form.areaMax <= 0 ||
       +form.areaMin > +form.areaMax
@@ -1825,8 +1829,8 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
       budgetOrPrice:priceMode==="specific"?`${currency} ${form.budgetOrPrice}/${basis}`:priceMode==="negotiable"?"Negotiable":"Not specified",
       availabilityDate:dateUnknown?"":form.availabilityDate,
       kind,
-      areaMin: +form.areaMin,
-      areaMax: +form.areaMax,
+      areaMin: Number((+form.areaMin * areaFactors[areaUnit]).toPrecision(15)),
+      areaMax: Number((+form.areaMax * areaFactors[areaUnit]).toPrecision(15)),
       transaction: form.transaction as "lease" | "sale",
     });
     submitted.current=true;
@@ -1835,7 +1839,7 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
   const field = (key: keyof typeof form, label: string, type = "text") => (
     <label data-field={key} className={errors[key] ? "invalid" : ""}>
       <span>{label} *</span>
-      {choices[key]?<select value={form[key]} onChange={e=>update(key,e.target.value)}><option value="">{ui(language,"Chọn thông tin","Choose an option")}</option>{choices[key]!.map(value=><option key={value} value={value}>{key==='assetType'?tr(labels[value as keyof typeof labels],language):key==='industry'?industryLabel(value,language):key==='location'?ui(language,({North:'Miền Bắc',Central:'Miền Trung',South:'Miền Nam','Not specified':'Chưa xác định'} as Record<string,string>)[value]||value,value):dataText(value,language)}</option>)}</select>:<input
+      {key==='areaMin'||key==='areaMax'?<AreaInput value={form[key]} onChange={value=>update(key,value)} language={language}/>:choices[key]?<select value={form[key]} onChange={e=>update(key,e.target.value)}><option value="">{ui(language,"Chọn thông tin","Choose an option")}</option>{choices[key]!.map(value=><option key={value} value={value}>{key==='assetType'?tr(labels[value as keyof typeof labels],language):key==='industry'?industryLabel(value,language):key==='location'?ui(language,({North:'Miền Bắc',Central:'Miền Trung',South:'Miền Nam','Not specified':'Chưa xác định'} as Record<string,string>)[value]||value,value):dataText(value,language)}</option>)}</select>:<input
         type={type}
         value={form[key]}
         onChange={(e) => update(key, e.target.value)}
@@ -1901,16 +1905,9 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
                   ? ui(language, "Tỉnh/thành hoặc khu vực mong muốn", "Preferred location")
                   : ui(language, "Vị trí mặt bằng", "Asset location"),
               )}{" "}
-              {field(
-                "areaMin",
-                ui(language, "Diện tích từ (m²)", "Minimum area"),
-                "number",
-              )}
-              {field(
-                "areaMax",
-                ui(language, "Diện tích đến (m²)", "Maximum area"),
-                "number",
-              )}
+              <label data-field="areaUnit"><span>{emptyCopy(language,"Đơn vị diện tích","Area unit","面积单位")}</span><select value={areaUnit} onChange={e=>changeAreaUnit(e.target.value as AreaUnit)}><option value="m2">m²</option><option value="ha">{emptyCopy(language,"Hecta (ha)","Hectare (ha)","公顷 (ha)")}</option><option value="km2">km²</option></select></label>
+              {field("areaMin", `${emptyCopy(language,"Diện tích từ","Minimum area","最小面积")} (${areaUnit==='m2'?'m²':areaUnit==='km2'?'km²':'ha'})`)}
+              {field("areaMax", `${emptyCopy(language,"Diện tích đến","Maximum area","最大面积")} (${areaUnit==='m2'?'m²':areaUnit==='km2'?'km²':'ha'})`)}
               <label><span>{ui(language,"Chế độ giá/ngân sách","Budget / price mode")} *</span><select value={priceMode} onChange={e=>setPriceMode(e.target.value)}><option value="">{ui(language,"Chọn chế độ","Choose a mode")}</option><option value="specific">{ui(language,"Giá cụ thể","Specific price")}</option><option value="negotiable">{ui(language,"Thỏa thuận","Negotiable")}</option><option value="not_specified">{ui(language,"Chưa xác định","Not specified")}</option></select></label>
               {priceMode==="specific"&&<>{field("budgetOrPrice",ui(language,"Số tiền","Amount"),"number")}<label>{ui(language,"Mã tiền tệ","Currency code")}<input value={currency} maxLength={3} onChange={e=>setCurrency(e.target.value.toUpperCase())}/></label><label>{ui(language,"Đơn vị định giá","Pricing basis")}<input value={basis} placeholder={ui(language,"Ví dụ: m²/tháng","Example: m²/month")} onChange={e=>setBasis(e.target.value)}/></label></>}
               {field(

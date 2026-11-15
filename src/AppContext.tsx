@@ -116,4 +116,4 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 }
 export const useApp = () => { const x = useContext(Context); if (!x) throw new Error('AppProvider required'); return x; };
 export const tr = (value: { vi: string; en: string; zh?: string }, language: Language) =>
-  language === 'vi' ? value.vi : language === 'zh' ? value.zh || translateToChinese(value.en) : value.en;
+  language === 'vi' ? value.vi?.trim() || value.en?.trim() || value.zh || '' : language === 'zh' ? value.zh?.trim() || (value.en?.trim()?translateToChinese(value.en):value.vi) || '' : value.en?.trim() || value.vi?.trim() || value.zh || '';

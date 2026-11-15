@@ -1,3 +1,4 @@
+import {sameContent} from './contentIntegrity';
 import {structuralErrors} from '../contentSchema';
 import type { IndustrialParkProfile, IndustrialAsset } from '../types';
 import {identifyRows} from './repeatedRows';
@@ -27,7 +28,7 @@ export type Content = IndustrialParkProfile | IndustrialAsset;
 export type ContentKind='park'|'asset';
 export interface Draft { id:string; kind:ContentKind; data:Content; revision:number; state:'draft'|'in_review'|'approved'|'published'; updatedAt:string; updatedBy:string; published?:Content }
 export interface ImportRow { sheet:'Parks'|'Products'; row:number; id:string; action:'create'|'update'; parkId:string; values:Record<string,string>; errors:string[]; warnings:string[]; before?:Content; after?:Content; revision?:number; result?:'created'|'updated'|'failed'; resultMessage?:string }
-export interface ImportBatch { id:string; fileName:string; fingerprint:string; at:string; actor:string; rows:ImportRow[]; state:'preview'|'complete' }
+export interface ImportBatch { id:string; fileName:string; fingerprint:string; at:string; actor:string; rows:ImportRow[]; state:'preview'|'partial'|'complete' }
 export interface AdminStore { packages:ServicePackage[]; users:AdminUser[]; invites:Invite[]; audit:Audit[]; drafts:Draft[]; batches:ImportBatch[]; matrix:Record<AdminRole,string[]>; matrixRevision:number }
 export function initialAdmin(parks:IndustrialParkProfile[],assets:IndustrialAsset[]):AdminStore {
   const now=Date.now();
@@ -45,7 +46,7 @@ export function initialAdmin(parks:IndustrialParkProfile[],assets:IndustrialAsse
   ],audit:[],batches:[],drafts:[...parks.map(data=>({data,kind:'park' as const})),...assets.map(data=>({data,kind:'asset' as const}))].map(({data,kind})=>({id:data.id,kind,data:identifyRows(structuredClone(data)),published:structuredClone(data),revision:1,state:kind==='park'?(data as IndustrialParkProfile).publicationStatus==='published'?'published':'draft':'published',updatedAt:new Date(now).toISOString(),updatedBy:'Seed demo'}))};
 }
 export const isPark=(value:Content):value is IndustrialParkProfile=>'slug' in value;
-export function contentErrors(data:Content):Record<string,string> {
+export function contentErrors(data:Content,previous?:Content):Record<string,string> {
   const errors:Record<string,string>=structuralErrors(data);
   const visit=(value:unknown,path:string)=>{
     if(typeof value==='number'&&!Number.isFinite(value))errors[path]='number';
@@ -64,7 +65,7 @@ export function contentErrors(data:Content):Record<string,string> {
   Object.entries(allowed).forEach(([key,options])=>{const v=(data as unknown as Record<string,unknown>)[key];if(v&& !options.includes(String(v)))errors[key]='selection'});
   if(isPark(data)){
     if(data.slug&&!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(data.slug))errors.slug='slug';
-    if(data.coordinates&&((data.coordinates.lat!=null&&!Number.isFinite(data.coordinates.lat))||(data.coordinates.lng!=null&&!Number.isFinite(data.coordinates.lng))||data.coordinates.lat<-90||data.coordinates.lat>90||data.coordinates.lng<-180||data.coordinates.lng>180))errors.coordinates='coordinates';
+    if(data.coordinates&&(typeof data.coordinates!=='object'||Array.isArray(data.coordinates)||(data.coordinates.lat!=null&&!Number.isFinite(data.coordinates.lat))||(data.coordinates.lng!=null&&!Number.isFinite(data.coordinates.lng))||data.coordinates.lat<-90||data.coordinates.lat>90||data.coordinates.lng<-180||data.coordinates.lng>180))errors.coordinates='coordinates';
     if(data.totalArea.value!=null&&data.totalArea.value<=0)errors['totalArea.value']='positive';
     if(data.industrialLandArea.value!=null&&data.industrialLandArea.value<0)errors['industrialLandArea.value']='positive';
     const area=(s:{value:number|null;unit?:string})=>s.value==null?null:s.value*(s.unit==='m²'?0.0001:1);
@@ -74,10 +75,12 @@ export function contentErrors(data:Content):Record<string,string> {
     const orders=data.process.map(p=>p.order);if(orders.some(n=>n<=0)||new Set(orders).size!==orders.length)errors.process='order';
     data.availability.forEach((a,i)=>{for(const [key,v] of Object.entries(a)){if(v&&typeof v==='object'&&'value' in v&&typeof v.value==='number'&&v.value<0)errors[`availability.${i}.${key}`]='positive'}});
   } else {if(data.area!=null&&data.area<=0)errors.area='positive';if(data.price.value!=null&&data.price.value<=0)errors['price.value']='positive';}
+  if(previous){const at=(o:any,path:string)=>path.split('.').reduce((v,k)=>v?.[k],o);for(const path of Object.keys(errors))if(errors[path]==='url'&&sameContent(at(data,path),at(previous,path)))delete errors[path];}
+  if(!isPark(data)&&data.powerMva!=null&&(typeof data.powerMva!=='number'||!Number.isFinite(data.powerMva)||data.powerMva<0))errors.powerMva='number';
   return errors;
 }
 export function publicationIssues(data:Content,all:Draft[]):string[] {
-  const issues=Object.keys(contentErrors(data));const localized=(x:{vi:string;en:string;zh?:string})=>x.vi.trim()&&x.en.trim()&&x.zh?.trim();
+  const previous=all.find(d=>d.id===data.id)?.published;const issues=Object.keys(contentErrors(data,previous));const localized=(x:{vi:string;en:string;zh?:string})=>x.vi.trim()&&x.en.trim()&&x.zh?.trim();
   if(!localized(data.name))issues.push('name');if(!localized(isPark(data)?data.summary:data.description))issues.push('summary');
   if(isPark(data)){
     if(data.masterplan){if(!data.masterplan.geometryReviewed)issues.push('masterplan');for(const p of data.masterplan.plots){if(p.assetId&&!all.some(d=>d.kind==='asset'&&d.id===p.assetId&&(d.data as IndustrialAsset).parkId===data.id))issues.push('masterplan');}}
@@ -104,5 +107,8 @@ export function publicationIssues(data:Content,all:Draft[]):string[] {
     if(!data.image||!data.imageApproved)issues.push('media');
     if(data.price.disclosureStatus==='public'&&(!data.price.value||!data.price.unit))issues.push('price');
     if(parent&&data.industries.some(i=>parent.restrictedIndustries.includes(i)))issues.push('industries');
-  }return [...new Set(issues)];
+  }
+  // Unchanged governance on an already published record is inherited. New or changed evidence must pass all gates.
+  if(isPark(data)&&previous&&isPark(previous)&&previous.publicationStatus==='published'){const groups:Record<string,string[]>={legal:['documents'],source:['sourceDocumentId','dataOwner','verifiedBy','lastVerifiedAt','sourceLanguage','documents'],utilities:['utilities'],incentives:['incentives']};for(const [issue,keys] of Object.entries(groups))if(keys.every(k=>sameContent((data as any)[k],(previous as any)[k])))for(let i=issues.length-1;i>=0;i--)if(issues[i]===issue)issues.splice(i,1);}
+  return [...new Set(issues)];
 }

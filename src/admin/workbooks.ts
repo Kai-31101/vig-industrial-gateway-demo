@@ -1,17 +1,18 @@
+import {invalidateChangedApprovals} from './contentIntegrity';
 import {emptyPark,emptyAsset,withPricing,pricingOf} from '../contentSchema';
 import ExcelJS from 'exceljs';
 import {mergeImported,importSafe} from './repeatedRows';
 import {parks,assets} from '../data';
 import {newContent,blank} from './ContentEditor';
 import {contentErrors,type Draft,type ImportRow,type Content,type ContentKind} from './model';
-export const IMPORT_VERSION='VSIP-DEMO-3';
+export const IMPORT_VERSION='VSIP-DEMO-4';
 export const IMPORT_LIMITS={bytes:5*1024*1024,rows:500};
 export function flatten(value:any,path=''):Record<string,unknown>{
   if(Array.isArray(value))return {[path]:value};
   if(value&&typeof value==='object'){return Object.fromEntries(Object.entries(value).filter(([k])=>!['conflicts','payment','publicationStatus','id','verifiedBy','lastVerifiedAt','verificationStatus','visibility','approved','imageApproved'].includes(k)).flatMap(([k,v])=>Object.entries(flatten(v,path?`${path}.${k}`:k))))}
   return {[path]:value};
 }
-export const importColumns={Parks:['action','id',...Object.keys(flatten(emptyPark('')))],Products:['action','id',...Object.keys(flatten(emptyAsset('')))]};
+export const importColumns={Parks:['action','id',...Object.keys(flatten({...emptyPark(''),coordinates:{lat:null,lng:null}}))],Products:['action','id',...Object.keys(flatten(emptyAsset('')))]};
 function setPath(root:any,path:string,value:unknown,sample:any){const keys=path.split('.');let obj=root,shape=sample;keys.slice(0,-1).forEach((key,index)=>{shape=shape?.[key];if(obj[key]==null)obj[key]=shape&&typeof shape==='object'?blank(shape):/^\d+$/.test(keys[index+1])?[]:{};obj=obj[key]});obj[keys.at(-1)!]=value;}
 export async function templateWorkbook(mode:string,sample=false){const wb=new ExcelJS.Workbook();const info=wb.addWorksheet('Instructions');info.addRows([[IMPORT_VERSION],['DEMO ONLY: 5 MB / 500 rows. Production limits require approval.'],['Empty update cells retain saved values. Import creates drafts only.'],['Parks before Products. Use explicit IDs; no fuzzy name matching.'],['Review full records in VSIP before publishing. No verification can be imported.'],['Repeated groups use JSON arrays with stable _rowId (or existing id). Never use row position.'],['Export current drafts to obtain row IDs. Missing rows and empty values are retained; remove only in the draft editor.']]);
   for(const name of (mode==='both'?['Parks','Products']:[mode]) as ('Parks'|'Products')[]){const ws=wb.addWorksheet(name);ws.addRow(importColumns[name]);ws.getRow(1).font={bold:true};ws.views=[{state:'frozen',ySplit:1}];ws.columns.forEach(c=>c.width=23);
@@ -27,12 +28,13 @@ export async function readImport(file:File,drafts:Draft[],mode:string):Promise<I
     ws.eachRow((row,n)=>{if(n===1)return;const values:Record<string,string>={},errors:string[]=[];headers.forEach((key,i)=>{const c=row.getCell(i+1);if(c.type===ExcelJS.ValueType.Formula||c.type===ExcelJS.ValueType.Hyperlink)errors.push(key+': formula/link object');values[key]=c.text.trim()});if(!Object.values(values).some(Boolean))return;
       const id=values.id,action=values.action as 'create'|'update',old=drafts.find(d=>d.id===id),kind:ContentKind=sheet==='Parks'?'park':'asset';
       if(!id||!['create','update'].includes(action))errors.push('id/action');if(action==='create'&&old||action==='update'&&(!old||old.kind!==kind))errors.push('record');
-      let after=structuredClone(old?.data||newContent(kind,id));const schema=flatten(sheet==='Parks'?emptyPark(''):emptyAsset(''));
+      let after=structuredClone(old?.data||newContent(kind,id));const schema=flatten(sheet==='Parks'?{...emptyPark(''),coordinates:{lat:null,lng:null}}:emptyAsset(''));
       for(const key of headers.slice(2)){const v=values[key];if(!v)continue;const shape=schema[key];let parsed:unknown=v;if(Array.isArray(shape)){try{const patch=JSON.parse(v);if(!Array.isArray(patch))throw new Error('array');const previous=key.split('.').reduce((o,k)=>o?.[k],after as any);parsed=mergeImported(previous,patch,blank(shape[0]))}catch{errors.push(key+': row_id/array/permission');continue}}if(typeof shape==='number'||shape===null&&/(amount|area|powerMva|\.value|lat|lng)$/.test(key)){parsed=Number(v);if(!Number.isFinite(parsed))errors.push(key)}if(typeof shape==='boolean'){if(!['true','false'].includes(v))errors.push(key);parsed=v==='true'}setPath(after,key,parsed,sheet==='Parks'?emptyPark(''):emptyAsset(''));}
       const defaults=(v:any):any=>Array.isArray(v)?v.map(defaults):v&&typeof v==='object'?{...('disclosureStatus'in v?{verificationStatus:'unverified'}:{}),...Object.fromEntries(Object.entries(v).map(([k,x])=>[k,defaults(x)]))}:v;
       after=defaults(after);
       if('slug'in after){after.media=after.media.map(m=>({...m,approved:m.approved??false}));after.documents=after.documents.map(d=>({...d,visibility:d.visibility||'admin_only',verificationStatus:d.verificationStatus||'unverified'}));}else after=withPricing(after,pricingOf(after));
-      try{errors.push(...Object.keys(contentErrors(after)))}catch{errors.push('schema')};rows.push({sheet,row:n,id,action,parkId:(after as any).parkId||'',values,errors,warnings:['Draft only; review required'],before:old?.data,after:after as Content,revision:old?.revision});
+      after=invalidateChangedApprovals(after,old?.data);
+      try{errors.push(...Object.keys(contentErrors(after,old?.published)))}catch{errors.push('schema')};rows.push({sheet,row:n,id,action,parkId:(after as any).parkId||'',values,errors,warnings:['Draft only; review required'],before:old?.data,after:after as Content,revision:old?.revision});
     });
   }
   if(rows.length>IMPORT_LIMITS.rows)throw new Error('limit');

@@ -23,7 +23,7 @@ describe('Cross-Epic UI contracts',()=>{
   expect(screen.getByText('Nhà xưởng xây sẵn 1')).toBeTruthy();
   const mode=screen.getByLabelText(/Chế độ giá\/ngân sách/);
   fireEvent.change(mode,{target:{value:'specific'}});
-  expect(screen.getByLabelText('Mã tiền tệ')).toBeTruthy();
+  expect(screen.getByRole('combobox', {name: 'Tiền tệ'})).toBeTruthy();
   fireEvent.click(screen.getByLabelText('Chưa xác định ngày bàn giao'));
   expect(screen.queryByLabelText('Thời điểm bàn giao *')).toBeNull();
  });

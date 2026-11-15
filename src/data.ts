@@ -167,7 +167,8 @@ const basePark = (index: number, definition: DemoParkDefinition): IndustrialPark
     phases: [{ name: l('Giai đoạn phát triển', 'Development phase'), status: index % 3 === 0 ? 'developing' : 'operational', area: s(180 + index * 12, 'ha', 'vig-demo-fixture') }],
     availability: [{ type: index % 4 === 0 ? 'ready_built_factory' : 'industrial_land', total: s(120, 'ha', 'vig-demo-fixture'), available: s(25 + index, 'ha', 'vig-demo-fixture'), reserved: s(10, 'ha', 'vig-demo-fixture'), occupied: s(85 - index, 'ha', 'vig-demo-fixture'), transactionModes: ['lease'], minimumPlot: s(1, 'ha', 'vig-demo-fixture') }],
     connectivity: [{ type: 'road', name: l('Trục giao thông', 'Arterial road'), distanceKm: s(2 + index, 'km', 'vig-demo-fixture'), status: 'operational' }, { type: index % 2 ? 'port' : 'airport', name: l('Đầu mối logistics', 'Logistics gateway'), distanceKm: s(20 + index * 2, 'km', 'vig-demo-fixture'), status: 'operational' }],
-    utilities: ['electricity', 'water', 'wastewater'].map((key, u) => ({ key, label: l(['Điện', 'Cấp nước', 'Nước thải'][u], ['Electricity', 'Water', 'Wastewater'][u]), capacity: index % 4 === 0 ? unavailable() : s([126, 12000, 8000][u], ['MVA', 'm³/day', 'm³/day'][u], 'vig-demo-fixture') })),
+    // Demo infrastructure template: https://www.vsip.com.vn/en/project/vsip-thai-binh-2/
+    utilities: ['electricity', 'water', 'wastewater'].map((key, u) => ({ key, label: l(['Điện', 'Cấp nước', 'Nước thải'][u], ['Electricity', 'Water', 'Wastewater'][u]), capacity: s([126, 16500, 9200][u], ['MVA', 'm³/day', 'm³/day'][u], 'vig-demo-fixture') })),
     suitableIndustries: definition.industries,
     restrictedIndustries: definition.restrictedIndustries,
     incentives: [], process: vsipThaiBinh.process.slice(0, 3), logistics: { shippingRoutes: [], indicativeCosts: [] }, community: [], sustainability: [l('Hạ tầng môi trường', 'Environmental infrastructure')], tenants: [],

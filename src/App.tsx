@@ -1,3 +1,4 @@
+import {ParkLocationMap,ParkMasterplan} from "./ParkMaps";
 import {AreaInput,areaFactors,convertArea,type AreaUnit} from "./AreaInput";
 import {BrandLogo} from "./BrandLogo";
 import {industryLabel} from "./industryLabels";
@@ -930,6 +931,14 @@ function ParkDetailPage() {
       block: "start",
     });
   };
+  const switchParkTab = (tab: "information" | "assets") => {
+    const nav = document.querySelector<HTMLElement>(".park-primary-tabs");
+    const content = document.querySelector<HTMLElement>(".detail-page");
+    const top = content && nav ? content.getBoundingClientRect().top + window.scrollY - nav.offsetHeight - (mobile ? 64 : 76) : 0;
+    const scrolled = nav && nav.getBoundingClientRect().top <= (mobile ? 65 : 77);
+    setActiveParkTab(tab);
+    if (scrolled) requestAnimationFrame(() => window.scrollTo({top,behavior:"instant"}));
+  };
   const showPhotos=()=>{setActiveParkTab("information");requestAnimationFrame(()=>requestAnimationFrame(()=>{scrollToSection("media");const gallery=document.getElementById("media");gallery?.setAttribute("tabindex","-1");gallery?.focus({preventScroll:true})}))};
   const landRecords=park.availability.filter(item=>item.type==="industrial_land");
   const mobileMetrics=[{label:ui(language,"Tổng diện tích","Total area"),value:park.totalArea},{label:ui(language,"Đất còn trống","Available land"),value:landRecords.length===1?landRecords[0].available:undefined},{label:ui(language,"Điện","Electricity"),value:park.utilities.find(u=>u.key==="electricity")?.capacity},{label:ui(language,"Cấp nước","Water"),value:park.utilities.find(u=>u.key==="water")?.capacity}];
@@ -1000,14 +1009,14 @@ function ParkDetailPage() {
           <button
             type="button"
             className={activeParkTab === "information" ? "active" : ""}
-            onClick={() => setActiveParkTab("information")}
+            onClick={() => switchParkTab("information")}
           >
             <FileText /> {ui(language, "Thông tin", "Information")}
           </button>
           <button
             type="button"
             className={activeParkTab === "assets" ? "active" : ""}
-            onClick={() => setActiveParkTab("assets")}
+            onClick={() => switchParkTab("assets")}
           >
             <PackageSearch /> {ui(language, "Mặt bằng", "Assets")}
             <span>{linked.length}</span>
@@ -1100,27 +1109,7 @@ function ParkDetailPage() {
             }
           />
           <div className="connect-grid">
-            {park.coordinates && <div className="map-panel">
-              <div className="map-rings">
-                <span className="map-point park"><BrandLogo compact /></span>
-                <span className="map-point port">
-                  <Ship /> {ui(language, "Cảng biển", "Port")}
-                </span>
-                <span className="map-point airport">
-                  <Plane /> {ui(language, "Sân bay", "Airport")}
-                </span>
-                <span className="map-point city">Hanoi</span>
-                <i />
-                <i />
-                <i />
-              </div>
-              <div className="coordinates">
-                <MapPin size={16} />
-                {park.coordinates?.lat.toFixed(4)},{" "}
-                {park.coordinates?.lng.toFixed(4)}
-              </div>
-            </div>
-            }<div className="connect-list">
+            {park.coordinates && <ParkLocationMap park={park} language={language}/>}<div className="connect-list">
               {park.connectivity.map((c, i) => (
                 <article key={i}>
                   {c.type === "port" ? (
@@ -1156,52 +1145,9 @@ function ParkDetailPage() {
             </div>
           </div>
         </OptionalSection>
-        <OptionalSection show={approvedMedia.some(m => m.type === "masterplan")}>
-          <SectionTitle
-            eyebrow={ui(language, "QUY HOẠCH", "MASTERPLAN")}
-            title={
-              ui(language, "Quy hoạch mặt bằng và hiện trạng quỹ đất", "Masterplan and land availability")
-            }
-          />
-          <div className="masterplan-card">
-            <div className="masterplan">
-              <span className="zone available">A1</span>
-              <span className="zone occupied">B1</span>
-              <span className="zone reserved">C1</span>
-              <span className="zone future">D1</span>
-              <span className="zone utility">
-                <Zap />U
-              </span>
-              <div className="road horizontal" />
-              <div className="road vertical" />
-            </div>
-            <div className="legend">
-              <b>{ui(language, "Chú giải", "Legend")}</b>
-              <span>
-                <i className="available" />
-                {ui(language, "Sẵn sàng bàn giao", "Available")}
-              </span>
-              <span>
-                <i className="reserved" />
-                {ui(language, "Đã giữ chỗ", "Reserved")}
-              </span>
-              <span>
-                <i className="occupied" />
-                {ui(language, "Đã lấp đầy", "Occupied")}
-              </span>
-              <span>
-                <i className="utility" />
-                {ui(language, "Hạ tầng kỹ thuật", "Utility")}
-              </span>
-              <span>
-                <i className="future" />
-                {ui(language, "Khu mở rộng", "Future")}
-              </span>
-              <small>
-                {ui(language, "Sơ đồ quy hoạch", "Masterplan schematic")}
-              </small>
-            </div>
-          </div>
+        <OptionalSection show={linked.length > 0}>
+          <SectionTitle eyebrow={ui(language,"QUY HOẠCH","MASTERPLAN")} title={ui(language,"Quy hoạch mặt bằng và hiện trạng quỹ đất","Masterplan and land availability")}/>
+          <ParkMasterplan key={park.id} assets={linked} language={language}/>
         </OptionalSection>
         <OptionalSection show={visibleSections.infrastructure} id="infrastructure">
           <SectionTitle

@@ -1,3 +1,5 @@
+import {publicInventory,CONTENT_KEY} from './contentRepository';
+import {registerPublished,resetMembership} from './publicMembership';
 import {validLeasingContext,isPublicPark,isPublicAsset} from './leasing';
 import { createContext, useContext, useMemo, useState, useRef, useEffect } from 'react';
 import {candidateChecks} from './matching';
@@ -35,9 +37,11 @@ const initialRequests: IndustrialRequest[] = [
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguage] = useState<Language>('vi');
   const [role, setRole] = useState<Role>('public');
-  const [parks, setParks] = useState(seedParks);
-  const [assets, setAssets] = useState(seedAssets);
+  const [parks, setParks] = useState(()=>publicInventory().parks);
+  const [assets, setAssets] = useState(()=>publicInventory().assets);
+  useEffect(()=>{const sync=()=>{const next=publicInventory();setParks(next.parks);setAssets(next.assets)};window.addEventListener('storage',sync);window.addEventListener('vsip-content-updated',sync);return()=>{window.removeEventListener('storage',sync);window.removeEventListener('vsip-content-updated',sync)}},[]);
   const publishContent = (data: IndustrialParkProfile | IndustrialAsset) => {
+    registerPublished('slug'in data?'park':'asset',data.id);
     if ('slug' in data) setParks(list => list.some(p=>p.id===data.id)?list.map(p=>p.id===data.id?data:p):[...list,data]);
     else setAssets(list => list.some(a=>a.id===data.id)?list.map(a=>a.id===data.id?data:a):[...list,data]);
   };
@@ -106,7 +110,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setChatThreads(threads=>({...threads,[chatParkId]:threads[chatParkId].map(m=>m.id===id?{...m,status:'sending'}:m)}));
     deliver(chatParkId,id);
   };
-  const resetDemo = () => { pendingChat.current.forEach(clearTimeout);pendingChat.current.clear(); setParks(seedParks); setAssets(seedAssets);requestRef.current=initialRequests; setRequests(initialRequests);setOwnRequestIds([]); setChatParkId(null); setChatOpen(false); setChatThreads({}); setRole('public'); setLanguage('vi'); };
+  const resetDemo = () => { localStorage.removeItem(CONTENT_KEY);resetMembership();window.dispatchEvent(new Event('vsip-content-updated')); pendingChat.current.forEach(clearTimeout);pendingChat.current.clear(); const restored=publicInventory();setParks(restored.parks); setAssets(restored.assets);requestRef.current=initialRequests; setRequests(initialRequests);setOwnRequestIds([]); setChatParkId(null); setChatOpen(false); setChatThreads({}); setRole('public'); setLanguage('vi'); };
   const value = useMemo(() => ({ language, setLanguage, role, setRole, parks, assets, expos, requests, ownRequestIds,createRequest, transitionRequest,assignRequest, updateParkPublication, publishContent, resetDemo, chatParkId, chatOpen, chatThreads, openParkChat, closeParkChat, toggleParkChat, sendParkChatMessage,retryParkChatMessage }), [language, role, parks, assets, requests,ownRequestIds, chatParkId, chatOpen, chatThreads]);
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }

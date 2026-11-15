@@ -15,14 +15,14 @@ export function parseArea(value:string,language:Language){
   const raw=value.replace(/[\s\u00a0\u202f]/g,'').split(language==='vi'?'.':',').join('').replace(language==='vi'?',':'.','.');
   return /^\d*(\.\d*)?$/.test(raw)?raw:null;
 }
-export function AreaInput({value,onChange,language}:{value:string;onChange:(value:string)=>void;language:Language}){
+export function AreaInput({value,onChange,language,disabled=false}:{value:string;onChange:(value:string)=>void;language:Language;disabled?:boolean}){
   const ref=useRef<HTMLInputElement>(null);
   const caret=useRef<number|null>(null);
   useLayoutEffect(()=>{const input=ref.current,before=caret.current;caret.current=null;if(!input||before===null||document.activeElement!==input)return;
     const decimal=language==='vi'?',':'.';let at=0,count=0;
     while(at<input.value.length&&count<before){const c=input.value[at++];if(/\d/.test(c)||c===decimal)count++}input.setSelectionRange(at,at);
   },[value,language]);
-  return <input ref={ref} type="text" inputMode="decimal" autoComplete="off" value={formatArea(value,language)} onChange={e=>{
+  return <input disabled={disabled} ref={ref} type="text" inputMode="decimal" autoComplete="off" value={formatArea(value,language)} onChange={e=>{
     const text=e.target.value, decimal=language==='vi'?',':'.';
     const meaningful=(s:string)=>[...s].filter(c=>/\d/.test(c)||c===decimal).length;
     const before=meaningful(text.slice(0,e.target.selectionStart??text.length));

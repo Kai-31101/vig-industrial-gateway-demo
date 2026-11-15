@@ -1,11 +1,12 @@
-import { createContext,useContext,useRef,useState,type ReactNode } from 'react';
+import {CONTENT_KEY,loadContent,persistContent,hydrateContent,deploymentInventory} from '../contentRepository';
+import { createContext,useContext,useRef,useState,useEffect,type ReactNode } from 'react';
 import { useApp } from '../AppContext';
 import {packageCopyErrors,type ServicePackage} from '../servicePackages';
 import {parks as seedParks,assets as seedAssets} from '../data';
 import type {ConnectionOutcome,RequestStatus} from '../types';
 import { initialAdmin,permissions,validRole,validMatrix,validEmail,validPhone,validPassword,inviteStatus,contentErrors,publicationIssues,isPark,type AdminStore,type AdminUser,type AdminRole,type Content,type Audit,type ImportBatch } from './model';
 type Result={ok:boolean;error?:string;id?:string};
-interface AdminState { store:AdminStore;current:AdminUser|undefined; can:(p:string)=>boolean; login:(username:string,password:string)=>Result; logout:()=>void; reset:()=>void;
+interface AdminState { writable:boolean; recovery:boolean; store:AdminStore;current:AdminUser|undefined; can:(p:string)=>boolean; login:(username:string,password:string)=>Result; logout:()=>void; reset:()=>void;
   savePackage:(id:string,content:ServicePackage['content'],revision:number)=>Result;
   configure:(matrix:AdminStore['matrix'],revision:number,note?:string)=>Result; retryDelivery:(id:string)=>Result;
   manageRequest:(id:string,revision:number,to:RequestStatus,reason?:string,outcome?:ConnectionOutcome,parkId?:string)=>Result;
@@ -13,13 +14,22 @@ interface AdminState { store:AdminStore;current:AdminUser|undefined; can:(p:stri
   invite:(input:{name:string;email:string;phone:string;role:AdminRole},resend?:string)=>Result;
   revoke:(id:string)=>Result; accept:(token:string,password:string,confirm:string)=>Result;
   updateUser:(id:string,revision:number,role?:AdminRole,access?:AdminUser['access'],reason?:string)=>Result;
-  save:(data:Content,revision?:number)=>Result; workflow:(id:string,revision:number,action:'submit'|'approve'|'return'|'publish',reason?:string)=>Result;
+  save:(data:Content,revision?:number)=>Result; workflow:(id:string,revision:number,action:'submit'|'approve'|'return'|'publish'|'withdraw',reason?:string)=>Result;
   addBatch:(batch:ImportBatch)=>Result; applyBatch:(id:string,selected:string[])=>Result;
 }
 const C=createContext<AdminState|null>(null);
 export function AdminProvider({children}:{children:ReactNode}){
-  const app=useApp();const [store,setStore]=useState(()=>initialAdmin(app.parks,app.assets));const ref=useRef(store);ref.current=store;
+  const app=useApp();const [store,setStore]=useState(()=>{const seeds=deploymentInventory();return hydrateContent(initialAdmin(seeds.parks,seeds.assets))});const ref=useRef(store);ref.current=store;
   const [userId,setUserId]=useState('');const session=useRef('');const current=store.users.find(u=>u.id===userId);
+  const [writable,setWritable]=useState(import.meta.env.MODE==='test');
+  const [recovery,setRecovery]=useState(loadContent().error);
+  const repositoryRevision=useRef(loadContent().snapshot?.revision||0);
+  useEffect(()=>{let disposed=false,release:undefined|(()=>void);if(import.meta.env.MODE!=='test')setWritable(false);if(userId&&navigator.locks)navigator.locks.request('vsip-content-writer',{ifAvailable:true},async lock=>{if(!lock||disposed)return;setWritable(true);await new Promise<void>(resolve=>{release=resolve});});
+    const sync=()=>{const loaded=loadContent();setRecovery(loaded.error);if(loaded.error)return;const seeds=deploymentInventory();const next=hydrateContent(initialAdmin(seeds.parks,seeds.assets));repositoryRevision.current=loaded.snapshot?.revision||0;setStore(old=>{const merged={...old,drafts:next.drafts,batches:next.batches,audit:[...old.audit.filter(a=>a.domain==='users'),...next.audit]};ref.current=merged;return merged})};
+    window.addEventListener('storage',sync);return()=>{disposed=true;release?.();window.removeEventListener('storage',sync)};
+  },[userId]);
+  const contentCommit=(next:AdminStore):Result=>{if(!writable||recovery)return {ok:false,error:recovery?'recovery':'writer'};try{repositoryRevision.current=persistContent(next,repositoryRevision.current);ref.current=next;setStore(next);return {ok:true};}catch(e){return {ok:false,error:e instanceof Error&&['stale','recovery'].includes(e.message)?e.message:'storage'}}};
+
   // Demo-only credentials stay in memory and are never written to audit or browser storage.
   const passwords=useRef<Record<string,string>>({sa:'VigDemo@2026',admin:'VigDemo@2026',operator:'VigDemo@2026',existing:'VigDemo@2026'});
   const can=(p:string)=>permissions(ref.current.users.find(u=>u.id===session.current),ref.current.matrix).includes(p);
@@ -100,24 +110,26 @@ export function AdminProvider({children}:{children:ReactNode}){
     }
     if(d){const before=d.data;d.data=structuredClone(data);d.state='draft';d.revision++;Object.assign(d,stamp);audit(s,'content',data.id,'save',before,data)}
     else{s.drafts.push({id:data.id,kind:isPark(data)?'park':'asset',data:structuredClone(data),revision:1,state:'draft',...stamp});audit(s,'content',data.id,'create',null,data)}
-    commit(s);return {ok:true,id:data.id};
+    const result=contentCommit(s);return {...result,id:data.id};
   };
   const workflow:AdminState['workflow']=(id,revision,action,reason='')=>{
-    if(!can({submit:'P04',approve:'P05',return:'P05',publish:'P06'}[action]))return fail('permission');
+    if(!can({submit:'P04',approve:'P05',return:'P05',publish:'P06',withdraw:'P06'}[action]))return fail('permission');
     const s=structuredClone(ref.current),d=s.drafts.find(d=>d.id===id);if(!d||d.revision!==revision)return fail('stale');
+    if(action==='withdraw'){if(!d.published||!reason.trim())return fail('reason');delete d.published;d.state='draft';d.revision++;audit(s,'content',id,'withdraw','published','draft',reason);return contentCommit(s);}
     if(action==='submit'&&d.state!=='draft'||['approve','return'].includes(action)&&d.state!=='in_review'||action==='publish'&&d.state!=='approved')return fail('transition');
     if(action==='return'&&!reason.trim())return fail('reason');if(['approve','publish'].includes(action)&&publicationIssues(d.data,s.drafts).length)return fail('publication');
     if(action==='submit'&&(!d.data.name.vi||Object.keys(contentErrors(d.data)).length))return fail('validation');
     const before=d.state;d.state=({submit:'in_review',approve:'approved',return:'draft',publish:'published'} as const)[action];d.revision++;
-    if(action==='publish'){d.published=structuredClone(d.data);if(isPark(d.published))d.published.publicationStatus='published';app.publishContent(d.published);}
-    audit(s,'content',id,action,before,d.state,reason);commit(s);return {ok:true};
+    if(action==='publish'){d.published=structuredClone(d.data);if(isPark(d.published))d.published.publicationStatus='published';}
+    audit(s,'content',id,action,before,d.state,reason);return contentCommit(s);
   };
-  const addBatch=(batch:ImportBatch)=>{if(!can('P03'))return fail('permission');const old=ref.current.batches.find(b=>b.fingerprint===batch.fingerprint);if(old)return {ok:true,id:old.id};const s=structuredClone(ref.current);s.batches.unshift(batch);commit(s);return {ok:true,id:batch.id}};
+  const addBatch=(batch:ImportBatch)=>{if(!can('P03'))return fail('permission');const old=ref.current.batches.find(b=>b.fingerprint===batch.fingerprint);if(old)return {ok:true,id:old.id};const s=structuredClone(ref.current);s.batches.unshift(batch);return {...contentCommit(s),id:batch.id}};
   const applyBatch:AdminState['applyBatch']=(id,selected)=>{
     if(!can('P03'))return fail('permission');const s=structuredClone(ref.current),b=s.batches.find(b=>b.id===id);if(!b)return fail('stale');if(b.state==='complete')return {ok:true,id};if(!selected.length)return fail('selection');
     const rows=b.rows.filter(r=>selected.includes(`${r.sheet}:${r.row}`));
     for(const r of rows.filter(r=>r.sheet==='Products'))if(!s.drafts.some(d=>d.id===r.parkId&&d.kind==='park')&&!rows.some(p=>p.sheet==='Parks'&&p.id===r.parkId&&!p.errors.length))return fail('dependency');
     for(const r of [...rows].sort((a,b)=>a.sheet==='Parks'&&b.sheet!=='Parks'?-1:1)){
+      if(r.after){try{r.errors.push(...Object.keys(contentErrors(r.after)));if(isPark(r.after)&&s.drafts.some(d=>d.id!==r.id&&isPark(d.data)&&d.data.slug===(r.after as any).slug))r.errors.push('slug');}catch{r.errors.push('schema')}}
       if(r.errors.length||!r.after){r.result='failed';r.resultMessage='validation';continue;}
       const d=s.drafts.find(d=>d.id===r.id);
       if(r.action==='create'&&d||r.action==='update'&&(!d||d.revision!==r.revision)){r.result='failed';r.resultMessage='stale';continue;}
@@ -125,8 +137,8 @@ export function AdminProvider({children}:{children:ReactNode}){
       if(d){d.data=structuredClone(r.after);d.revision++;d.state='draft';d.updatedBy=current!.name;r.result='updated';}
       else{s.drafts.push({id:r.id,kind:r.sheet==='Parks'?'park':'asset',data:structuredClone(r.after),revision:1,state:'draft',updatedAt:new Date().toISOString(),updatedBy:current!.name});r.result='created';}
       audit(s,'import',r.id,r.result,r.before,r.after);
-    }b.state='complete';commit(s);return {ok:true,id};
+    }b.state='complete';return {...contentCommit(s),id};
   };
-  return <C.Provider value={{store,current,can,savePackage,login,logout,configure,retryDelivery,manageRequest,assignConnection,reset:()=>{commit(initialAdmin(seedParks,seedAssets));passwords.current={sa:'VigDemo@2026',admin:'VigDemo@2026',operator:'VigDemo@2026',existing:'VigDemo@2026'};logout()},invite,revoke,accept,updateUser,save,workflow,addBatch,applyBatch}}>{children}</C.Provider>;
+  return <C.Provider value={{writable,recovery,store,current,can,savePackage,login,logout,configure,retryDelivery,manageRequest,assignConnection,reset:()=>{if(!writable)return;localStorage.removeItem(CONTENT_KEY);repositoryRevision.current=0;setRecovery(false);app.resetDemo();const base=deploymentInventory();commit(initialAdmin(base.parks,base.assets));passwords.current={sa:'VigDemo@2026',admin:'VigDemo@2026',operator:'VigDemo@2026',existing:'VigDemo@2026'};logout()},invite,revoke,accept,updateUser,save,workflow,addBatch,applyBatch}}>{children}</C.Provider>;
 }
 export const useAdmin=()=>{const c=useContext(C);if(!c)throw new Error('AdminProvider required');return c};

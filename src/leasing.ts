@@ -1,11 +1,11 @@
 import type {IndustrialParkProfile, IndustrialAsset, IndustrialRequest, Language} from './types';
-import {parks as demoParks} from './data';
+import {publicParkMember,publicAssetMember} from './publicMembership';
 // This deployment deliberately retains the approved demo fixtures. Membership is
 // a demo visibility scope, never evidence of VSIP ownership or verification.
 export const portfolioMode = 'demo' as const;
-const demoIds = new Set(demoParks.map(p => p.id));
-export const isPublicPark = (park: IndustrialParkProfile) => park.publicationStatus === 'published' && demoIds.has(park.id);
-export const isPublicAsset = (asset: IndustrialAsset, parks: IndustrialParkProfile[]) => asset.transaction === 'lease' && parks.some(p => p.id === asset.parkId && isPublicPark(p));
+
+export const isPublicPark = (park: IndustrialParkProfile) => park.publicationStatus === 'published' && publicParkMember(park.id);
+export const isPublicAsset = (asset: IndustrialAsset, parks: IndustrialParkProfile[]) => publicAssetMember(asset.id) && asset.transaction === 'lease' && parks.some(p => p.id === asset.parkId && isPublicPark(p));
 export const leasingIntents = ['Find Supply', 'Meeting / Connection'] as const;
 export const leasingIntentLabel = (intent:string, language:Language) => intent === 'Meeting / Connection'
   ? ({vi:'Yêu cầu khảo sát',en:'Site visit request',zh:'实地考察申请'})[language]

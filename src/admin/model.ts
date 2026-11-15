@@ -1,3 +1,4 @@
+import {structuralErrors} from '../contentSchema';
 import type { IndustrialParkProfile, IndustrialAsset } from '../types';
 import {identifyRows} from './repeatedRows';
 import {packageSeeds,type ServicePackage} from '../servicePackages';
@@ -45,7 +46,7 @@ export function initialAdmin(parks:IndustrialParkProfile[],assets:IndustrialAsse
 }
 export const isPark=(value:Content):value is IndustrialParkProfile=>'slug' in value;
 export function contentErrors(data:Content):Record<string,string> {
-  const errors:Record<string,string>={};
+  const errors:Record<string,string>=structuralErrors(data);
   const visit=(value:unknown,path:string)=>{
     if(typeof value==='number'&&!Number.isFinite(value))errors[path]='number';
     if(typeof value==='string'){
@@ -63,7 +64,7 @@ export function contentErrors(data:Content):Record<string,string> {
   Object.entries(allowed).forEach(([key,options])=>{const v=(data as unknown as Record<string,unknown>)[key];if(v&& !options.includes(String(v)))errors[key]='selection'});
   if(isPark(data)){
     if(data.slug&&!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(data.slug))errors.slug='slug';
-    if(data.coordinates&&(data.coordinates.lat<-90||data.coordinates.lat>90||data.coordinates.lng<-180||data.coordinates.lng>180))errors.coordinates='coordinates';
+    if(data.coordinates&&((data.coordinates.lat!=null&&!Number.isFinite(data.coordinates.lat))||(data.coordinates.lng!=null&&!Number.isFinite(data.coordinates.lng))||data.coordinates.lat<-90||data.coordinates.lat>90||data.coordinates.lng<-180||data.coordinates.lng>180))errors.coordinates='coordinates';
     if(data.totalArea.value!=null&&data.totalArea.value<=0)errors['totalArea.value']='positive';
     if(data.industrialLandArea.value!=null&&data.industrialLandArea.value<0)errors['industrialLandArea.value']='positive';
     const area=(s:{value:number|null;unit?:string})=>s.value==null?null:s.value*(s.unit==='m²'?0.0001:1);
@@ -79,6 +80,8 @@ export function publicationIssues(data:Content,all:Draft[]):string[] {
   const issues=Object.keys(contentErrors(data));const localized=(x:{vi:string;en:string;zh?:string})=>x.vi.trim()&&x.en.trim()&&x.zh?.trim();
   if(!localized(data.name))issues.push('name');if(!localized(isPark(data)?data.summary:data.description))issues.push('summary');
   if(isPark(data)){
+    if(data.masterplan){if(!data.masterplan.geometryReviewed)issues.push('masterplan');for(const p of data.masterplan.plots){if(p.assetId&&!all.some(d=>d.kind==='asset'&&d.id===p.assetId&&(d.data as IndustrialAsset).parkId===data.id))issues.push('masterplan');}}
+    if(data.availability.some(a=>a.transactionModes.some(m=>m!=='lease')))issues.push('lease_only');
     if(!data.slug||!data.parkType.vi||!data.status||!data.totalArea.value)issues.push('identity');
     if(!data.operator.name||!localized(data.operator.overview))issues.push('operator');
     if(!data.coordinates||data.coordinates.lat==null||data.coordinates.lng==null||!data.province||!data.address.vi)issues.push('location');
@@ -93,6 +96,8 @@ export function publicationIssues(data:Content,all:Draft[]):string[] {
     if(!data.dataOwner?.trim()||!data.verifiedBy?.trim()||!data.lastVerifiedAt||data.lastVerifiedAt>new Date().toISOString().slice(0,10)||!['vi','en','zh'].includes(data.sourceLanguage)||!data.sourceDocumentId||!data.documents.some(d=>d.id===data.sourceDocumentId&&d.sourceUrl))issues.push('source');
     if(data.incentives.some(i=>!i.sourceDocumentId||!i.effectiveDate||!i.eligibility.vi))issues.push('incentives');
   }else{
+    if(data.transaction!=='lease')issues.push('lease_only');
+    if(data.pricing?.mode==='specific'&&!(Number(data.pricing.amount)>0))issues.push('pricing');
     const parent=all.find(d=>d.kind==='park'&&d.id===data.parkId)?.published as IndustrialParkProfile|undefined;
     if(!parent||parent.publicationStatus!=='published')issues.push('parkId');
     if(!data.area||!data.unit||!data.type||!data.transaction)issues.push('asset');

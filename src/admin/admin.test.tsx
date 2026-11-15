@@ -9,7 +9,7 @@ import {parks,assets} from '../data';
 import {newContent} from './ContentEditor';
 import {templateWorkbook,readImport} from './workbooks';
 import {createExpoWorkbook} from './ExpoReport';
-afterEach(cleanup);
+afterEach(()=>{cleanup();localStorage.removeItem('vsip-content-v1')});
 const wrapper=({children}:{children:ReactNode})=><AppProvider><AdminProvider>{children}</AdminProvider></AppProvider>;
 const setup=()=>{const h=renderHook(()=>({admin:useAdmin(),app:useApp()}),{wrapper});act(()=>h.result.current.admin.login('superadmin@vig.example','VigDemo@2026'));return h};
 describe('VSIP Admin workflows',()=>{

@@ -19,6 +19,7 @@ const groups=[
  ['Sustainability','Phát triển bền vững','可持续发展',['sustainability'],[]],
  ['Community','Cộng đồng','社区',['community'],[]],
  ['Existing tenants','Doanh nghiệp hiện hữu','入驻企业',['tenants'],[]],
+ ['Masterplan plots','Lô quy hoạch','规划地块',['masterplan'],['masterplan']],
  ['Media and masterplan','Hình ảnh & quy hoạch','媒体与规划',['media'],['media']],
  ['Legal documents','Hồ sơ pháp lý','法律文件',['documents'],['legal']],
  ['Contact','Liên hệ','联系方式',['contact'],['contact']],

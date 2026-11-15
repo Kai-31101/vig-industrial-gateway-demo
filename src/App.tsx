@@ -1,3 +1,4 @@
+import type {IndustrialAsset} from './types';
 import {ParkLocationMap,ParkMasterplan} from "./ParkMaps";
 import {AreaInput,areaFactors,convertArea,type AreaUnit} from "./AreaInput";
 import {BrandLogo} from "./BrandLogo";
@@ -15,7 +16,7 @@ import {sortParksByCompleteness} from './parkCompleteness';
 import {ConnectionDetail,ConnectionDashboard,ExpoDirectoryAdmin} from './admin/Connections';
 import {successfulConnection} from './connectionLogic';
 import {validPhone} from './admin/model';
-import { CSSProperties, FormEvent, ReactNode, useMemo, useState, useRef, useEffect } from "react";
+import { CSSProperties, FormEvent, ReactNode, Fragment, useMemo, useState, useRef, useEffect } from "react";
 import {
   BrowserRouter,
   Link,
@@ -890,38 +891,40 @@ function Modal({
 function ContactModal({type,park}:{type:string;park:IndustrialParkProfile;close:()=>void}) {
   return <Navigate replace to={`/find-supply?parkId=${encodeURIComponent(park.id)}&support=${type==='Meeting'?'meeting':'inquiry'}`} />;
 }
-function ParkDetailPage() {
+export function ParkDetailPage({draft,draftAssets}:{draft?:IndustrialParkProfile;draftAssets?:IndustrialAsset[]}={}) {
+  const Shell=draft?Fragment:PublicShell;
   const mobile=useMobile();
   const { slug } = useParams();
-  const { language, parks, assets, openParkChat } = useApp();
+  const { language, parks, assets:publicAssets, openParkChat } = useApp();
+  const assets=draftAssets||publicAssets;
   const [modal, setModal] = useState("");
   const [activeParkTab, setActiveParkTab] = useState<"information" | "assets">(
     ()=>(sessionStorage.getItem(`park-tab:${slug}:${language}`)==="assets"?"assets":"information"),
   );
   const tabKey=useRef(`park-tab:${slug}:${language}`);
-  useEffect(()=>{const key=`park-tab:${slug}:${language}`;if(tabKey.current!==key){tabKey.current=key;setActiveParkTab(sessionStorage.getItem(key)==="assets"?"assets":"information");}else sessionStorage.setItem(key,activeParkTab)},[slug,language,activeParkTab]);
+  useEffect(()=>{if(draft)return;const key=`park-tab:${slug}:${language}`;if(tabKey.current!==key){tabKey.current=key;setActiveParkTab(sessionStorage.getItem(key)==="assets"?"assets":"information");}else sessionStorage.setItem(key,activeParkTab)},[slug,language,activeParkTab]);
   const [activeSection, setActiveSection] = useState("overview");
   const [previewParams] = useSearchParams();
   const previewMode = import.meta.env.DEV ? previewParams.get("demoState") : null;
-  const originalPark = parks.find((p) => p.slug === slug && isPublicPark(p));
+  const originalPark = draft || parks.find((p) => p.slug === slug && isPublicPark(p));
   const park = originalPark ? previewPark(originalPark, previewMode) : undefined;
   if (!park)
     return (
-      <PublicShell>
+      <Shell>
         <div className="page page-top">
           <DetailUnavailable to="/industrial-parks" label={ui(language,"Danh mục khu công nghiệp","Industrial park directory")} />
         </div>
-      </PublicShell>
+      </Shell>
     );
-  const linked = previewMode ? [] : assets.filter((a) => a.parkId === park.id && isPublicAsset(a,parks));
+  const linked = previewMode ? [] : assets.filter((a) => a.parkId === park.id && (draft||isPublicAsset(a,parks)));
   const approvedMedia = park.media.filter(m => m.approved && m.url.trim());
   const visibleSections: Record<string, boolean> = {
     overview: true, connectivity: Boolean(park.coordinates || park.connectivity.length),
     infrastructure: Boolean(park.utilities.length || park.amenities.length),
     workforce: [park.provinceProfile.population, park.provinceProfile.grdp, park.provinceProfile.growthRate, park.workforce.laborForce, park.workforce.skilledLabor, park.workforce.catchmentPopulation, park.provinceProfile.context, park.workforce.salaryBenchmark].some(hasValue),
-    incentives: park.incentives.length > 0, media: approvedMedia.length > 0, documents: park.documents.length > 0,
+    incentives: park.incentives.length > 0, media: approvedMedia.length > 0, documents: park.documents.some(d=>d.visibility==='public'),
   };
-  const publicDocs = park.documents;
+  const publicDocs = park.documents.filter(d=>d.visibility==='public');
   const scrollToSection = (id: string) => {
     setActiveSection(id);
     const target=document.getElementById(id);
@@ -952,7 +955,7 @@ function ParkDetailPage() {
     ["documents", ui(language, "Tài liệu", "Documents")],
   ].filter(([id]) => visibleSections[id]);
   return (
-    <PublicShell>
+    <Shell>
       {mobile&&<section className="mobile-park-summary page">
         <div className="breadcrumbs"><Link to="/industrial-parks">{ui(language,"Khu công nghiệp","Industrial parks")}</Link><ChevronRight size={14}/><span>{park.province}</span></div>
         <div className="mobile-park-identity">{approvedMedia.length>0?<button onClick={showPhotos} aria-label={emptyCopy(language,`Xem ${approvedMedia.length} ảnh`,`View photos (${approvedMedia.length})`,`查看图片 (${approvedMedia.length})`)}><SafeImage src={approvedMedia[0].url} alt=""/></button>:<div className="mobile-photo-placeholder"/>}<div><ParkStatusBadge park={park}/><h1>{tr(park.name,language)}</h1><p>{tr(park.address,language)}</p></div></div>
@@ -1109,7 +1112,7 @@ function ParkDetailPage() {
             }
           />
           <div className="connect-grid">
-            {park.coordinates && <ParkLocationMap park={park} language={language}/>}<div className="connect-list">
+            {park.coordinates && Number.isFinite(park.coordinates.lat) && Number.isFinite(park.coordinates.lng) && <ParkLocationMap park={park} language={language}/>}<div className="connect-list">
               {park.connectivity.map((c, i) => (
                 <article key={i}>
                   {c.type === "port" ? (
@@ -1145,9 +1148,9 @@ function ParkDetailPage() {
             </div>
           </div>
         </OptionalSection>
-        <OptionalSection show={linked.length > 0}>
+        <OptionalSection show={Boolean(park.masterplan?.plots.length||linked.length)}>
           <SectionTitle eyebrow={ui(language,"QUY HOẠCH","MASTERPLAN")} title={ui(language,"Quy hoạch mặt bằng và hiện trạng quỹ đất","Masterplan and land availability")}/>
-          <ParkMasterplan key={park.id} assets={linked} language={language}/>
+          <ParkMasterplan key={park.id} assets={linked} language={language} plan={park.masterplan} parkId={park.id}/>
         </OptionalSection>
         <OptionalSection show={visibleSections.infrastructure} id="infrastructure">
           <SectionTitle
@@ -1490,11 +1493,11 @@ function ParkDetailPage() {
           </div>
         </section>
       </div>
-      {modal && (
+      {!draft && modal && (
         <ContactModal type={modal} park={park} close={() => setModal("")} />
       )}
-    <MobileActionBar><button className="button primary" onClick={()=>setModal("Inquiry")}><Send size={16}/>{ui(language,"Gửi yêu cầu","Inquiry")}</button><button data-chat onClick={()=>openParkChat(park.id)}><MessageCircle size={16}/>{ui(language,"Trao đổi","Chat")}</button><button onClick={()=>setModal("Meeting")}><Users size={16}/>{emptyCopy(language,"Khảo sát","Site visit","考察")}</button></MobileActionBar>
-    </PublicShell>
+    {!draft&&<MobileActionBar><button className="button primary" onClick={()=>setModal("Inquiry")}><Send size={16}/>{ui(language,"Gửi yêu cầu","Inquiry")}</button><button data-chat onClick={()=>openParkChat(park.id)}><MessageCircle size={16}/>{ui(language,"Trao đổi","Chat")}</button><button onClick={()=>setModal("Meeting")}><Users size={16}/>{emptyCopy(language,"Khảo sát","Site visit","考察")}</button></MobileActionBar>}
+    </Shell>
   );
 }
 
@@ -1523,7 +1526,7 @@ function AssetCard({
           </p>
           <div className="asset-card-facts">
             <b>
-              {asset.area.toLocaleString(language === "vi" ? "vi-VN" : language === "zh" ? "zh-CN" : "en-US")} {asset.unit}
+              {(asset.area?.toLocaleString(language === "vi" ? "vi-VN" : language === "zh" ? "zh-CN" : "en-US")??"—")} {asset.unit}
             </b>
             <strong>{assetPriceText(asset,language)}</strong>
           </div>
@@ -1620,18 +1623,19 @@ function AssetsPage() {
     </PublicShell>
   );
 }
-function AssetDetailPage() {
+export function AssetDetailPage({draft,draftPark}:{draft?:IndustrialAsset;draftPark?:IndustrialParkProfile}={}) {
+  const Shell=draft?Fragment:PublicShell;
   const mobile=useMobile();
   const { id } = useParams();
   const { assets, parks, language, openParkChat } = useApp();
   const [params] = useSearchParams();
   const mode = import.meta.env.DEV ? params.get("demoState") : null;
-  const original = assets.find(a => a.id === id && isPublicAsset(a,parks) && parks.some(p=>p.id===a.parkId&&isPublicPark(p)));
+  const original = draft || assets.find(a => a.id === id && isPublicAsset(a,parks) && parks.some(p=>p.id===a.parkId&&isPublicPark(p)));
   const asset = original ? previewAsset(original,mode) : undefined;
-  if (!asset) return <PublicShell><div className="page page-top"><DetailUnavailable to="/assets" label={ui(language,"Bất động sản công nghiệp","Assets")} /></div></PublicShell>;
-  const park = mode === "orphan" ? undefined : parks.find(p => p.id === asset.parkId);
+  if (!asset) return <Shell><div className="page page-top"><DetailUnavailable to="/assets" label={ui(language,"Bất động sản công nghiệp","Assets")} /></div></Shell>;
+  const park = draftPark || (mode === "orphan" ? undefined : parks.find(p => p.id === asset.parkId));
   const requestUrl = park ? `/find-supply?${new URLSearchParams({parkId:park.id,assetId:asset.id})}` : "/find-supply";
-  return <PublicShell><div className="page page-top asset-detail-page">
+  return <Shell><div className="page page-top asset-detail-page">
     <div className="breadcrumbs"><Link to="/assets">{ui(language,"Bất động sản công nghiệp","Assets")}</Link><ChevronRight size={14}/><span>{tr(asset.name,language)}</span></div>
     <div className="asset-detail">
       <SafeImage fallbackIllustration src={asset.image} alt={tr(asset.name,language)} />
@@ -1651,7 +1655,7 @@ function AssetDetailPage() {
         </div>
       </div>
     </div>
-  </div><MobileActionBar><Link className="button primary" to={requestUrl}><Send size={16}/>{ui(language,"Gửi yêu cầu","Inquiry")}</Link>{park&&<button data-chat onClick={()=>openParkChat(park.id,asset.id)}><MessageCircle size={16}/>{ui(language,"Trao đổi","Chat")}</button>}</MobileActionBar></PublicShell>;
+  </div>{!draft&&<MobileActionBar><Link className="button primary" to={requestUrl}><Send size={16}/>{ui(language,"Gửi yêu cầu","Inquiry")}</Link>{park&&<button data-chat onClick={()=>openParkChat(park.id,asset.id)}><MessageCircle size={16}/>{ui(language,"Trao đổi","Chat")}</button>}</MobileActionBar>}</Shell>;
 }
 
 const emptyForm = {
@@ -2072,7 +2076,7 @@ function AdminShell({ children }: { children: ReactNode }) {
           })}
         </nav>
         <div className="sidebar-bottom">
-          <button onClick={()=>{admin.reset();resetDemo()}}>
+          <button disabled={!admin.writable||!admin.can('P06')} onClick={()=>{if(window.confirm(emptyCopy(language,'Xóa nội dung đã nhập và khôi phục dữ liệu demo?','Clear authored content and reset the demo?','清除编辑内容并恢复演示数据？')))admin.reset()}}>
             <RotateCcw />
             {ui(language, "Khôi phục dữ liệu demo", "Reset demo")}
           </button>
@@ -2098,7 +2102,7 @@ function AdminShell({ children }: { children: ReactNode }) {
               aria-label={
                 ui(language, "Khôi phục dữ liệu demo", "Reset demo")
               }
-              onClick={()=>{admin.reset();resetDemo()}}
+              disabled={!admin.writable||!admin.can('P06')} onClick={()=>{if(window.confirm(emptyCopy(language,'Xóa nội dung đã nhập và khôi phục dữ liệu demo?','Clear authored content and reset the demo?','清除编辑内容并恢复演示数据？')))admin.reset()}}
             >
               <RotateCcw />
             </button>

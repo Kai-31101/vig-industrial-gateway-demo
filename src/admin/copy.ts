@@ -1,5 +1,6 @@
 import type {Language} from '../types';
 const options:Record<string,[string,string,string]>={
+ exact:['Vị trí dự án','Project location','项目位置'],regional:['Khu vực tỉnh/thành','Province / region','省市区域'],
   submitted:['Đã tiếp nhận','Submitted','已提交'],under_review:['Đang xác minh','Under review','核实中'],matching:['Đang chuẩn bị phương án','Preparing options','准备方案'],connection_scheduled:['Đang sắp xếp khảo sát','Visit being arranged','正在安排考察'],closed:['Đã đóng','Closed','已关闭'],rejected:['Từ chối','Rejected','已拒绝'],roads:['Đường nội bộ','Internal roads','内部道路'],
   draft:['Bản nháp','Draft','草稿'],in_review:['Chờ duyệt','In review','待审核'],approved:['Đã duyệt','Approved','已审核'],published:['Đã công bố','Published','已发布'],
   unknown:['Chưa xác nhận trạng thái','Status not confirmed','状态尚未确认'],

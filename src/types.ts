@@ -76,3 +76,8 @@ export interface ExpoAnalytics {
   topMarkets: ExpoMarketMetric[];
 }
 export interface ExpoProgram { id: string; title: LocalizedText; market: string; industries: string[]; date: string; status: 'upcoming' | 'live' | 'ended'; exhibitors: number; analytics: ExpoAnalytics; }
+export interface MasterplanPlot { id:string; code:string; status:'available'|'reserved'|'occupied'|'utility'; rect:{x:number;y:number;width:number;height:number}; assetId?:string; areaM2?:number; }
+export interface ParkMasterplanData { background:'builtin'|string; aspectRatio:number; geometryReviewed:boolean; plots:MasterplanPlot[]; }
+export interface AssetPricing { mode:'specific'|'negotiable'|'not_available'; amount:number|null; currency:'VND'|'USD'; areaBasis:'m²'|'ha'; period:'month'|'year'|'term'; }
+export interface IndustrialParkProfile { masterplan?:ParkMasterplanData; mapMode?:'exact'|'regional'; }
+export interface IndustrialAsset { pricing?:AssetPricing; }

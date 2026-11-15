@@ -2,3 +2,6 @@
 @media(max-width:680px){.park-location-map .park-geographic-map{height:300px}.park-plan-toolbar{align-items:flex-start;flex-direction:column;padding:12px}.park-plan-scroll{max-height:460px}.park-plan-detail{padding:16px;align-items:stretch;flex-direction:column;gap:12px}.park-plan-detail a{align-self:flex-start}.park-plan-legend{padding:12px;gap:10px}.park-plan-toolbar>div{align-self:flex-end}}
 
 .park-geographic-map{z-index:0}.park-location-map .leaflet-control-attribution{font-size:10px}.park-location-map .leaflet-control-zoom a{width:40px;height:40px;line-height:40px}
+
+.park-plot-select{display:grid;gap:6px;flex:1;min-width:0;max-width:640px;font-size:14px}.park-plot-select>span{font-weight:700;color:#123e55}.park-plot-select select{width:100%;min-width:0;min-height:44px;padding:10px 32px 10px 12px;border:1px solid #9db7c5;border-radius:8px;background:white;color:#123e55;font:inherit;text-overflow:ellipsis}.park-plot-select small{font-size:12px;color:#536b7b;line-height:1.5}.park-plan-plot:hover{background:#00a2bf22;outline:2px solid #007b9c;outline-offset:-2px}
+@media(max-width:680px){.park-plot-select{width:100%;max-width:none}.park-plot-select select{font-size:16px}.park-plan-toolbar{gap:10px}}

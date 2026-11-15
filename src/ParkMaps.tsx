@@ -1,4 +1,4 @@
-import {useState,useEffect,useRef} from 'react';
+import {useState,useEffect,useRef,useId} from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import {Link} from 'react-router-dom';
@@ -26,20 +26,29 @@ export function ParkLocationMap({park,language}:{park:IndustrialParkProfile;lang
  return <div className="park-location-map"><div className="park-geographic-map" ref={host} role="region" aria-label={title}/><div className="park-map-caption"><span>{region?park.province:tr(park.name,language)}</span><a href={`https://www.google.com/maps/search/?api=1&query=${region?encodeURIComponent(park.province+', Vietnam'):`${lat},${lng}`}`} target="_blank" rel="noreferrer">{copy(language,'Mở bản đồ ↗','Open map ↗','打开地图 ↗')}</a></div></div>
 }
 export function ParkMasterplan({assets,language}:{assets:IndustrialAsset[];language:Language}){
- const [selected,setSelected]=useState(0),[zoom,setZoom]=useState(1);
+ const [selected,setSelected]=useState(-1),[zoom,setZoom]=useState(1);
+ const [popupOpen,setPopupOpen]=useState(false);
+ const popupId=useId();
+ const stage=useRef<HTMLDivElement>(null);
+ const trigger=useRef<HTMLElement|null>(null);
+ const closePopup=()=>{setPopupOpen(false);setSelected(-1);trigger.current?.focus({preventScroll:true})};
  const planScroll=useRef<HTMLDivElement>(null);
  const choosePlot=(index:number)=>{
+  trigger.current=document.activeElement as HTMLElement;
   setSelected(index);
+  setPopupOpen(true);
+  requestAnimationFrame(()=>{if(stage.current){const offset=window.matchMedia('(max-width:680px)').matches?124:140;window.scrollTo({top:stage.current.getBoundingClientRect().top+window.scrollY-offset,behavior:'instant'})}});
   const viewport=planScroll.current;
   const plot=viewport?.querySelectorAll<HTMLElement>('.park-plan-plot')[index];
-  if(viewport&&plot) viewport.scrollTo({left:Math.max(0,plot.offsetLeft+plot.offsetWidth/2-viewport.clientWidth/2),behavior:'smooth'});
+  if(viewport&&plot) viewport.scrollTo({left:Math.max(0,plot.offsetLeft+plot.offsetWidth/2-viewport.clientWidth/2),behavior:'instant'});
  };
  const a=assets[selected]||assets[0];
  const c=(vi:string,en:string,zh:string)=>copy(language,vi,en,zh);
  const locale=language==='vi'?'vi-VN':language==='zh'?'zh-CN':'en-US';
  const codes=['A-01','A-02','A-03'];
- return <div className="park-plan">
-  <div className="park-plan-toolbar"><label className="park-plot-select"><span>{c('Chọn lô','Select plot','选择地块')}</span><select value={selected} onChange={event=>choosePlot(Number(event.target.value))}>{assets.slice(0,3).map((asset,i)=><option key={asset.id} value={i}>{codes[i]} · {tr(asset.name,language)} · {asset.area.toLocaleString(locale)} {asset.unit}</option>)}</select><small>{c('Hoặc bấm trực tiếp vào lô A-01, A-02, A-03 trên sơ đồ.','Or click A-01, A-02 or A-03 directly on the plan.','也可直接点击图中的 A-01、A-02 或 A-03 地块。')}</small></label><div><button type="button" disabled={zoom===1} onClick={()=>setZoom(Math.max(1,zoom-.5))} aria-label={c('Thu nhỏ','Zoom out','缩小')}>−</button><button type="button" onClick={()=>setZoom(1)} aria-label={c('Đặt lại thu phóng','Reset zoom','重置缩放')}>{Math.round(zoom*100)}%</button><button type="button" disabled={zoom===2} onClick={()=>setZoom(Math.min(2,zoom+.5))} aria-label={c('Phóng to','Zoom in','放大')}>+</button></div></div>
+ return <div className="park-plan" onKeyDown={event=>{if(event.key==='Escape'&&popupOpen){event.stopPropagation();closePopup()}}}>
+  <div className="park-plan-toolbar"><label className="park-plot-select"><span>{c('Chọn lô','Select plot','选择地块')}</span><select aria-controls={popupId} value={selected} onChange={event=>choosePlot(Number(event.target.value))}><option value={-1} disabled>{c('Chọn lô để xem thông tin','Select a plot to view details','选择地块查看详情')}</option>{assets.slice(0,3).map((asset,i)=><option key={asset.id} value={i}>{codes[i]} · {tr(asset.name,language)} · {asset.area.toLocaleString(locale)} {asset.unit}</option>)}</select><small>{c('Hoặc bấm trực tiếp vào lô A-01, A-02, A-03 trên sơ đồ.','Or click A-01, A-02 or A-03 directly on the plan.','也可直接点击图中的 A-01、A-02 或 A-03 地块。')}</small></label><div><button type="button" disabled={zoom===1} onClick={()=>setZoom(Math.max(1,zoom-.5))} aria-label={c('Thu nhỏ','Zoom out','缩小')}>−</button><button type="button" onClick={()=>setZoom(1)} aria-label={c('Đặt lại thu phóng','Reset zoom','重置缩放')}>{Math.round(zoom*100)}%</button><button type="button" disabled={zoom===2} onClick={()=>setZoom(Math.min(2,zoom+.5))} aria-label={c('Phóng to','Zoom in','放大')}>+</button></div></div>
+  <div className="park-plan-stage" ref={stage}>
   <div className="park-plan-scroll" ref={planScroll} tabIndex={0} aria-label={c('Sơ đồ quy hoạch 2D','2D masterplan','二维总平面图')}><div className="park-plan-canvas" style={{width:`${zoom*100}%`}}>
   <svg viewBox="0 0 1000 660" role="img" aria-label={c('Đường nội khu, lô công nghiệp và hạ tầng kỹ thuật','Internal roads, industrial plots and utilities','园区道路、工业地块及基础设施')}>
    <defs><pattern id="plan-grid" width="25" height="25" patternUnits="userSpaceOnUse"><path d="M25 0H0V25" fill="none" stroke="#c9d9c5" strokeWidth=".6"/></pattern><pattern id="plan-roof" width="10" height="10" patternUnits="userSpaceOnUse"><rect width="10" height="10" fill="#d7e0e5"/><path d="M0 0V10" stroke="#acbac3" strokeWidth="2"/></pattern></defs>
@@ -59,9 +68,15 @@ export function ParkMasterplan({assets,language}:{assets:IndustrialAsset[];langu
    <text x="167" y="520" textAnchor="middle" fontSize="15" fill="#294b59">{c('Khu kỹ thuật','Utilities','公用设施')}</text><text x="327" y="420" textAnchor="middle" fontSize="15" fill="#5c553e">{c('Điều hành','Administration','管理中心')}</text><text x="327" y="520" textAnchor="middle" fontSize="15" fill="#315b38">{c('Cây xanh','Green space','绿地')}</text>
    <text x="440" y="652" textAnchor="middle" fontSize="16" fill="#304959">{c('CỔNG CHÍNH · ĐƯỜNG KẾT NỐI','MAIN GATE · ACCESS ROAD','主入口 · 连接道路')}</text><path d="M950 100V40L940 60M950 40L960 60" stroke="#244759" strokeWidth="3" fill="none"/><text x="950" y="28" textAnchor="middle" fontSize="18" fill="#244759">N</text>
   </svg>
-  {assets.slice(0,3).map((asset,i)=><button key={asset.id} type="button" className={`park-plan-plot ${selected===i?'selected':''}`} style={{left:`${10+i*10.5}%`,top:'15.15%',width:'8.5%',height:'28.03%'}} onClick={()=>choosePlot(i)} aria-pressed={selected===i} aria-label={`${codes[i]} · ${tr(asset.name,language)}`}><strong>{codes[i]}</strong><span>{asset.area.toLocaleString(locale)} {asset.unit}</span></button>)}
+  {assets.slice(0,3).map((asset,i)=><button key={asset.id} type="button" className={`park-plan-plot ${selected===i?'selected':''}`} style={{left:`${10+i*10.5}%`,top:'15.15%',width:'8.5%',height:'28.03%'}} onClick={()=>choosePlot(i)} aria-controls={popupId} aria-expanded={selected===i&&popupOpen} aria-pressed={selected===i} aria-label={`${codes[i]} · ${tr(asset.name,language)}`}><strong>{codes[i]}</strong><span>{asset.area.toLocaleString(locale)} {asset.unit}</span></button>)}
   </div></div>
+  {a&&popupOpen&&<section id={popupId} className="park-plan-popup" aria-label={c('Thông tin lô','Plot information','地块信息')}>
+    <button type="button" className="park-plan-popup-close" onClick={closePopup} aria-label={c('Đóng thông tin lô','Close plot information','关闭地块信息')}>×</button>
+    <div aria-live="polite"><small>{c('Lô','Plot','地块')} {codes[selected]}</small><h3>{tr(a.name,language)}</h3><p>{a.area.toLocaleString(locale)} {a.unit}</p><p>{assetPriceText(a,language)}</p></div>
+    <Link className="button primary" to={`/assets/${a.id}`}>{c('Xem mặt bằng','View asset','查看物业')} →</Link>
+  </section>}
+  </div>
   <div className="park-plan-legend"><span><i style={{background:'#cae2c9'}}/>{c('Mặt bằng cho thuê','Leasing inventory','可租物业')}</span><span><i style={{background:'#dbe0df'}}/>{c('Nhà máy hiện hữu','Existing factories','现有工厂')}</span><span><i style={{background:'#bddad6'}}/>{c('Hạ tầng kỹ thuật','Utilities','公用设施')}</span><span><i style={{background:'#a5c8a2'}}/>{c('Cây xanh','Green space','绿地')}</span></div>
-  {a&&<div className="park-plan-detail" aria-live="polite"><div><small>{c('Lô','Plot','地块')} {codes[selected]}</small><h3>{tr(a.name,language)}</h3><p>{a.area.toLocaleString(locale)} {a.unit} · {assetPriceText(a,language)}</p><p>{tr(a.description,language)}</p></div><Link className="button primary" to={`/assets/${a.id}`}>{c('Xem mặt bằng','View asset','查看物业')} →</Link></div>}
+
  </div>
 }

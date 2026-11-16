@@ -1,11 +1,11 @@
 import {validateLeasingRequest} from '../src/requestSchema';
 import type {VercelRequest,VercelResponse} from '@vercel/node';
-import {pool,tx,ApiError} from '../server/db';
-import {cookie,hash,newToken,setCookie,session,csrf,limited,validAdminKey} from '../server/security';
-import {state,persist} from '../server/repository';
+import {pool,tx,ApiError} from './db';
+import {cookie,hash,newToken,setCookie,session,csrf,limited,validAdminKey} from './security';
+import {state,persist} from './repository';
 import {executeCommand} from '../src/admin/commands';
 import {publishedBundle,parseContentSnapshot} from '../src/contentRepository';
-import {answer} from '../server/ai';
+import {answer} from './ai';
 import {validEmail,validPhone} from '../src/admin/model';
 export default async function handler(req:VercelRequest,res:VercelResponse){
  res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');

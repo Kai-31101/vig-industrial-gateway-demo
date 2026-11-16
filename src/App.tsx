@@ -311,7 +311,7 @@ function Header() {
             </small>
           </span>
         </Link>
-        {mobile && <button className="mobile-header-chat" onClick={toggleParkChat} aria-expanded={chatOpen} aria-label={ui(language,"Mở trao đổi với khu công nghiệp","Open industrial park chat")}><MessageCircle /></button>}
+        {mobile && <button className="mobile-header-chat" onClick={toggleParkChat} aria-expanded={chatOpen} aria-label={ui(language,"Mở trao đổi với khu công nghiệp","Open industrial park chat")}><img className="mobile-chat-lotus" src="/images/ai-lotus.png" alt="" aria-hidden="true" width="68" height="56" /></button>}
         <button
           className="mobile-menu"
           ref={menuTrigger}
@@ -507,7 +507,7 @@ function FloatingParkChat() {
         onClick={toggleParkChat}
         aria-label={ui(language, "Mở trao đổi với khu công nghiệp", "Open industrial park chat")}
       >
-        {chatOpen ? <X /> : <MessageCircle />}
+        {chatOpen ? <X /> : <img className="floating-chat-lotus" src="/images/ai-lotus.png" alt="" aria-hidden="true" width="68" height="56" />}
         {threadIds.length > 0 && <span>{threadIds.length}</span>}
       </button>
     </div>

@@ -6,7 +6,6 @@ import {BrandLogo} from "./BrandLogo";
 import {industryLabel} from "./industryLabels";
 import {portfolioMode,isPublicPark,isPublicAsset,leasingIntents,leasingIntentLabel,leasingTeam,validLeasingContext} from './leasing';
 import {useMobile,MobileMenu,MobileActionBar,MobileDisclosure,PublicScrollRestore} from './MobileUX';
-import {AdminLogin} from './admin/AdminLogin';
 import {HomeAds} from './HomeAds';
 import {PackageSettings} from './admin/PackageSettings';
 import {PermissionMatrix} from './admin/PermissionMatrix';
@@ -2009,8 +2008,9 @@ function RetiredPublicFlow({event=false}:{event?:boolean}) {
 }
 function ExpoPage(){return <PublicShell><div className="page page-top"><TradeExpoSection/></div></PublicShell>}
 function AdminGuard({ children }: { children: ReactNode }) {
-  const admin=useAdmin(),{pathname,search}=useLocation();
-  if(!admin.current)return <Navigate to="/admin/login" state={{from:pathname+search}} replace/>;
+  const admin=useAdmin(),{pathname}=useLocation();
+  useEffect(()=>{if(!admin.current)admin.enterDemo()},[admin.current,admin.enterDemo]);
+  if(!admin.current)return null;
   return pathname==='/admin/no-access'?<>{children}</>:<Access permission={routePermission(pathname)}>{children}</Access>;
 }
 function AdminShell({ children }: { children: ReactNode }) {
@@ -2119,7 +2119,7 @@ function AdminShell({ children }: { children: ReactNode }) {
           <div className="admin-header-controls">
             <LanguageToggle />
             <div className="admin-user">
-              <span>{admin.current?.name}</span><button className="button" onClick={()=>{admin.logout();navigate("/admin/login")}}>{emptyCopy(language,"Đăng xuất","Sign out","退出")}</button>
+              <span>{admin.current?.name}</span><button className="button" onClick={openPublicPortal}>{emptyCopy(language,"Về trang chủ","Back to website","返回网站")}</button>
             </div>
           </div>
         </header>
@@ -3127,7 +3127,7 @@ function AppRoutes() {
       <Route path="/request-confirmation/:id" element={<ConfirmationPage />} />
       <Route path="/industrial-expo" element={<RetiredPublicFlow event />} />
       <Route path="/login" element={<Navigate to="/admin/login" replace/>} />
-      <Route path="/admin/login" element={<AdminLogin/>}/>
+      <Route path="/admin/login" element={<Navigate to="/admin" replace/>}/>
       <Route path="/admin" element={<AdminEntry/>}/>
       <Route path="/admin/packages" element={<AdminGuard><AdminShell><PackageSettings/></AdminShell></AdminGuard>}/>
       <Route path="/admin/permissions" element={<AdminGuard><AdminShell><PermissionMatrix/></AdminShell></AdminGuard>}/>
@@ -3201,7 +3201,7 @@ function AppRoutes() {
   );
 }
 function AdminNoAccess(){const {language}=useApp();return <StatePanel kind="forbidden" title={emptyCopy(language,"Chưa có quyền truy cập","No accessible modules","无可访问模块")} text={emptyCopy(language,"Liên hệ Super Admin để được cấp quyền.","Contact your Super Admin to review your access.","请联系超级管理员审核权限。")}/>}
-function AdminEntry(){const a=useAdmin();return <Navigate to={a.current?firstAdminPage(a.current,a.store.matrix):'/admin/login'} replace/>}
+function AdminEntry(){const a=useAdmin();return <AdminGuard><Navigate to={firstAdminPage(a.current,a.store.matrix)} replace/></AdminGuard>}
 export default function App() {
   // Convert saved legacy hash links before the browser router reads the location.
   if(window.location.hash.startsWith('#/')){const target=window.location.hash.slice(1);if(target.startsWith('/')&&!target.startsWith('//'))window.history.replaceState(null,'',target);}

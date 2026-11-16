@@ -7,7 +7,7 @@ import {parks as seedParks,assets as seedAssets} from '../data';
 import type {ConnectionOutcome,RequestStatus} from '../types';
 import { initialAdmin,permissions,validRole,validMatrix,validEmail,validPhone,validPassword,inviteStatus,contentErrors,publicationIssues,isPark,type AdminStore,type AdminUser,type AdminRole,type Content,type Audit,type ImportBatch } from './model';
 type Result={ok:boolean;error?:string;id?:string};
-interface AdminState { deploymentDrift:boolean;reconcile:()=>Result;restoreBackup:(raw:string)=>Result; writable:boolean; recovery:boolean; store:AdminStore;current:AdminUser|undefined; can:(p:string)=>boolean; login:(username:string,password:string)=>Result; logout:()=>void; reset:()=>void;
+interface AdminState { deploymentDrift:boolean;reconcile:()=>Result;restoreBackup:(raw:string)=>Result; writable:boolean; recovery:boolean; store:AdminStore;current:AdminUser|undefined; can:(p:string)=>boolean; enterDemo:()=>void; login:(username:string,password:string)=>Result; logout:()=>void; reset:()=>void;
   savePackage:(id:string,content:ServicePackage['content'],revision:number)=>Result;
   configure:(matrix:AdminStore['matrix'],revision:number,note?:string)=>Result; retryDelivery:(id:string)=>Result;
   manageRequest:(id:string,revision:number,to:RequestStatus,reason?:string,outcome?:ConnectionOutcome,parkId?:string)=>Result;
@@ -34,6 +34,7 @@ export function AdminProvider({children}:{children:ReactNode}){
   // Demo-only credentials stay in memory and are never written to audit or browser storage.
   const passwords=useRef<Record<string,string>>({sa:'VigDemo@2026',admin:'VigDemo@2026',operator:'VigDemo@2026',existing:'VigDemo@2026'});
   const can=(p:string)=>permissions(ref.current.users.find(u=>u.id===session.current),ref.current.matrix).includes(p);
+  const enterDemo=()=>{session.current='sa';setUserId('sa');app.setRole('admin')};
   const logout=()=>{session.current='';setUserId('');app.setRole('public')};
   const login=(username:string,password:string):Result=>{const u=ref.current.users.find(u=>u.email===username.trim().toLowerCase());if(!u||passwords.current[u.id]!==password)return {ok:false,error:'credentials'};if(u.account!=='active')return {ok:false,error:'disabled'};session.current=u.id;setUserId(u.id);app.setRole('admin');return {ok:true,id:u.id}};
   const commit=(s:AdminStore)=>{ref.current=s;setStore(s)};
@@ -143,6 +144,6 @@ export function AdminProvider({children}:{children:ReactNode}){
     }b.state=b.rows.every(r=>['created','updated'].includes(r.result||''))?'complete':'partial';return {...contentCommit(s),id};
   };
   const restore=(raw?:string):Result=>{if(!writable||!can('P06')||!can('P08')||!can('P05')||!can('P07')||!can('P16'))return fail('permission');try{const snapshot=raw?parseContentSnapshot(raw):loadContent().snapshot;if(!snapshot)return fail('validation');const base=deploymentInventory(),fresh=initialAdmin(base.parks,base.assets);const next={...ref.current,drafts:reconcileDrafts(snapshot.drafts,fresh.drafts),batches:snapshot.batches,audit:[...new Map([...snapshot.audit.filter(a=>['content','import'].includes(a.domain)),...ref.current.audit].map(a=>[a.id,a])).values()]};audit(next,'content','backup',raw?'restore':'reconcile',null,'Drafts restored; deployed publication preserved');repositoryRevision.current=persistContent(next,repositoryRevision.current,true);setRecovery(false);commit(next);return {ok:true}}catch{return fail('validation')}};
-  return <C.Provider value={{deploymentDrift:hasDeploymentDrift(),reconcile:()=>restore(),restoreBackup:raw=>restore(raw),writable,recovery,store,current,can,savePackage,login,logout,configure,retryDelivery,manageRequest,assignConnection,reset:()=>{if(!writable)return;localStorage.removeItem(CONTENT_KEY);repositoryRevision.current=0;setRecovery(false);app.resetDemo();const base=deploymentInventory();commit(initialAdmin(base.parks,base.assets));passwords.current={sa:'VigDemo@2026',admin:'VigDemo@2026',operator:'VigDemo@2026',existing:'VigDemo@2026'};logout()},invite,revoke,accept,updateUser,save,workflow,addBatch,applyBatch}}>{children}</C.Provider>;
+  return <C.Provider value={{deploymentDrift:hasDeploymentDrift(),reconcile:()=>restore(),restoreBackup:raw=>restore(raw),writable,recovery,store,current,can,savePackage,enterDemo,login,logout,configure,retryDelivery,manageRequest,assignConnection,reset:()=>{if(!writable)return;localStorage.removeItem(CONTENT_KEY);repositoryRevision.current=0;setRecovery(false);app.resetDemo();const base=deploymentInventory();commit(initialAdmin(base.parks,base.assets));passwords.current={sa:'VigDemo@2026',admin:'VigDemo@2026',operator:'VigDemo@2026',existing:'VigDemo@2026'};logout()},invite,revoke,accept,updateUser,save,workflow,addBatch,applyBatch}}>{children}</C.Provider>;
 }
 export const useAdmin=()=>{const c=useContext(C);if(!c)throw new Error('AdminProvider required');return c};

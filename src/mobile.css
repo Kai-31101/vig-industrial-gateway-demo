@@ -106,5 +106,3 @@
   .park-grid .park-card .industries{flex-wrap:nowrap;overflow:hidden;margin-top:8px}
   .park-grid .park-card .industries span{white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
 }
-
-@media(max-width:680px){.mobile-header-chat{background:#0b2a5a;border:1px solid #eeceaf}.mobile-header-chat>.mobile-chat-lotus{display:block;width:38px;height:32px;object-fit:contain;pointer-events:none}}

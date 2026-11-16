@@ -4095,17 +4095,3 @@ td small {
 .profile-source-link { display:inline-block; margin:8px 0 16px; text-decoration:underline; text-underline-offset:3px; }
 .published-contact a { color:inherit; overflow-wrap:anywhere; }
 .published-contact h3 { margin:12px 0 8px; }
-
-/* AI lotus artwork reused from the HCMC Investment Hub floating assistant. */
-.floating-chat-launcher:not(.open) {
-  background: #0b2a5a;
-  border-color: #eeceaf;
-  box-shadow: 0 0 0 3px rgba(240,140,41,.10), 0 8px 24px rgba(2,53,125,.28);
-}
-.floating-chat-launcher > .floating-chat-lotus {
-  display: block;
-  width: 48px;
-  height: 40px;
-  object-fit: contain;
-  pointer-events: none;
-}

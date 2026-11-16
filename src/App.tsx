@@ -1,3 +1,4 @@
+import {LotusChatIcon} from './LotusChatIcon';
 import type {IndustrialAsset} from './types';
 import {ParkLocationMap,ParkMasterplan} from "./ParkMaps";
 import {AreaInput,areaFactors,convertArea,type AreaUnit} from "./AreaInput";
@@ -311,7 +312,7 @@ function Header() {
             </small>
           </span>
         </Link>
-        {mobile && <button className="mobile-header-chat" onClick={toggleParkChat} aria-expanded={chatOpen} aria-label={ui(language,"Mở trao đổi với khu công nghiệp","Open industrial park chat")}><img className="mobile-chat-lotus" src="/images/ai-lotus.png" alt="" aria-hidden="true" width="68" height="56" /></button>}
+        {mobile && <button className="mobile-header-chat" onClick={toggleParkChat} aria-expanded={chatOpen} aria-label={ui(language,"Mở trao đổi với khu công nghiệp","Open industrial park chat")}><LotusChatIcon/></button>}
         <button
           className="mobile-menu"
           ref={menuTrigger}
@@ -507,7 +508,7 @@ function FloatingParkChat() {
         onClick={toggleParkChat}
         aria-label={ui(language, "Mở trao đổi với khu công nghiệp", "Open industrial park chat")}
       >
-        {chatOpen ? <X /> : <img className="floating-chat-lotus" src="/images/ai-lotus.png" alt="" aria-hidden="true" width="68" height="56" />}
+        {chatOpen ? <X /> : <LotusChatIcon/>}
         {threadIds.length > 0 && <span>{threadIds.length}</span>}
       </button>
     </div>

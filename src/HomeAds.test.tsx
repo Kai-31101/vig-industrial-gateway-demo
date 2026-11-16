@@ -2,17 +2,18 @@
 import {afterEach,describe,it,expect,vi} from 'vitest';
 import {act,cleanup,fireEvent,render,screen,within} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
-import {AppProvider} from './AppContext';
+import {AppProvider,useApp} from './AppContext';
 import {HomeAds} from './HomeAds';
 afterEach(()=>{cleanup();vi.useRealTimers();vi.unstubAllGlobals();});
-const setup=()=>render(<AppProvider><MemoryRouter><HomeAds placement="top"/><HomeAds placement="bottom"/></MemoryRouter></AppProvider>);
+const LanguagePicker=()=>{const {setLanguage}=useApp();return <><button onClick={()=>setLanguage('en')}>English test</button><button onClick={()=>setLanguage('zh')}>Chinese test</button></>};
+const setup=()=>render(<AppProvider><MemoryRouter><LanguagePicker/><HomeAds placement="top"/><HomeAds placement="bottom"/></MemoryRouter></AppProvider>);
 describe('homepage advertisement carousels',()=>{
  it('keeps the first banner fixed and labels every banner as Ads',()=>{
   vi.useFakeTimers();setup();
   const first=screen.getByRole('region',{name:'Banner top 1'});
-  expect(screen.getAllByText('Ads')).toHaveLength(4);
+  expect(screen.getAllByText('Quảng cáo')).toHaveLength(4);
   act(()=>vi.advanceTimersByTime(15000));
-  expect(within(first).getByRole('img').getAttribute('src')).toContain('advertise-here.png');
+  expect(first.querySelector('.ad-artwork img')?.getAttribute('src')).toContain('advertise-here.png');
   expect(first.querySelector('.ad-slide-in')).toBeNull();
   expect(first.querySelector('.ad-slide-out')).toBeNull();
   expect(first.hasAttribute('aria-roledescription')).toBe(false);
@@ -23,17 +24,17 @@ describe('homepage advertisement carousels',()=>{
   vi.stubGlobal('IntersectionObserver',class {constructor(callback:(entries:{isIntersecting:boolean}[])=>void){callbacks.push(callback)}observe(){}disconnect(){}});
   setup();const first=screen.getByRole('region',{name:'Banner bottom 1'});
   act(()=>callbacks[2]([{isIntersecting:false}]));
-  act(()=>vi.advanceTimersByTime(9000));expect(within(first).getByRole('img').getAttribute('src')).toContain('vietcombank-vie.png');
+  act(()=>vi.advanceTimersByTime(9000));expect(first.querySelector('.ad-artwork img')?.getAttribute('src')).toContain('vietcombank-vie.png');
   act(()=>callbacks[2]([{isIntersecting:true}]));
-  act(()=>vi.advanceTimersByTime(2999));expect(within(first).getByRole('img').getAttribute('src')).toContain('vietcombank-vie.png');
-  act(()=>vi.advanceTimersByTime(1));expect(within(first).getByRole('img').getAttribute('src')).toContain('factory-construction.png');
+  act(()=>vi.advanceTimersByTime(2999));expect(first.querySelector('.ad-artwork img')?.getAttribute('src')).toContain('vietcombank-vie.png');
+  act(()=>vi.advanceTimersByTime(1));expect(first.querySelector('.ad-artwork img')?.getAttribute('src')).toContain('factory-construction.png');
  });
  it('renders two banners in each location and rotates independently every three seconds',()=>{
   vi.useFakeTimers();setup();
-  expect(screen.getAllByRole('img')).toHaveLength(4);
+  expect(document.querySelectorAll('.ad-artwork img')).toHaveLength(4);
   const first=screen.getByRole('region',{name:'Banner bottom 1'});
   const second=screen.getByRole('region',{name:'Banner top 2'});
-  const src=(el:HTMLElement)=>within(el).getByRole('img').getAttribute('src');
+  const src=(el:HTMLElement)=>el.querySelector('.ad-artwork img')?.getAttribute('src');
   expect(src(first)).toContain('vietcombank-vie.png');
   act(()=>vi.advanceTimersByTime(2999));expect(src(first)).toContain('vietcombank-vie.png');
   act(()=>vi.advanceTimersByTime(1));expect(src(first)).toContain('factory-construction.png');
@@ -43,14 +44,25 @@ describe('homepage advertisement carousels',()=>{
   act(()=>vi.advanceTimersByTime(3000));expect(src(first)).toContain('vietcombank-vie.png');
   act(()=>vi.advanceTimersByTime(3000));expect(src(first)).toContain('factory-construction.png');
   expect(first.querySelector('.ad-slide-in')).not.toBeNull();
-  expect(first.querySelector('.ad-slide-out')?.getAttribute('src')).toContain('vietcombank-vie.png');
+  expect(first.querySelector('.ad-slide-out img')?.getAttribute('src')).toContain('vietcombank-vie.png');
  });
  it('keeps focus pause and safe CTAs without a visible control toolbar',()=>{
   vi.useFakeTimers();setup();
   const first=screen.getByRole('region',{name:'Banner bottom 1'});const q=within(first);
-  expect(screen.queryAllByRole('button')).toHaveLength(0);
-  fireEvent.focus(q.getByRole('link'));act(()=>vi.advanceTimersByTime(3000));expect(q.getByRole('img').getAttribute('src')).toContain('vietcombank-vie.png');
-  expect(q.getByRole('link').getAttribute('href')).toBe('/images/ads/vietcombank-vie.png');
-  expect(screen.getAllByRole('link').every(a=>!a.getAttribute('href')?.startsWith('tel:'))).toBe(true);
+  expect(first.querySelector('.ad-controls')).toBeNull();
+  fireEvent.focus(q.getByRole('button',{name:/Xem quảng cáo/}));act(()=>vi.advanceTimersByTime(3000));expect(first.querySelector('.ad-artwork img')?.getAttribute('src')).toContain('vietcombank-vie.png');
+  expect(q.getByRole('button',{name:/Xem quảng cáo/}).getAttribute('type')).toBe('button');
+  expect(screen.queryAllByRole('link').every(a=>!a.getAttribute('href')?.startsWith('tel:'))).toBe(true);
  });
+ it('updates visible copy and outgoing slides when the locale changes',()=>{
+  vi.useFakeTimers();setup();act(()=>vi.advanceTimersByTime(3000));
+  fireEvent.click(screen.getByRole('button',{name:'English test'}));
+  expect(screen.getByRole('button',{name:'Advertise here — View advertisement'})).toBeTruthy();
+  expect([...document.querySelectorAll('.ad-localized')].every(el=>el.getAttribute('lang')==='en')).toBe(true);
+  fireEvent.click(screen.getByRole('button',{name:'Chinese test'}));
+  expect(screen.getByRole('button',{name:'在此投放广告 — 查看广告'})).toBeTruthy();
+  expect([...document.querySelectorAll('.ad-localized')].every(el=>el.getAttribute('lang')==='zh')).toBe(true);
+  expect(screen.queryByText('Advertise here')).toBeNull();
+ });
+
 });

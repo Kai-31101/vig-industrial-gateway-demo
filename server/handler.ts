@@ -6,6 +6,7 @@ import {state,persist} from './repository';
 import {executeCommand} from '../src/admin/commands';
 import {publishedBundle,parseContentSnapshot} from '../src/contentRepository';
 import {answer} from './ai';
+import {enquiryChat} from './enquiryChat';
 import {validEmail,validPhone} from '../src/admin/model';
 export default async function handler(req:VercelRequest,res:VercelResponse){
  res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');
@@ -47,6 +48,7 @@ export default async function handler(req:VercelRequest,res:VercelResponse){
    const out=await tx(async c=>(await c.query('SELECT vsip.submit_enquiry($1,$2,$3) AS request',[s.tokenHash,r.idempotencyKey,JSON.stringify(input)])).rows[0].request);
    return res.json(out);
   }
+  if(path==='/api/ai/enquiry'&&req.method==='POST'){await limited(req,'chat-enquiry',60,3600);return res.json(await enquiryChat(s,body))}
   if((path==='/api/ai/public'||path==='/api/ai/admin')&&req.method==='POST'){await limited(req,'ai',30,3600);return res.json(await answer(path.endsWith('/admin')?'admin':'public',s,body))}
   throw new ApiError(404,'not_found');
  }catch(e){const code=e instanceof ApiError?e.code:e instanceof Error&&['stale','idempotency_conflict'].includes(e.message)?e.message:'server';const status=e instanceof ApiError?e.status:['stale','idempotency_conflict'].includes(code)?409:500;console.error('VSIP API error',code);return res.status(status).json({error:code})}

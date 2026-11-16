@@ -1,6 +1,8 @@
 import {useEffect,useState,useRef} from 'react';
 import {useApp} from './AppContext';
 import './HomeAds.css';
+import {adCopy} from './adCopy';
+import type {Language} from './types';
 
 const ads=[
   {image:'/images/ads/factory-construction.png',title:{vi:'Xây dựng nhà máy - nhà xưởng trong KCN',en:'Industrial park factory and warehouse construction',zh:'工业园区工厂与厂房建设'}},
@@ -15,6 +17,9 @@ export function AdCarousel({ids,label}:{ids:number[];label:string}) {
   const {language}=useApp();
   const text=(vi:string,en:string,zh:string)=>language==='vi'?vi:language==='zh'?zh:en;
   const regionRef=useRef<HTMLDivElement>(null);
+  const previewRef=useRef<HTMLDialogElement>(null);
+  const [previewId,setPreviewId]=useState<number|null>(null);
+  useEffect(()=>{if(previewId!==null)previewRef.current?.showModal();},[previewId]);
   const [offscreen,setOffscreen]=useState(false);
   useEffect(()=>{if(typeof IntersectionObserver==='undefined')return;const observer=new IntersectionObserver(([entry])=>setOffscreen(!entry.isIntersecting));if(regionRef.current)observer.observe(regionRef.current);return()=>observer.disconnect()},[]);
   const [index,setIndex]=useState(0);
@@ -34,25 +39,38 @@ export function AdCarousel({ids,label}:{ids:number[];label:string}) {
     return ()=>{query?.removeEventListener('change',motion);document.removeEventListener('visibilitychange',visibility);};
   },[]);
   useEffect(()=>{
-    if(ids.length<2||offscreen||hover||focus||hidden||reduced)return;
+    if(ids.length<2||offscreen||hover||focus||hidden||reduced||previewId!==null)return;
     const timer=window.setInterval(()=>setIndex(i=>i+1),3000);
     return ()=>window.clearInterval(timer);
-  },[offscreen,hover,focus,hidden,reduced,ids.length,index]);
+  },[offscreen,hover,focus,hidden,reduced,ids.length,index,previewId]);
   const id=ids[index%ids.length];
-  const ad=ads[id];
   return <div ref={regionRef} className="ad-carousel" role="region" aria-roledescription={ids.length>1?'carousel':undefined} aria-label={label}
     onMouseEnter={()=>setHover(true)} onMouseLeave={()=>setHover(false)}
     onFocusCapture={()=>setFocus(true)} onBlurCapture={e=>{if(!e.currentTarget.contains(e.relatedTarget as Node))setFocus(false);}}>
-    {index>0 && <img key={`out-${index}`} className="ad-slide-out" src={ads[ids[(index-1)%ids.length]].image} alt="" aria-hidden="true" width="2172" height="724" />}
-    <a key={index} className={`ad-artwork${index>0?' ad-slide-in':''}`} href={ad.image} target="_blank" rel="noreferrer" aria-label={`${ad.title[language]} — ${text('Xem ảnh quảng cáo','View advertisement','查看广告图片')}`}>
-      <img src={ad.image} alt={`${ad.title[language]}. ${id===4?'':id===2?text('Banner do người dùng cung cấp.','User-provided banner.','用户提供的广告。'):text('Ảnh minh họa AI. Liên hệ 0900 000 000 là số minh họa.','AI illustration. Contact 0900 000 000 is a placeholder.','AI示意图。0900 000 000为示例号码。')}`} width="2172" height="724" loading="eager" decoding="async" />
-    </a>
-    <span className="ad-disclosure">Ads</span>
+    {index>0 && <div key={`out-${index}-${language}`} className="ad-slide-out" aria-hidden="true"><AdArtwork id={ids[(index-1)%ids.length]} language={language}/></div>}
+    <button type="button" key={`${index}-${language}`} className={`ad-artwork${index>0?' ad-slide-in':''}`} onClick={()=>setPreviewId(id)} aria-label={`${adCopy[id].heading[language]} — ${text('Xem quảng cáo','View advertisement','查看广告')}`}><AdArtwork id={id} language={language}/></button>
+    <dialog ref={previewRef} className="ad-preview" onClose={()=>setPreviewId(null)} aria-label={text('Xem quảng cáo','View advertisement','查看广告')}>
+      <button type="button" className="ad-preview-close" onClick={()=>previewRef.current?.close()} aria-label={text('Đóng','Close','关闭')}>×</button>
+      {previewId!==null&&<AdArtwork id={previewId} language={language}/>}
+    </dialog>
+  </div>;
+}
+
+function AdArtwork({id,language}:{id:number;language:Language}) {
+  const copy=adCopy[id];
+  return <div className={`ad-localized ad-theme-${id}`} lang={language}>
+    <img src={ads[id].image} alt="" aria-hidden="true" width="2172" height="724" decoding="async"/>
+    {id===2&&<span className="ad-bank-brand">{language==='vi'?'Chi nhánh Nam Sài Gòn':language==='zh'?'南西贡分行':'South Saigon Branch'}</span>}
+    <div className="ad-copy"><strong>{copy.heading[language]}</strong><span>{copy.description[language]}</span><span className="ad-cta">{copy.action[language]} →</span>
+      {id!==2&&id!==4&&<small>{language==='vi'?'Liên hệ':language==='zh'?'联系':'Contact'}: 0900 000 000</small>}
+    </div>
+    <span className="ad-disclosure">{language==='vi'?'Quảng cáo':language==='zh'?'广告':'Ads'}</span>
   </div>;
 }
 
 export function HomeAds({placement}:{placement:'top'|'bottom'}) {
-  return <section className={`page home-ads home-ads-${placement}`} aria-label={placement==='top'?'Quảng cáo sau tìm kiếm':'Quảng cáo sau hồ sơ KCN'}>
+  const {language}=useApp();
+  return <section className={`page home-ads home-ads-${placement}`} aria-label={language==='vi'?'Quảng cáo':language==='zh'?'广告':'Advertisements'}>
     {pools[placement].map((ids,i)=><AdCarousel key={i} ids={ids} label={`Banner ${placement} ${i+1}`}/>)}
   </section>;
 }

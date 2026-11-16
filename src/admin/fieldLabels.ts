@@ -680,9 +680,9 @@ export const fieldLabels: Record<string,[string,string,string]> = {
     "可用日期"
   ],
   "asset.powerMva": [
-    "Điện",
-    "Power",
-    "电力"
+    "Công suất điện (MVA)",
+    "Power capacity (MVA)",
+    "电力容量（MVA）"
   ],
   "asset.industries": [
     "Ngành phù hợp",

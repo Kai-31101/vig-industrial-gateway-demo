@@ -21,7 +21,8 @@ import {sortParksByCompleteness} from './parkCompleteness';
 import {ConnectionDetail,ConnectionDashboard,ExpoDirectoryAdmin} from './admin/Connections';
 import {successfulConnection} from './connectionLogic';
 import {validPhone} from './admin/model';
-import {ageDays} from './admin/insights';
+import {ageDays,assetTypeKey,regionKey} from './admin/insights';
+import {optionText} from './admin/copy';
 import { CSSProperties, FormEvent, ReactNode, Fragment, useMemo, useState, useRef, useEffect } from "react";
 import {
   BrowserRouter,
@@ -2075,7 +2076,6 @@ function RequestTable({ requests }: { requests: IndustrialRequest[] }) {
         <thead>
           <tr>
             <th>ID</th>
-            <th>{emptyCopy(language,"Loại yêu cầu","Enquiry type","咨询类型")}</th>
             <th>{ui(language, "Doanh nghiệp", "Organisation")}</th>
             <th>{ui(language, "Tỉnh/thành, khu vực", "Location")}</th>
             <th>{ui(language, "Trạng thái", "Status")}</th>
@@ -2086,18 +2086,13 @@ function RequestTable({ requests }: { requests: IndustrialRequest[] }) {
           {requests.map((r) => (
             <tr key={r.id}>
               <td>
-                <Link to={`/admin/requests/${r.id}`}>{r.id}</Link>
-              </td>
-              <td>
-                {r.kind === "find_supply"
-                  ? leasingIntentLabel('Find Supply',language)
-                  : emptyCopy(language,"Yêu cầu cũ – chào thuê bên ngoài","Legacy – external property offering","历史记录—外部物业招租")}
+                <Link className="nowrap" to={`/admin/requests/${r.id}`}>{r.id}</Link>
               </td>
               <td>
                 <b>{r.organization}</b>
-                <small>{dataText(r.assetType, language)}</small>
+                <small>{optionText(assetTypeKey(r.assetType),language)}{r.kind!=='find_supply'?` · ${emptyCopy(language,'Yêu cầu cũ','Legacy','历史记录')}`:''}</small>
               </td>
-              <td>{r.location}</td>
+              <td>{optionText(regionKey(r.location),language)}</td>
               <td>
                 <Badge value={r.status} />
               </td>

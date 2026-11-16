@@ -1,5 +1,7 @@
 import {remoteEnabled,api,ensureSession} from './remote';
-import {initialRequests} from './requestFixtures';
+import {initialRequests as baseRequests} from './requestFixtures';
+import {mockLeasingRequests} from './requestMockData';
+const initialRequests=[...baseRequests,...mockLeasingRequests];
 import {publicInventory,CONTENT_KEY} from './contentRepository';
 import {registerPublished,resetMembership} from './publicMembership';
 import {validLeasingContext,isPublicPark,isPublicAsset} from './leasing';

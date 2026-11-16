@@ -7,6 +7,7 @@ import {successfulConnection} from '../connectionLogic';
 import {useAdminActions} from './AdminContext';
 import {Access,useText} from './ui';
 import {PageHeader,DataTable} from './components';
+import {ColumnChart,StageBars,StackedBars} from './OverviewCharts';
 import {optionText} from './copy';
 import {activeRequest,ageDays,areaM2,askAiLink,formatArea,needsResponse,withinDays} from './insights';
 export {askAiLink};
@@ -74,8 +75,15 @@ export function OverviewDashboard(){
  const submitAsk=(e:FormEvent)=>{e.preventDefault();if(ask.trim())navigate(askAiLink(ask.trim()))};
 
  // Demand by industry (selected date range)
- const byIndustry=Object.entries(requests.reduce<Record<string,number>>((acc,r)=>{const key=r.industry||'';acc[key]=(acc[key]||0)+1;return acc},{})).sort((x,y)=>y[1]-x[1]).slice(0,5);
- const peak=Math.max(1,...byIndustry.map(([,n])=>n));
+ const byIndustry=Object.entries(requests.reduce<Record<string,number>>((acc,r)=>{const key=r.industry||'';acc[key]=(acc[key]||0)+1;return acc},{})).sort((x,y)=>y[1]-x[1]).slice(0,6);
+ // Weekly series: 12 buckets ending today (Asia/Ho_Chi_Minh), independent of the range filter.
+ const weekStart=(i:number)=>Date.now()-(11-i)*7*86400000-6*86400000;
+ const weekly=Array.from({length:12},(_,i)=>{const s0=weekStart(i),e0=s0+7*86400000;const value=leasing.filter(r=>{const at=Date.parse(r.submittedAt);return at>=s0&&at<e0}).length;const d=new Date(e0-86400000);return {key:String(i),label:d.toLocaleDateString(lang==='vi'?'vi-VN':lang==='zh'?'zh-CN':'en-GB',{day:'2-digit',month:'2-digit'}),value,hint:`${new Date(s0).toLocaleDateString(lang)} – ${d.toLocaleDateString(lang)}`}});
+ const weeklyTotal=weekly.reduce((n,w)=>n+w.value,0);
+ const stages:[string,string][]=[['submitted',t('Mới tiếp nhận','Received','已接收')],['under_review',t('Đang xác minh','Verifying','核实中')],['verified',t('Đã xác minh','Verified','已核实')],['matching',t('Đang ghép nối','Matching','匹配中')],['connection_scheduled',t('Hẹn khảo sát','Site visit','安排考察')],['closed',t('Đã đóng','Closed','已关闭')]];
+ const funnel=stages.map(([key,label])=>({key,label,value:requests.filter(r=>r.status===key).length}));
+ const typeKeys=['industrial_land','ready_built_factory','warehouse','build_to_suit'];
+ const areaByType=typeKeys.map(k=>{const rows=assets.filter(d=>(d.data as IndustrialAsset).type===k);const pub=rows.filter(d=>split.live.assets.has(d.id)).reduce((n,d)=>n+areaM2(d.data as IndustrialAsset),0),all=rows.reduce((n,d)=>n+areaM2(d.data as IndustrialAsset),0);return {key:k,label:optionText(k,lang),values:[pub,all-pub] as [number,number]}}).filter(d=>d.values[0]+d.values[1]>0);
  const counts:[View,number,typeof Factory][]=([['parks',parks.length,Factory],['assets',assets.length,Warehouse],['industries',industries.length,Layers3],['requests',requests.length,ClipboardList]] as [View,number,typeof Factory][]).filter(([key])=>key==='requests'||canCatalogue);
 
  return <Access permission="P11"><div className="admin-page workflow-page overview-dashboard">
@@ -88,22 +96,31 @@ export function OverviewDashboard(){
 
   <section className="overview-kpis" aria-label={t('Chỉ số chính','Key metrics','关键指标')}>{kpis.map(k=><Link key={k.label} to={k.to} className="overview-kpi"><span>{k.label}</span><strong>{k.value}</strong><small className={k.tone}>{k.note}</small></Link>)}</section>
 
+  <div className="overview-filterbar" role="group" aria-label={t('Bộ lọc thời gian','Date filter','时间筛选')}><label className="overview-range">{t('Khoảng thời gian','Date range','时间范围')}<select value={range} onChange={e=>setRange(e.target.value)}><option value="all">{t('Tất cả thời gian','All time','全部时间')}</option><option value="365">{t('12 tháng gần đây','Last 12 months','近12个月')}</option><option value="90">{t('90 ngày gần đây','Last 90 days','近90天')}</option><option value="custom">{t('Tùy chọn','Custom','自定义')}</option></select></label>
+   {range==='custom'&&<><label className="overview-range">{t('Từ ngày','From','开始日期')}<input type="date" value={from} max={today} onChange={e=>setFrom(e.target.value)}/></label><label className="overview-range">{t('Đến ngày','To','结束日期')}<input type="date" value={to} max={today} onChange={e=>setTo(e.target.value)}/></label></>}
+   <small>{range==='all'?t('Đang hiển thị toàn bộ dữ liệu','Showing all data','显示全部数据'):`${requests.length} ${t('nhu cầu trong khoảng đã chọn','enquiries in range','条区间内需求')}`}</small></div>
+  {!valid&&<p role="alert" className="admin-message error">{t('Chọn khoảng ngày hợp lệ, không vượt quá hôm nay.','Choose a valid date range ending no later than today.','请选择有效日期范围，结束日期不得晚于今天。')}</p>}
+
+  {canRequests&&<div className="overview-columns charts">
+   <section className="admin-panel"><div className="overview-panel-heading"><h2>{t('Nhu cầu mới 12 tuần gần nhất','New enquiries, last 12 weeks','近12周新需求')}</h2><small>{weeklyTotal} {t('nhu cầu','enquiries','条需求')}</small></div><ColumnChart data={weekly} unit={t('nhu cầu','enquiries','条需求')} caption={t('Số nhu cầu mới theo tuần','New enquiries per week','每周新需求')}/></section>
+   <section className="admin-panel"><div className="overview-panel-heading"><h2>{t('Phễu xử lý nhu cầu','Enquiry pipeline','需求处理漏斗')}</h2><small>{t('Bấm để xem danh sách','Click to list','点击查看')}</small></div><StageBars data={funnel} caption={t('Số nhu cầu theo bước xử lý','Enquiries by stage','各阶段需求数')} onSelect={key=>{choose('requests');setState(key)}}/>
+    <div className="overview-request-stats">{[['',t('Tất cả','All','全部')],['active',t('Đang xử lý','In progress','处理中')],['success',t('Thành công','Successful','成功')]].map(([key,label])=><button key={key} aria-pressed={view==='requests'&&state===key} onClick={()=>{choose('requests');setState(key)}}><strong>{requests.filter(r=>!key||(key==='active'?activeRequest(r):successfulConnection(r))).length}</strong><span>{label}</span></button>)}</div></section>
+  </div>}
+
   <div className="overview-columns">
    <section className="admin-panel overview-todo"><div className="overview-panel-heading"><h2>{t('Việc cần làm','To do','待办事项')}</h2>{todos.length>0&&<span className="overview-count">{todos.length}</span>}</div>
     {todos.length?<ul>{todos.slice(0,5).map(item=>{const Icon=todoIcon[item.kind];return <li key={item.kind+item.id} className={item.urgent?'urgent':''}><Link to={item.to}><Icon size={18}/><span><b>{item.title}</b><small>{item.meta}</small></span><ArrowRight size={16}/></Link></li>})}</ul>:<p className="overview-empty">{t('Không có việc tồn đọng.','Nothing outstanding.','暂无待办。')}</p>}
-    {todos.length>5&&<p className="overview-more">+{todos.length-5} {t('việc khác','more items','项其他')}</p>}
+    {todos.length>5&&<Link className="overview-more" to="/admin/requests">+{todos.length-5} {t('việc khác','more items','项其他')} →</Link>}
    </section>
-   <section className="admin-panel overview-demand"><div className="overview-panel-heading"><h2>{t('Nhu cầu theo ngành','Demand by industry','按行业需求')}</h2><label className="overview-range">{t('Khoảng thời gian','Date range','时间范围')}<select value={range} onChange={e=>setRange(e.target.value)}><option value="all">{t('Tất cả thời gian','All time','全部时间')}</option><option value="365">{t('12 tháng gần đây','Last 12 months','近12个月')}</option><option value="90">{t('90 ngày gần đây','Last 90 days','近90天')}</option><option value="custom">{t('Tùy chọn','Custom','自定义')}</option></select></label></div>
-    {range==='custom'&&<div className="overview-date-controls"><label>{t('Từ ngày','From','开始日期')}<input type="date" value={from} max={today} onChange={e=>setFrom(e.target.value)}/></label><label>{t('Đến ngày','To','结束日期')}<input type="date" value={to} max={today} onChange={e=>setTo(e.target.value)}/></label></div>}
-    {!valid&&<p role="alert" className="admin-message error">{t('Chọn khoảng ngày hợp lệ, không vượt quá hôm nay.','Choose a valid date range ending no later than today.','请选择有效日期范围，结束日期不得晚于今天。')}</p>}
-    {byIndustry.length?<ul className="overview-bars">{byIndustry.map(([key,n])=><li key={key}><span>{key?industryLabel(key,lang):t('Chưa xác định','Not specified','未指定')}</span><i style={{width:`${n/peak*100}%`}}/><b>{n}</b></li>)}</ul>:<p className="overview-empty">{t('Chưa có nhu cầu trong khoảng thời gian này.','No enquiries in this period.','此期间暂无需求。')}</p>}
-    <div className="overview-request-stats">{[['',t('Tất cả','All','全部')],['active',t('Đang xử lý','In progress','处理中')],['success',t('Thành công','Successful','成功')]].map(([key,label])=><button key={key} aria-pressed={view==='requests'&&state===key} onClick={()=>{choose('requests');setState(key)}}><strong>{requests.filter(r=>!key||(key==='active'?activeRequest(r):successfulConnection(r))).length}</strong><span>{label}</span></button>)}</div>
+   <section className="admin-panel overview-demand"><div className="overview-panel-heading"><h2>{t('Nhu cầu theo ngành','Demand by industry','按行业需求')}</h2><small>{t('Top 6','Top 6','前6')}</small></div>
+    {byIndustry.length?<StageBars data={byIndustry.map(([key,n])=>({key,label:key?industryLabel(key,lang):t('Chưa xác định','Not specified','未指定'),value:n}))} caption={t('Số nhu cầu theo ngành','Enquiries by industry','各行业需求数')} onSelect={key=>{choose('requests');setIndustry(key)}}/>:<p className="overview-empty">{t('Chưa có nhu cầu trong khoảng thời gian này.','No enquiries in this period.','此期间暂无需求。')}</p>}
    </section>
   </div>
 
   <section className="admin-panel overview-catalogue"><div className="overview-panel-heading"><h2>{t('Danh mục','Catalogue','目录')}</h2><small>{t('Chọn để xem chi tiết','Select to explore','选择查看详情')}</small></div>
    <div className="overview-cards" role="region" aria-label={t('Chọn danh sách','Select catalogue','选择列表')}>{counts.map(([key,count,Icon])=><button key={key} className={'overview-card '+(view===key?'active':'')} aria-pressed={view===key} onClick={()=>view===key?setView(null):choose(key)}><Icon size={18}/><span>{titles[key]}</span><strong>{count.toLocaleString(lang)}</strong></button>)}</div>
-   {canCatalogue&&<div className="overview-status">{(['parks','assets'] as const).map(key=>{const rows=key==='parks'?parks:assets;const states=['published','in_review','draft','approved'].map(s=>[s,rows.filter(d=>d.state===s).length] as const).filter(([,n])=>n>0);return <div className="overview-status-row" key={key}><b>{titles[key]}</b>{states.map(([s,n])=><button key={s} aria-pressed={view===key&&state===s} onClick={()=>{choose(key);setState(s)}}><span>{optionText(s,lang)}</span><strong>{n}</strong></button>)}</div>})}</div>}
+   {canCatalogue&&<div className="overview-catalogue-grid"><div><h3>{t('Diện tích mặt bằng theo loại','Asset area by type','各类物业面积')}</h3><StackedBars data={areaByType} series={[t('Công bố','Published','已发布'),t('Nháp','Draft','草稿')]} format={v=>formatArea(v,lang)} caption={t('Diện tích công bố và nháp theo loại mặt bằng','Published and draft area by asset type','各类物业已发布与草稿面积')}/></div>
+    <div className="overview-status">{(['parks','assets'] as const).map(key=>{const rows=key==='parks'?parks:assets;const states=['published','in_review','draft','approved'].map(s=>[s,rows.filter(d=>d.state===s).length] as const).filter(([,n])=>n>0);return <div className="overview-status-row" key={key}><b>{titles[key]}</b>{states.map(([s,n])=><button key={s} aria-pressed={view===key&&state===s} onClick={()=>{choose(key);setState(s)}}><span>{optionText(s,lang)}</span><strong>{n}</strong></button>)}{key==='assets'&&split.summary.assets.hiddenByDraftPark>0&&<small className="hidden-note">{split.summary.assets.hiddenByDraftPark} {t('ẩn vì KCN chưa công bố','hidden: park unpublished','因园区未发布而隐藏')}</small>}</div>})}<p className="overview-status-hint">{t('Trạng thái quy trình duyệt nội dung','Content workflow status','内容审核流程状态')}</p></div></div>}
   </section>
 
   {view&&<section id="overview-details" className="admin-panel overview-details"><div className="overview-detail-heading"><h2>{titles[view]}{state?` — ${state==='active'?t('Đang xử lý','In progress','处理中'):state==='success'?t('Thành công','Successful','成功'):optionText(state,lang)}`:''}</h2><div className="admin-actions"><button className="button" onClick={()=>{setQuery('');setIndustry('');setState('')}}>{t('Xóa bộ lọc','Clear filters','清除筛选')}</button><button className="button icon" onClick={()=>setView(null)} aria-label={t('Thu gọn','Collapse','收起')}><X size={18}/></button></div></div>

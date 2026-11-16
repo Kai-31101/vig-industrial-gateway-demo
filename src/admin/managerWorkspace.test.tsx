@@ -20,7 +20,7 @@ describe('manager overview',()=>{
   expect(screen.queryByRole('table')).toBeNull();
   const drafts=h.result.current.store.drafts.filter(d=>d.state==='draft').length;
   const todo=screen.getByRole('heading',{name:'Việc cần làm'}).closest('section')!;
-  const links=within(todo).getAllByRole('link');
+  const links=within(todo).getAllByRole('listitem');
   expect(drafts).toBeGreaterThan(0);
   expect(links.length).toBeGreaterThan(0);
   expect(links.length).toBeLessThanOrEqual(5);

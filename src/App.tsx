@@ -289,7 +289,7 @@ function LanguageToggle({ compact = false }: { compact?: boolean }) {
 function Header() {
   const mobile=useMobile();const menuTrigger=useRef<HTMLButtonElement>(null);
   const closeMenu=()=>{setOpen(false);menuTrigger.current?.focus()};
-  const { language, toggleParkChat, chatOpen } = useApp();
+  const { language } = useApp();
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const nav = [
@@ -312,7 +312,6 @@ function Header() {
             </small>
           </span>
         </Link>
-        {mobile && <button className="mobile-header-chat" onClick={toggleParkChat} aria-expanded={chatOpen} aria-label={ui(language,"Mở trao đổi với khu công nghiệp","Open industrial park chat")}><LotusChatIcon/></button>}
         <button
           className="mobile-menu"
           ref={menuTrigger}
@@ -506,6 +505,7 @@ function FloatingParkChat() {
         type="button"
         className={`floating-chat-launcher ${chatOpen ? "open" : ""}`}
         onClick={toggleParkChat}
+        aria-expanded={chatOpen}
         aria-label={ui(language, "Mở trao đổi với khu công nghiệp", "Open industrial park chat")}
       >
         {chatOpen ? <X /> : <LotusChatIcon/>}

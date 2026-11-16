@@ -8,7 +8,11 @@
 .floating-chat-launcher:not(.open){border:0;background:transparent;box-shadow:0 8px 26px rgba(2,53,125,.28)}
 .floating-chat-launcher>span{z-index:5}
 @media(min-width:681px){.floating-chat-root>.floating-chat-panel{bottom:92px}}
-@media(max-width:680px){.header .mobile-header-chat{position:relative;width:50px;height:50px;padding:0;border:0;border-radius:50%;background:transparent}}
+@media(max-width:680px){
+ body .floating-chat-root{right:max(12px,env(safe-area-inset-right,0px));bottom:calc(12px + max(env(safe-area-inset-bottom,0px),var(--action-bar-h,0px)))}
+ .floating-chat-root>.floating-chat-launcher{display:grid;width:64px;height:64px}
+ .floating-chat-root>.floating-chat-panel{bottom:80px;max-height:calc(100dvh - 120px - env(safe-area-inset-bottom,0px));width:calc(100vw - 24px - env(safe-area-inset-right,0px))}
+}
 @keyframes lotus-chat-spin{to{transform:rotate(360deg)}}
 @keyframes lotus-chat-flare{0%,100%{transform:scale(.96);opacity:.55}50%{transform:scale(1.08);opacity:1}}
 @media(prefers-reduced-motion:reduce){.lotus-chat-ring,.lotus-chat-orbit,.lotus-chat-flare{animation:none}}

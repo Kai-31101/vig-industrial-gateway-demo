@@ -1,5 +1,6 @@
 // UI labels shared by the current VSIP profile editor.
 const groupLabels: Record<string,[string,string,string]> = {
+  asset:['Loại và diện tích mặt bằng','Asset type and area','物业类型与面积'],
   identity:['Nhận diện cơ bản','Core identity','基本资料'],location:['Vị trí','Location','位置'],legal:['Hồ sơ pháp lý','Legal documents','法律文件'],source:['Nguồn & xác minh','Sources & verification','来源与核验'],
   mapMode:['Kiểu bản đồ','Map display','地图显示'],masterplan:['Quy hoạch & lô','Masterplan & plots','总平面图与地块'],industryNote:['Ghi chú ngành nghề','Industry note','行业备注'],pricing:['Giá thuê','Lease price','租金'],lease_only:['Chỉ hỗ trợ cho thuê','Lease only','仅租赁'],
 

@@ -1,6 +1,21 @@
 {
   "rewrites": [
-    { "source": "/assets/asset-:id", "destination": "/index.html" },
-    { "source": "/((?!images/|assets/).*)", "destination": "/index.html" }
-  ]
+    {
+      "source": "/api/:path*",
+      "destination": "/api/index?route=:path*"
+    },
+    {
+      "source": "/assets/asset-:id",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/((?!api/|images/|assets/).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "functions": {
+    "api/index.ts": {
+      "maxDuration": 120
+    }
+  }
 }

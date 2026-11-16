@@ -1,7 +1,7 @@
 import {BrandLogo} from "../BrandLogo";
 import {useState} from 'react';
 import {Link,Navigate,useLocation,useNavigate} from 'react-router-dom';
-import {useAdmin} from './AdminContext';
+import {useAdminActions as useAdmin} from './AdminContext';
 import {firstAdminPage,permissions,routePermission} from './model';
 import {AdminLanguage,AdminNotice,Message,useText} from './ui';
 

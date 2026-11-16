@@ -2,7 +2,7 @@ import {useRef,useState} from 'react';
 import {Link,useParams} from 'react-router-dom';
 import ExcelJS from 'exceljs';
 import {useApp,tr} from '../AppContext';
-import {useAdmin} from './AdminContext';
+import {useAdminActions as useAdmin} from './AdminContext';
 import {Access,AdminNotice,Message,useText} from './ui';
 import {downloadWorkbook} from './workbooks';
 import {StatePanel} from '../EmptyStates';

@@ -2,7 +2,7 @@ import {useState} from 'react';
 import type {Language} from '../types';
 import {PackageCards} from '../PackageCards';
 import {packageCopyErrors,type PackageCopy,type ServicePackage} from '../servicePackages';
-import {useAdmin} from './AdminContext';
+import {useAdminActions as useAdmin} from './AdminContext';
 import {Access,AdminNotice,Message,useText} from './ui';
 
 export function PackageSettings(){
@@ -24,7 +24,7 @@ export function PackageSettings(){
         {(Object.keys(labels) as (keyof PackageCopy)[]).map(key=><label className="package-editor-field" key={key}>{labels[key]}<textarea aria-label={labels[key]} rows={key==='benefits'?5:2} disabled={!editable} value={draft.content[lang][key]} aria-invalid={errors.includes(`${lang}.${key}`)} maxLength={{name:80,audience:200,benefits:700,scope:350}[key]} onChange={e=>{setDraft({...draft,content:{...draft.content,[lang]:{...draft.content[lang],[key]:e.target.value}}});setMessage('')}}/>{errors.includes(`${lang}.${key}`)&&<small role="alert">{t('Bắt buộc nhập; lợi ích tối đa 5 dòng, mỗi dòng 140 ký tự.','Required; benefits allow up to 5 lines of 140 characters each.','必填；优势最多5行，每行140个字符。')}</small>}</label>)}
       </section><section className="admin-panel"><h2>{t('Xem trước','Preview','预览')}</h2><PackageCards packages={[draft]} language={lang} value={draft.id}/></section></div>
       <Message code={message}/>{stale&&<Message code="stale"/>}
-      {editable&&<div className="admin-actions"><button className="button primary" disabled={!dirty||stale} onClick={()=>{const invalid=packageCopyErrors(draft.content);setErrors(invalid);if(invalid.length){setLang(invalid[0].split('.')[0] as Language);setMessage('validation');return}const r=a.savePackage(id,draft.content,draft.revision);setMessage(r.ok?'success':r.error||'validation');if(r.ok)setDraft({...draft,revision:draft.revision+1})}}>{t('Lưu nội dung','Save content','保存内容')}</button><button className="button" onClick={()=>load(id)}>{stale?t('Tải lại nội dung','Reload content','重新加载内容'):t('Hủy thay đổi','Cancel changes','取消更改')}</button><span role="status">{dirty?t('Có thay đổi chưa lưu. Lưu hoặc hủy trước khi chọn gói khác.','Unsaved changes. Save or cancel before selecting another package.','有未保存的更改。选择其他套餐前请保存或取消。'):t('Nội dung đã lưu','Content saved','内容已保存')}</span></div>}
+      {editable&&<div className="admin-actions"><button className="button primary" disabled={!dirty||stale} onClick={async ()=>{const invalid=packageCopyErrors(draft.content);setErrors(invalid);if(invalid.length){setLang(invalid[0].split('.')[0] as Language);setMessage('validation');return}const r=await a.savePackage(id,draft.content,draft.revision);setMessage(r.ok?'success':r.error||'validation');if(r.ok)setDraft({...draft,revision:draft.revision+1})}}>{t('Lưu nội dung','Save content','保存内容')}</button><button className="button" onClick={()=>load(id)}>{stale?t('Tải lại nội dung','Reload content','重新加载内容'):t('Hủy thay đổi','Cancel changes','取消更改')}</button><span role="status">{dirty?t('Có thay đổi chưa lưu. Lưu hoặc hủy trước khi chọn gói khác.','Unsaved changes. Save or cancel before selecting another package.','有未保存的更改。选择其他套餐前请保存或取消。'):t('Nội dung đã lưu','Content saved','内容已保存')}</span></div>}
     </>}
   </div></Access>;
 }

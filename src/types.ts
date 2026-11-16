@@ -53,7 +53,7 @@ export type RequestKind = 'find_demand' | 'find_supply';
 export interface IndustrialAsset { imageApproved?: boolean; priceMode?: 'specific' | 'negotiable' | 'not_available'; pricingBasis?: string; }
 export type RequestStatus = 'submitted' | 'under_review' | 'verified' | 'matching' | 'connection_scheduled' | 'closed' | 'rejected';
 export interface ConnectionOutcome { result: 'success' | 'unsuccessful'; note: string; requesterConfirmed: boolean; partnerConfirmed: boolean; confirmedOn: string; recordedBy: string; }
-export interface IndustrialRequest { parkId?: string; assetId?: string; entrySource?: 'form'|'park'|'asset'; direction?: 'inbound'|'outbound'; consent?: boolean; outcome?: ConnectionOutcome; revision?: number; selectedParkId?: string; coordinationNote?: string; }
+export interface IndustrialRequest { parkId?: string; assetId?: string; entrySource?: 'form'|'park'|'asset'|'ai_chat'; direction?: 'inbound'|'outbound'; consent?: boolean; outcome?: ConnectionOutcome; revision?: number; selectedParkId?: string; coordinationNote?: string; }
 export interface RequestActivity { id: string; at: string; actor: string; action: LocalizedText; }
 export interface IndustrialRequest { id: string; kind: RequestKind; organization: string; contactName: string; email: string; phone: string; service: string; assetType: string; industrialParkName: string; location: string; areaMin: number; areaMax: number; transaction: 'lease' | 'sale'; budgetOrPrice: string; industry: string; availabilityDate: string; requirements: string; status: RequestStatus; submittedAt: string; assignedTo: string; activities: RequestActivity[]; rejectionReason?: string; }
 export interface ParkChatMessage { id: string; sender: 'supplier' | 'user'; text: LocalizedText; at?:string; status?:'sending'|'sent'|'failed'; assetId?:string; contextOnly?:boolean; }
@@ -81,3 +81,5 @@ export interface ParkMasterplanData { background:'builtin'|string; aspectRatio:n
 export interface AssetPricing { mode:'specific'|'negotiable'|'not_available'; amount:number|null; currency:'VND'|'USD'; areaBasis:'m²'|'ha'; period:'month'|'year'|'term'; }
 export interface IndustrialParkProfile { masterplan?:ParkMasterplanData; mapMode?:'exact'|'regional'; }
 export interface IndustrialAsset { pricing?:AssetPricing; }
+
+export interface IndustrialRequest { budget?:import('./requestSchema').RequestBudget;dateUnknown?:boolean;idempotencyKey?:string; }

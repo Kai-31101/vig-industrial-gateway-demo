@@ -1,3 +1,5 @@
+import {remoteEnabled} from '../remote';
+import {RemoteAdminProvider} from './RemoteAdminProvider';
 import {invalidateChangedApprovals} from './contentIntegrity';
 import {CONTENT_KEY,hasDeploymentDrift,parseContentSnapshot,reconcileDrafts,loadContent,persistContent,hydrateContent,deploymentInventory} from '../contentRepository';
 import { createContext,useContext,useRef,useState,useEffect,type ReactNode } from 'react';
@@ -7,7 +9,7 @@ import {parks as seedParks,assets as seedAssets} from '../data';
 import type {ConnectionOutcome,RequestStatus} from '../types';
 import { initialAdmin,permissions,validRole,validMatrix,validEmail,validPhone,validPassword,inviteStatus,contentErrors,publicationIssues,isPark,type AdminStore,type AdminUser,type AdminRole,type Content,type Audit,type ImportBatch } from './model';
 type Result={ok:boolean;error?:string;id?:string};
-interface AdminState { deploymentDrift:boolean;reconcile:()=>Result;restoreBackup:(raw:string)=>Result; writable:boolean; recovery:boolean; store:AdminStore;current:AdminUser|undefined; can:(p:string)=>boolean; enterDemo:()=>void; login:(username:string,password:string)=>Result; logout:()=>void; reset:()=>void;
+export interface AdminState { remoteCommand?:(action:string,args:any[])=>Promise<Result>;remoteError?:string;remoteScope?:string;remoteBusy?:boolean; deploymentDrift:boolean;reconcile:()=>Result;restoreBackup:(raw:string)=>Result; writable:boolean; recovery:boolean; store:AdminStore;current:AdminUser|undefined; can:(p:string)=>boolean; enterDemo:()=>void; login:(username:string,password:string)=>Result; logout:()=>void; reset:()=>void;
   savePackage:(id:string,content:ServicePackage['content'],revision:number)=>Result;
   configure:(matrix:AdminStore['matrix'],revision:number,note?:string)=>Result; retryDelivery:(id:string)=>Result;
   manageRequest:(id:string,revision:number,to:RequestStatus,reason?:string,outcome?:ConnectionOutcome,parkId?:string)=>Result;
@@ -18,8 +20,10 @@ interface AdminState { deploymentDrift:boolean;reconcile:()=>Result;restoreBacku
   save:(data:Content,revision?:number)=>Result; workflow:(id:string,revision:number,action:'submit'|'approve'|'return'|'publish'|'withdraw',reason?:string)=>Result;
   addBatch:(batch:ImportBatch)=>Result; applyBatch:(id:string,selected:string[])=>Result;
 }
-const C=createContext<AdminState|null>(null);
-export function AdminProvider({children}:{children:ReactNode}){
+export const AdminContext=createContext<AdminState|null>(null);
+const C=AdminContext;
+export function AdminProvider({children}:{children:ReactNode}){return remoteEnabled?<RemoteAdminProvider>{children}</RemoteAdminProvider>:<LocalAdminProvider>{children}</LocalAdminProvider>}
+function LocalAdminProvider({children}:{children:ReactNode}){
   const app=useApp();const [store,setStore]=useState(()=>{const seeds=deploymentInventory();return hydrateContent(initialAdmin(seeds.parks,seeds.assets))});const ref=useRef(store);ref.current=store;
   const [userId,setUserId]=useState('');const session=useRef('');const current=store.users.find(u=>u.id===userId);
   const [writable,setWritable]=useState(import.meta.env.MODE==='test');
@@ -147,3 +151,5 @@ export function AdminProvider({children}:{children:ReactNode}){
   return <C.Provider value={{deploymentDrift:hasDeploymentDrift(),reconcile:()=>restore(),restoreBackup:raw=>restore(raw),writable,recovery,store,current,can,savePackage,enterDemo,login,logout,configure,retryDelivery,manageRequest,assignConnection,reset:()=>{if(!writable)return;localStorage.removeItem(CONTENT_KEY);repositoryRevision.current=0;setRecovery(false);app.resetDemo();const base=deploymentInventory();commit(initialAdmin(base.parks,base.assets));passwords.current={sa:'VigDemo@2026',admin:'VigDemo@2026',operator:'VigDemo@2026',existing:'VigDemo@2026'};logout()},invite,revoke,accept,updateUser,save,workflow,addBatch,applyBatch}}>{children}</C.Provider>;
 }
 export const useAdmin=()=>{const c=useContext(C);if(!c)throw new Error('AdminProvider required');return c};
+
+export function useAdminActions(){const a=useAdmin();const names=['save','workflow','addBatch','applyBatch','restoreBackup','savePackage','configure','invite','revoke','updateUser','retryDelivery','manageRequest','assignConnection','reset','reconcile','accept'] as const;const methods=Object.fromEntries(names.map(name=>[name,async(...args:any[])=>a.remoteCommand?a.remoteCommand(name,args):(a[name] as Function)(...args)])) as {[K in typeof names[number]]:(...args:Parameters<AdminState[K]>)=>Promise<Result>};return {...a,...methods};}

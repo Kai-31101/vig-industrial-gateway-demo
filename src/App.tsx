@@ -1,3 +1,6 @@
+import {remoteEnabled} from './remote';
+import {useRequestActions} from './AppContext';
+import {AiChat,InternalAccess,AdminAssistant} from './AiChat';
 import {LotusChatIcon} from './LotusChatIcon';
 import type {IndustrialAsset} from './types';
 import {ParkLocationMap,ParkMasterplan} from "./ParkMaps";
@@ -76,7 +79,7 @@ import { AppProvider, tr, useApp } from "./AppContext";
 import { StatePanel, FactGroup, SafeImage, OptionalSection, DetailUnavailable, hasValue, safeUrl, absentValue, emptyCopy } from "./EmptyStates";
 import { previewPark, previewAsset } from "./emptyPreview";
 import { StatePreview } from "./StatePreview";
-import { AdminProvider, useAdmin } from './admin/AdminContext';
+import { AdminProvider, useAdminActions as useAdmin } from './admin/AdminContext';
 import { ContentList, ContentEditor } from './admin/ContentEditor';
 import { UsersPage, AcceptInvitation } from './admin/Users';
 import { BatchImport } from './admin/BatchImport';
@@ -520,7 +523,7 @@ function PublicShell({ children }: { children: ReactNode }) {
       <Header />
       <main>{children}</main>
       <Footer />
-      <FloatingParkChat />
+      {remoteEnabled?<AiChat scope="public"/>:<FloatingParkChat />}
     </>
   );
 }
@@ -1677,7 +1680,7 @@ const emptyForm = {
 };
 function RequestFormPage({ kind }: { kind: RequestKind }) {
   const mobile=useMobile();
-  const { language, createRequest, parks, assets } = useApp();
+  const { language, createRequest, parks, assets } = useRequestActions();
 
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -1712,7 +1715,7 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
   }));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const isSupply = kind === "find_supply";
-  const submitted=useRef(false);
+  const submitted=useRef(false);const requestKey=useRef(crypto.randomUUID());
   const [consent,setConsent]=useState(false);
   const [dateUnknown,setDateUnknown]=useState(false);
   const [priceMode,setPriceMode]=useState("");
@@ -1728,7 +1731,7 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
     industry:[...new Set(parks.filter(isPublicPark).flatMap(p=>p.suitableIndustries)),'Not specified'],
     location:[...new Set(parks.filter(isPublicPark).map(p=>p.province)),...(isSupply?['North','Central','South','Not specified']:[])],
   };
-  function submit(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
     if(submitted.current)return;
     const er: Record<string, string> = {};
@@ -1775,9 +1778,10 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
     if(!validLeasingContext({kind,transaction:form.transaction as 'lease'|'sale',service:form.service,parkId:selectedPark?.id,assetId:selectedAsset?.id},parks,assets)||searchParams.get('transaction')&&searchParams.get('transaction')!=='lease'){
       setErrors({context:emptyCopy(language,'Chỉ tiếp nhận nhu cầu thuê mặt bằng trong danh mục demo hiện tại.','Only leasing enquiries for the current demo portfolio are accepted.','仅接受当前演示园区内物业的租赁咨询。')});return;
     }
-    const id = createRequest({
+    submitted.current=true;let id:string;try{id = await createRequest({
       parkId:selectedPark?.id,assetId:selectedAsset?.id,entrySource:selectedAsset?"asset":selectedPark?"park":"form",consent,
       ...form,
+      idempotencyKey:requestKey.current,dateUnknown,budget:{mode:priceMode as 'specific'|'negotiable'|'not_available',amount:priceMode==='specific'?+form.budgetOrPrice:null,currency:currency as 'VND'|'USD',areaBasis:priceArea as 'm²'|'ha',period:(pricePeriod==='lease term'?'term':pricePeriod) as 'month'|'year'|'term'},
       budgetOrPrice:priceMode==="specific"?`${currency} ${form.budgetOrPrice}/${basis}`:priceMode==="negotiable"?"Negotiable":"Not specified",
       availabilityDate:dateUnknown?"":form.availabilityDate,
       kind,
@@ -1785,6 +1789,7 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
       areaMax: Number((+form.areaMax * areaFactors[areaUnit]).toPrecision(15)),
       transaction: form.transaction as "lease" | "sale",
     });
+    }catch{submitted.current=false;setErrors({context:emptyCopy(language,'Không thể lưu yêu cầu. Vui lòng thử lại.','Unable to save the enquiry. Please retry.','无法保存咨询，请重试。')});return;}
     submitted.current=true;
     navigate(`/request-confirmation/${id}`);
   }
@@ -2010,7 +2015,7 @@ function ExpoPage(){return <PublicShell><div className="page page-top"><TradeExp
 function AdminGuard({ children }: { children: ReactNode }) {
   const admin=useAdmin(),{pathname}=useLocation();
   useEffect(()=>{if(!admin.current)admin.enterDemo()},[admin.current,admin.enterDemo]);
-  if(!admin.current)return null;
+  if(!admin.current)return <div className="page section"><p role="status">{admin.remoteError?'Không thể kết nối / Unable to connect / 无法连接':'Đang tải dữ liệu / Loading data / 正在加载'}</p>{admin.remoteError&&<button className="button" onClick={admin.enterDemo}>Thử lại / Retry / 重试</button>}</div>;
   return pathname==='/admin/no-access'?<>{children}</>:<Access permission={routePermission(pathname)}>{children}</Access>;
 }
 function AdminShell({ children }: { children: ReactNode }) {
@@ -2023,6 +2028,7 @@ function AdminShell({ children }: { children: ReactNode }) {
     admin.logout();
   };
   const links = [
+    ["/admin/assistant",Sparkles,emptyCopy(language,"Trợ lý AI","AI assistant","AI助手")],
     [
       "/admin/dashboard",
       LayoutDashboard,
@@ -2051,6 +2057,7 @@ function AdminShell({ children }: { children: ReactNode }) {
   ].filter(([path])=>admin.can(routePermission(String(path))));
   return (
     <div className="admin-shell">
+      {remoteEnabled&&location.pathname!=='/admin/assistant'&&<AiChat scope="admin"/>}
       <aside className="admin-sidebar">
         <Link to={firstAdminPage(admin.current,admin.store.matrix)} className="admin-brand">
           <BrandLogo compact />
@@ -2077,7 +2084,7 @@ function AdminShell({ children }: { children: ReactNode }) {
           })}
         </nav>
         <div className="sidebar-bottom">
-          <button disabled={!admin.writable||!admin.can('P06')} onClick={()=>{if(window.confirm(emptyCopy(language,'Xóa nội dung đã nhập và khôi phục dữ liệu demo?','Clear authored content and reset the demo?','清除编辑内容并恢复演示数据？')))admin.reset()}}>
+          <button disabled={!admin.writable||!admin.can('P06')} onClick={async ()=>{if(window.confirm(emptyCopy(language,'Xóa nội dung đã nhập và khôi phục dữ liệu demo?','Clear authored content and reset the demo?','清除编辑内容并恢复演示数据？')))await admin.reset()}}>
             <RotateCcw />
             {ui(language, "Khôi phục dữ liệu demo", "Reset demo")}
           </button>
@@ -2103,7 +2110,7 @@ function AdminShell({ children }: { children: ReactNode }) {
               aria-label={
                 ui(language, "Khôi phục dữ liệu demo", "Reset demo")
               }
-              disabled={!admin.writable||!admin.can('P06')} onClick={()=>{if(window.confirm(emptyCopy(language,'Xóa nội dung đã nhập và khôi phục dữ liệu demo?','Clear authored content and reset the demo?','清除编辑内容并恢复演示数据？')))admin.reset()}}
+              disabled={!admin.writable||!admin.can('P06')} onClick={async ()=>{if(window.confirm(emptyCopy(language,'Xóa nội dung đã nhập và khôi phục dữ liệu demo?','Clear authored content and reset the demo?','清除编辑内容并恢复演示数据？')))await admin.reset()}}
             >
               <RotateCcw />
             </button>
@@ -3107,6 +3114,8 @@ function AdminParkDetail() {
 }
 
 function AppRoutes() {
+  const {dataLoading,dataError,language}=useApp();const location=useLocation();
+  if(remoteEnabled&&!location.pathname.startsWith('/admin')&&(dataLoading||dataError))return <><Header/><main className="page section"><p role="status">{dataError?emptyCopy(language,'Không tải được dữ liệu. Vui lòng thử lại.','Unable to load data. Please retry.','无法加载数据，请重试。'):emptyCopy(language,'Đang tải dữ liệu…','Loading data…','正在加载数据…')}</p>{dataError&&<button className="button" onClick={()=>window.dispatchEvent(new Event('vsip-public-refresh'))}>{emptyCopy(language,'Thử lại','Retry','重试')}</button>}</main></>;
   return (
     <Routes>
       {import.meta.env.DEV && <Route path="/demo/empty-states" element={<PublicShell><StatePreview /></PublicShell>} />}
@@ -3128,6 +3137,8 @@ function AppRoutes() {
       <Route path="/industrial-expo" element={<RetiredPublicFlow event />} />
       <Route path="/login" element={<Navigate to="/admin/login" replace/>} />
       <Route path="/admin/login" element={<Navigate to="/admin" replace/>}/>
+      <Route path="/admin/assistant" element={<AdminGuard><AdminShell><AdminAssistant/></AdminShell></AdminGuard>}/>
+      <Route path="/admin/internal" element={<InternalAccess/>}/>
       <Route path="/admin" element={<AdminEntry/>}/>
       <Route path="/admin/packages" element={<AdminGuard><AdminShell><PackageSettings/></AdminShell></AdminGuard>}/>
       <Route path="/admin/permissions" element={<AdminGuard><AdminShell><PermissionMatrix/></AdminShell></AdminGuard>}/>

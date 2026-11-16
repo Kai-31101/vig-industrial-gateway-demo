@@ -1,3 +1,5 @@
+import {remoteEnabled,api,ensureSession} from './remote';
+import {initialRequests} from './requestFixtures';
 import {publicInventory,CONTENT_KEY} from './contentRepository';
 import {registerPublished,resetMembership} from './publicMembership';
 import {validLeasingContext,isPublicPark,isPublicAsset} from './leasing';
@@ -15,7 +17,7 @@ import type { IndustrialParkProfile, IndustrialRequest, Language, ParkChatMessag
 
 type Role = 'public' | 'admin';
 type NewRequest = Omit<IndustrialRequest, 'id' | 'status' | 'submittedAt' | 'assignedTo' | 'activities'>;
-interface AppState {
+interface AppState { dataLoading?:boolean; dataError?:string; createRequestRemote?:(input:NewRequest)=>Promise<string>;
   language: Language; setLanguage: (l: Language) => void; role: Role; setRole: (r: Role) => void;
   parks: IndustrialParkProfile[]; assets: IndustrialAsset[]; expos: typeof expos; requests: IndustrialRequest[];
   publishContent: (data: IndustrialParkProfile | IndustrialAsset) => void;
@@ -29,28 +31,36 @@ interface AppState {
 
 const Context = createContext<AppState | null>(null);
 const now = () => new Date().toISOString();
-const initialRequests: IndustrialRequest[] = [
-  { id: 'VSIP-2026-001', kind: 'find_supply', organization: 'Korea Future Electronics', contactName: 'Kim Min-jun', email: 'minjun@example.com', phone: '+82 10 5555 0123', service: 'Premium Matching', assetType: 'Ready-built factory', industrialParkName: 'VSIP Thái Bình', location: 'Northern Vietnam', areaMin: 15000, areaMax: 20000, transaction: 'lease', budgetOrPrice: 'Negotiable', industry: 'Electronics', availabilityDate: '2027-04-01', requirements: '2–4 MVA power, clean production environment, port access.', status: 'matching', submittedAt: '2026-08-18T08:30:00Z', assignedTo: 'Lan Anh', activities: [{ id: 'a1', at: '2026-08-18T08:30:00Z', actor: 'System', action: { vi: 'Đã tiếp nhận yêu cầu', en: 'Request submitted' } }, { id: 'a2', at: '2026-08-18T10:00:00Z', actor: 'Lan Anh', action: { vi: 'Đã xác minh và bắt đầu ghép nối', en: 'Verified and started matching' } }] },
-  { id: 'VSIP-2026-002', kind: 'find_demand', organization: 'Northern Logistics Assets', contactName: 'Nguyễn Hải', email: 'hai@example.com', phone: '0901234567', service: 'Market Outreach', assetType: 'Warehouse', industrialParkName: 'Khu công nghiệp Đình Vũ', location: 'Hải Phòng', areaMin: 20000, areaMax: 20000, transaction: 'lease', budgetOrPrice: 'USD 4.5/m²/month', industry: 'Logistics', availabilityDate: '2026-12-01', requirements: 'Seeking regional distribution tenant.', status: 'under_review', submittedAt: '2026-08-19T02:00:00Z', assignedTo: 'Minh Phương', activities: [{ id: 'b1', at: '2026-08-19T02:00:00Z', actor: 'System', action: { vi: 'Đã tiếp nhận yêu cầu', en: 'Request submitted' } }] },
-];
+
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguage] = useState<Language>('vi');
   const [role, setRole] = useState<Role>('public');
-  const [parks, setParks] = useState(()=>publicInventory().parks);
-  const [assets, setAssets] = useState(()=>publicInventory().assets);
-  useEffect(()=>{const sync=()=>{const next=publicInventory();setParks(next.parks);setAssets(next.assets)};window.addEventListener('storage',sync);window.addEventListener('vsip-content-updated',sync);return()=>{window.removeEventListener('storage',sync);window.removeEventListener('vsip-content-updated',sync)}},[]);
+  const [parks, setParks] = useState<IndustrialParkProfile[]>(()=>remoteEnabled?[]:publicInventory().parks);
+  const [assets, setAssets] = useState<IndustrialAsset[]>(()=>remoteEnabled?[]:publicInventory().assets);
+  useEffect(()=>{if(remoteEnabled)return;const sync=()=>{const next=publicInventory();setParks(next.parks);setAssets(next.assets)};window.addEventListener('storage',sync);window.addEventListener('vsip-content-updated',sync);return()=>{window.removeEventListener('storage',sync);window.removeEventListener('vsip-content-updated',sync)}},[]);
   const publishContent = (data: IndustrialParkProfile | IndustrialAsset) => {
     registerPublished('slug'in data?'park':'asset',data.id);
     if ('slug' in data) setParks(list => list.some(p=>p.id===data.id)?list.map(p=>p.id===data.id?data:p):[...list,data]);
     else setAssets(list => list.some(a=>a.id===data.id)?list.map(a=>a.id===data.id?data:a):[...list,data]);
   };
-  const [requests, setRequests] = useState(initialRequests);
+  const [requests, setRequests] = useState<IndustrialRequest[]>(remoteEnabled?[]:initialRequests);
+  const [dataError,setDataError]=useState('');const [dataLoading,setDataLoading]=useState(remoteEnabled);
   const requestRef=useRef(requests);requestRef.current=requests;
   const [ownRequestIds,setOwnRequestIds]=useState<string[]>([]);
   const [chatParkId, setChatParkId] = useState<string | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatThreads, setChatThreads] = useState<Record<string, ParkChatMessage[]>>({});
+  useEffect(()=>{if(!remoteEnabled)return;
+    const update=(r:any)=>{r.parks.forEach((p:IndustrialParkProfile)=>registerPublished('park',p.id));r.assets.forEach((a:IndustrialAsset)=>registerPublished('asset',a.id));setParks(r.parks);setAssets(r.assets)};
+    const refresh=()=>{setDataLoading(true);api('catalogue').then(r=>{update(r);setDataError('')}).catch(()=>setDataError('network')).finally(()=>setDataLoading(false))};
+    const admin=(e:Event)=>{const r=(e as CustomEvent).detail;update(r.inventory);setRequests(r.requests);requestRef.current=r.requests};
+    const receipt=(e:Event)=>{const r=(e as CustomEvent).detail;setRequests(rows=>[...rows.filter(x=>x.id!==r.id),r]);setOwnRequestIds(ids=>{const next=[...new Set([...ids,r.id])];sessionStorage.setItem('vsip-own-requests',JSON.stringify(next));return next})};window.addEventListener('vsip-request-created',receipt);
+    refresh();window.addEventListener('vsip-public-refresh',refresh);window.addEventListener('vsip-remote-state',admin);
+    const own=JSON.parse(sessionStorage.getItem('vsip-own-requests')||'[]');if(own.length){setOwnRequestIds(own);ensureSession().then(()=>api('requests')).then(r=>setRequests(r.filter((x:any)=>own.includes(x.id)))).catch(()=>{})}
+    return()=>{window.removeEventListener('vsip-request-created',receipt);window.removeEventListener('vsip-public-refresh',refresh);window.removeEventListener('vsip-remote-state',admin)};
+  },[]);
+  const createRequestRemote=async(input:NewRequest)=>{await ensureSession();const r=await api<IndustrialRequest>('requests',{...input,idempotencyKey:input.idempotencyKey||crypto.randomUUID()});setRequests(rows=>[...rows,r]);setOwnRequestIds(ids=>{const next=[...ids,r.id];sessionStorage.setItem('vsip-own-requests',JSON.stringify(next));return next});return r.id};
   const createRequest = (input: NewRequest) => {
     if(!validLeasingContext(input,parks,assets)) throw new Error("Unsupported leasing enquiry context");
     const id = `VSIP-${crypto.randomUUID().slice(0,8).toUpperCase()}`;
@@ -111,9 +121,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     deliver(chatParkId,id);
   };
   const resetDemo = () => { localStorage.removeItem(CONTENT_KEY);resetMembership();window.dispatchEvent(new Event('vsip-content-updated')); pendingChat.current.forEach(clearTimeout);pendingChat.current.clear(); const restored=publicInventory();setParks(restored.parks); setAssets(restored.assets);requestRef.current=initialRequests; setRequests(initialRequests);setOwnRequestIds([]); setChatParkId(null); setChatOpen(false); setChatThreads({}); setRole('public'); setLanguage('vi'); };
-  const value = useMemo(() => ({ language, setLanguage, role, setRole, parks, assets, expos, requests, ownRequestIds,createRequest, transitionRequest,assignRequest, updateParkPublication, publishContent, resetDemo, chatParkId, chatOpen, chatThreads, openParkChat, closeParkChat, toggleParkChat, sendParkChatMessage,retryParkChatMessage }), [language, role, parks, assets, requests,ownRequestIds, chatParkId, chatOpen, chatThreads]);
+  const value = useMemo(() => ({ dataLoading,dataError,createRequestRemote:remoteEnabled?createRequestRemote:undefined,language, setLanguage, role, setRole, parks, assets, expos, requests, ownRequestIds,createRequest, transitionRequest,assignRequest, updateParkPublication, publishContent, resetDemo, chatParkId, chatOpen, chatThreads, openParkChat, closeParkChat, toggleParkChat, sendParkChatMessage,retryParkChatMessage }), [dataLoading,dataError,language, role, parks, assets, requests,ownRequestIds, chatParkId, chatOpen, chatThreads]);
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 export const useApp = () => { const x = useContext(Context); if (!x) throw new Error('AppProvider required'); return x; };
 export const tr = (value: { vi: string; en: string; zh?: string }, language: Language) =>
   language === 'vi' ? value.vi?.trim() || value.en?.trim() || value.zh || '' : language === 'zh' ? value.zh?.trim() || (value.en?.trim()?translateToChinese(value.en):value.vi) || '' : value.en?.trim() || value.vi?.trim() || value.zh || '';
+
+export function useRequestActions(){const app=useApp();return {...app,createRequest:async(input:NewRequest)=>app.createRequestRemote?app.createRequestRemote(input):app.createRequest(input)}}

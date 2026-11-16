@@ -1,7 +1,7 @@
-.vsip-admin,.workspace-drawer,.native-confirm{
+:root,.vsip-admin,.workspace-drawer,.native-confirm{
  --admin-ink:#12374b;--admin-muted:#627787;--admin-bg:#f5f7fa;--admin-card:#fff;--admin-line:#dfe7ec;--admin-soft:#f0f5f7;
  --admin-accent:#082f49;--admin-blue:#0369a1;--admin-gold:#c8872b;--admin-green:#0f766e;--admin-tint:#e7f3f4;
- --admin-red:#a33232;--admin-red-bg:#fff1f0;--admin-focus:#0891b2;--admin-shadow:0 4px 20px #12374b08;
+ --admin-red:#a33232;--admin-red-bg:#fff1f0;--admin-focus:#0891b2;--admin-warn:#9a5b0c;--admin-warn-bg:#fdf3e2;--admin-info:#0b5394;--admin-info-bg:#e8f1fb;--admin-line-strong:#b9c9d2;--admin-approved:#3730a3;--admin-approved-bg:#eef2ff;--admin-shadow:0 4px 20px #12374b08;
  --space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--space-7:32px;--space-8:40px;
  --radius-sm:6px;--radius-md:10px;--radius-lg:16px;--control-h:44px;
 }

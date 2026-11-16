@@ -11,3 +11,6 @@
 .ai-panel{pointer-events:auto}.ai-message,.request-review dd,.request-receipt{overflow-wrap:anywhere}.ai-root{z-index:1000}
 .chat-enquiry-review .request-review{display:block}.chat-enquiry-review .request-review>div{display:grid;grid-template-columns:minmax(75px,30%) minmax(0,1fr);gap:10px;padding:7px 0;border-bottom:1px solid #e8eff3}.chat-enquiry-review dd{margin:0}.chat-enquiry-review h4{margin:0 0 12px;line-height:1.5}.chat-enquiry-review p{line-height:1.6}.chat-enquiry-review{min-width:0}
 .ai-panel>footer{background:#f6f9fb;color:#526e80;padding:8px 12px;flex-shrink:0}.ai-panel>header,.ai-request-bar,.ai-panel>form{flex-shrink:0}
+.ai-state{display:inline-block;margin-left:6px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:600;vertical-align:middle}
+.ai-state-published{background:#e7f3f4;color:#0f766e}
+.ai-state-draft{background:#fdf3e2;color:#8a5a12}

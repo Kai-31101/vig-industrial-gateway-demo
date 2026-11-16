@@ -21,6 +21,7 @@ import {sortParksByCompleteness} from './parkCompleteness';
 import {ConnectionDetail,ConnectionDashboard,ExpoDirectoryAdmin} from './admin/Connections';
 import {successfulConnection} from './connectionLogic';
 import {validPhone} from './admin/model';
+import {ageDays} from './admin/insights';
 import { CSSProperties, FormEvent, ReactNode, Fragment, useMemo, useState, useRef, useEffect } from "react";
 import {
   BrowserRouter,
@@ -2017,7 +2018,8 @@ function ExpoPage(){return <PublicShell><div className="page page-top"><TradeExp
 function AdminGuard({ children }: { children: ReactNode }) {
   const admin=useAdmin(),{pathname}=useLocation();
   useEffect(()=>{if(!admin.current)admin.enterDemo()},[admin.current,admin.enterDemo]);
-  if(!admin.current)return <div className="page section"><p role="status">{admin.remoteError?'Không thể kết nối / Unable to connect / 无法连接':'Đang tải dữ liệu / Loading data / 正在加载'}</p>{admin.remoteError&&<button className="button" onClick={admin.enterDemo}>Thử lại / Retry / 重试</button>}</div>;
+  const {language}=useApp();
+  if(!admin.current)return <div className="vsip-admin admin-loading"><aside className="workspace-sidebar" aria-hidden="true">{Array.from({length:8},(_,i)=><span key={i} className="skeleton skeleton-nav"/>)}</aside><div className="workspace-main"><header className="workspace-header"><span className="skeleton skeleton-title"/></header><main className="admin-surface">{admin.remoteError?<div className="admin-panel" role="alert"><h2>{emptyCopy(language,'Không thể kết nối máy chủ','Unable to connect','无法连接服务器')}</h2><p>{emptyCopy(language,'Kiểm tra mạng rồi thử lại.','Check your connection and try again.','请检查网络后重试。')}</p><button className="button primary" onClick={admin.enterDemo}>{emptyCopy(language,'Thử lại','Retry','重试')}</button></div>:<div role="status" aria-label={emptyCopy(language,'Đang tải dữ liệu…','Loading data…','正在加载数据…')}><span className="skeleton skeleton-h1"/><div className="skeleton-grid">{Array.from({length:4},(_,i)=><span key={i} className="skeleton skeleton-card"/>)}</div><span className="skeleton skeleton-block"/></div>}</main></div></div>;
   return pathname==='/admin/no-access'?<>{children}</>:<Access permission={routePermission(pathname)}>{children}</Access>;
 }
 function AdminShell({children}:{children:ReactNode}) {return <AdminFrame>{children}</AdminFrame>}
@@ -2077,7 +2079,7 @@ function RequestTable({ requests }: { requests: IndustrialRequest[] }) {
             <th>{ui(language, "Doanh nghiệp", "Organisation")}</th>
             <th>{ui(language, "Tỉnh/thành, khu vực", "Location")}</th>
             <th>{ui(language, "Trạng thái", "Status")}</th>
-            <th>SLA</th>
+            <th>{emptyCopy(language,"Thời gian chờ","Waiting","等待时间")}</th>
           </tr>
         </thead>
         <tbody>
@@ -2108,7 +2110,7 @@ function RequestTable({ requests }: { requests: IndustrialRequest[] }) {
                   }
                 >
                   {["submitted", "under_review"].includes(r.status)
-                    ? "4h"
+                    ? (ageDays(r.submittedAt)?`${ageDays(r.submittedAt)} ${emptyCopy(language,"ngày chờ","days waiting","天待处理")}`:emptyCopy(language,"Mới hôm nay","New today","今日新增"))
                     : ui(language, "Đúng tiến độ", "On track")}
                 </span>
               </td>
@@ -2134,9 +2136,8 @@ function AdminRequests() {
       <div className="admin-page">
         <div className="admin-title">
           <div>
-            <span>{ui(language, "QUẢN LÝ YÊU CẦU", "REQUEST MANAGEMENT")}</span>
-            <h1>
-              {emptyCopy(language,"Quản lý nhu cầu thuê","Leasing enquiry management","租赁咨询管理")}
+                        <h1>
+              {emptyCopy(language,"Nhu cầu thuê","Leasing enquiries","租赁需求")}
             </h1>
             <p>
               {emptyCopy(language,"Bộ phận Tiếp thị & Cho thuê tiếp nhận, tư vấn và sắp xếp khảo sát.","The Marketing & Leasing Department handles enquiries, advice and site visits.","市场推广与租赁部负责咨询、方案建议和考察安排。")}

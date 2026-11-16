@@ -16,7 +16,7 @@ describe('homepage advertisement carousels',()=>{
   act(()=>vi.advanceTimersByTime(9000));expect(within(first).getByRole('img').getAttribute('src')).toContain('factory-construction.png');
   act(()=>callbacks[0]([{isIntersecting:true}]));
   act(()=>vi.advanceTimersByTime(2999));expect(within(first).getByRole('img').getAttribute('src')).toContain('factory-construction.png');
-  act(()=>vi.advanceTimersByTime(1));expect(within(first).getByRole('img').getAttribute('src')).toContain('industrial-catering.png');
+  act(()=>vi.advanceTimersByTime(1));expect(within(first).getByRole('img').getAttribute('src')).toContain('vietcombank-vie.png');
  });
  it('renders two banners in each location and rotates independently every three seconds',()=>{
   vi.useFakeTimers();setup();
@@ -26,12 +26,12 @@ describe('homepage advertisement carousels',()=>{
   const src=(el:HTMLElement)=>within(el).getByRole('img').getAttribute('src');
   expect(src(first)).toContain('factory-construction.png');
   act(()=>vi.advanceTimersByTime(2999));expect(src(first)).toContain('factory-construction.png');
-  act(()=>vi.advanceTimersByTime(1));expect(src(first)).toContain('industrial-catering.png');
+  act(()=>vi.advanceTimersByTime(1));expect(src(first)).toContain('vietcombank-vie.png');
   fireEvent.mouseEnter(first);
-  act(()=>vi.advanceTimersByTime(3000));expect(src(first)).toContain('industrial-catering.png');expect(src(second)).toContain('industrial-catering.png');
+  act(()=>vi.advanceTimersByTime(3000));expect(src(first)).toContain('vietcombank-vie.png');expect(src(second)).toContain('industrial-catering.png');
   fireEvent.mouseLeave(first);
   act(()=>vi.advanceTimersByTime(3000));expect(src(first)).toContain('factory-construction.png');
-  act(()=>vi.advanceTimersByTime(3000));expect(src(first)).toContain('industrial-catering.png');
+  act(()=>vi.advanceTimersByTime(3000));expect(src(first)).toContain('vietcombank-vie.png');
   expect(first.querySelector('.ad-slide-in')).not.toBeNull();
   expect(first.querySelector('.ad-slide-out')?.getAttribute('src')).toContain('factory-construction.png');
  });

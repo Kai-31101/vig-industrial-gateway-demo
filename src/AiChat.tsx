@@ -54,4 +54,11 @@ export function AiChat({scope,embedded=false}:{scope:'public'|'admin';embedded?:
 }
 export function InternalAccess(){const {language}=useApp();const [token,setToken]=useState(''),[error,setError]=useState(false),[busy,setBusy]=useState(false);const t=(vi:string,en:string,zh:string)=>({vi,en,zh})[language];return <main className="page section"><section className="admin-panel internal-access"><h1>{t('Truy cập nội bộ','Internal access','内部访问')}</h1><p>{t('Dành cho người được cấp mã truy cập. Trang /admin vẫn mở workspace demo riêng.','For authorized access-code holders. /admin still opens an isolated demo workspace.','仅限获授权访问码持有人。/admin仍打开独立演示工作区。')}</p><form onSubmit={async e=>{e.preventDefault();setBusy(true);setError(false);try{await api('session',{internal:true,accessToken:token});location.href='/admin'}catch{setError(true)}finally{setBusy(false);setToken('')}}}><label>{t('Mã truy cập','Access code','访问码')}<input type="password" required value={token} autoComplete="off" onChange={e=>setToken(e.target.value)}/></label>{error&&<p role="alert">{t('Không thể truy cập. Kiểm tra mã và thử lại.','Unable to access. Check the code and retry.','无法访问，请检查访问码后重试。')}</p>}<button className="button primary" disabled={busy}>{t('Tiếp tục','Continue','继续')}</button></form><Link to="/admin">{t('Mở demo','Open demo','打开演示')}</Link></section></main>}
 
-export function AdminAssistant(){return <div className="admin-page ai-admin-page"><AiChat scope="admin" embedded/></div>}
+export function AdminAssistant(){
+ useEffect(()=>{
+  const viewport=window.visualViewport;
+  const update=()=>document.documentElement.style.setProperty('--admin-chat-height',String(viewport?.height||window.innerHeight)+'px');
+  update();viewport?.addEventListener('resize',update);window.addEventListener('resize',update);
+  return()=>{viewport?.removeEventListener('resize',update);window.removeEventListener('resize',update);document.documentElement.style.removeProperty('--admin-chat-height')};
+ },[]);
+ return <div className="admin-page ai-admin-page"><AiChat scope="admin" embedded/></div>}

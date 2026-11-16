@@ -18,7 +18,7 @@ export function ColumnChart({data,caption,unit}:{data:Bar[];caption:string;unit:
     {hover===i&&<span className="chart-tip" role="tooltip"><strong>{d.value} {unit}</strong>{d.hint||d.label}</span>}
    </button>)}</div>
   </div>
-  <div className="chart-axis" aria-hidden="true">{data.map((d,i)=><small key={d.key}>{i%2===last%2?d.label:''}</small>)}</div>
+  <div className="chart-axis" aria-hidden="true">{data.map((d,i)=><small key={d.key}>{data.length<=10||i%2===last%2?d.label:''}</small>)}</div>
   <SrTable caption={caption} rows={data.map(d=>[d.hint||d.label,d.value])}/>
  </figure>;
 }

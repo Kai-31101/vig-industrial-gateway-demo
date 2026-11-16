@@ -45,6 +45,7 @@ export function OverviewDashboard(){
  const livePublished=assets.filter(d=>split.live.assets.has(d.id));
  const readyArea=livePublished.reduce((sum,d)=>sum+areaM2(d.data as IndustrialAsset),0);
  const kpis=[
+  {label:t('Tất cả nhu cầu','All enquiries','全部需求'),value:leasing.length.toLocaleString(lang),note:`${active.length} ${t('đang xử lý','in progress','处理中')} · ${closed.length} ${t('đã đóng','closed','已关闭')}`,tone:'',to:'/admin/requests',show:canRequests},
   {label:t('Nhu cầu mới (7 ngày)','New enquiries (7 days)','新需求（7天）'),value:newThisWeek.toLocaleString(lang),note:delta===0?t('Bằng tuần trước','Same as last week','与上周持平'):`${delta>0?'+':''}${delta} ${t('so với tuần trước','vs last week','较上周')}`,tone:delta>0?'up':delta<0?'down':'',to:'/admin/requests',show:canRequests},
   {label:t('Đang xử lý','In progress','处理中'),value:active.length.toLocaleString(lang),note:waiting.length?`${waiting.length} ${t('cần phản hồi','need a response','待回复')}`:t('Không có yêu cầu chờ','Nothing waiting','无待处理'),tone:waiting.length?'warn':'',to:'/admin/requests',show:canRequests},
   {label:t('Kết nối thành công','Successful connections','成功对接'),value:closed.length?`${Math.round(success.length/closed.length*100)}%`:'—',note:closed.length?`${success.length}/${closed.length} ${t('yêu cầu đã đóng','closed enquiries','已关闭需求')}`:t('Chưa có yêu cầu đóng','No closed enquiries yet','暂无已关闭需求'),tone:'',to:'/admin/requests',show:canRequests},
@@ -76,10 +77,17 @@ export function OverviewDashboard(){
 
  // Demand by industry (selected date range)
  const byIndustry=Object.entries(requests.reduce<Record<string,number>>((acc,r)=>{const key=r.industry||'';acc[key]=(acc[key]||0)+1;return acc},{})).sort((x,y)=>y[1]-x[1]).slice(0,6);
- // Weekly series: 12 buckets ending today (Asia/Ho_Chi_Minh), independent of the range filter.
- const weekStart=(i:number)=>Date.now()-(11-i)*7*86400000-6*86400000;
- const weekly=Array.from({length:12},(_,i)=>{const s0=weekStart(i),e0=s0+7*86400000;const value=leasing.filter(r=>{const at=Date.parse(r.submittedAt);return at>=s0&&at<e0}).length;const d=new Date(e0-86400000);return {key:String(i),label:d.toLocaleDateString(lang==='vi'?'vi-VN':lang==='zh'?'zh-CN':'en-GB',{day:'2-digit',month:'2-digit'}),value,hint:`${new Date(s0).toLocaleDateString(lang)} – ${d.toLocaleDateString(lang)}`}});
- const weeklyTotal=weekly.reduce((n,w)=>n+w.value,0);
+ // Enquiries over time: every request in the selected range (default all time). Weekly buckets for spans up to
+ // ~4 months, monthly beyond that, so the chart always shows the whole dataset at a readable density.
+ const loc=lang==='vi'?'vi-VN':lang==='zh'?'zh-CN':'en-GB';
+ const times=requests.map(r=>Date.parse(r.submittedAt)).filter(n=>!Number.isNaN(n));
+ const first=start?Date.parse(start+'T00:00:00+07:00'):times.length?Math.min(...times):Date.now(),last=finish?Date.parse(finish+'T23:59:59+07:00'):Date.now();
+ const monthly=last-first>120*86400000;
+ const buckets:{key:string;from:number;to:number}[]=[];
+ if(monthly){const d=new Date(first);let y=d.getFullYear(),m=d.getMonth();while(new Date(y,m,1).getTime()<=last){buckets.push({key:`${y}-${m}`,from:new Date(y,m,1).getTime(),to:new Date(y,m+1,1).getTime()});m++;if(m>11){m=0;y++}}}
+ else{const day=new Date(first);day.setHours(0,0,0,0);const monday=day.getTime()-((day.getDay()+6)%7)*86400000;for(let t0=monday;t0<=last;t0+=7*86400000)buckets.push({key:String(t0),from:t0,to:t0+7*86400000})}
+ const weekly=buckets.map(bk=>{const value=times.filter(n=>n>=bk.from&&n<bk.to).length;const startD=new Date(bk.from),endD=new Date(bk.to-86400000);return {key:bk.key,label:monthly?startD.toLocaleDateString(loc,{month:'2-digit',year:'2-digit'}):startD.toLocaleDateString(loc,{day:'2-digit',month:'2-digit'}),value,hint:monthly?startD.toLocaleDateString(loc,{month:'long',year:'numeric'}):`${startD.toLocaleDateString(loc)} – ${endD.toLocaleDateString(loc)}`}});
+ const weeklyTotal=times.length;
  const stages:[string,string][]=[['submitted',t('Mới tiếp nhận','Received','已接收')],['under_review',t('Đang xác minh','Verifying','核实中')],['verified',t('Đã xác minh','Verified','已核实')],['matching',t('Đang ghép nối','Matching','匹配中')],['connection_scheduled',t('Hẹn khảo sát','Site visit','安排考察')],['closed',t('Đã đóng','Closed','已关闭')]];
  const funnel=stages.map(([key,label])=>({key,label,value:requests.filter(r=>r.status===key).length}));
  const typeKeys=['industrial_land','ready_built_factory','warehouse','build_to_suit'];
@@ -102,7 +110,7 @@ export function OverviewDashboard(){
   {!valid&&<p role="alert" className="admin-message error">{t('Chọn khoảng ngày hợp lệ, không vượt quá hôm nay.','Choose a valid date range ending no later than today.','请选择有效日期范围，结束日期不得晚于今天。')}</p>}
 
   {canRequests&&<div className="overview-columns charts">
-   <section className="admin-panel"><div className="overview-panel-heading"><h2>{t('Nhu cầu mới 12 tuần gần nhất','New enquiries, last 12 weeks','近12周新需求')}</h2><small>{weeklyTotal} {t('nhu cầu','enquiries','条需求')}</small></div><ColumnChart data={weekly} unit={t('nhu cầu','enquiries','条需求')} caption={t('Số nhu cầu mới theo tuần','New enquiries per week','每周新需求')}/></section>
+   <section className="admin-panel"><div className="overview-panel-heading"><h2>{monthly?t('Nhu cầu thuê theo tháng','Leasing enquiries by month','每月租赁需求'):t('Nhu cầu thuê theo tuần','Leasing enquiries by week','每周租赁需求')}</h2><small>{weeklyTotal} {t('nhu cầu','enquiries','条需求')}</small></div><ColumnChart data={weekly} unit={t('nhu cầu','enquiries','条需求')} caption={t('Số nhu cầu thuê theo thời gian','Leasing enquiries over time','各时期租赁需求')}/></section>
    <section className="admin-panel"><div className="overview-panel-heading"><h2>{t('Phễu xử lý nhu cầu','Enquiry pipeline','需求处理漏斗')}</h2><small>{t('Bấm để xem danh sách','Click to list','点击查看')}</small></div><StageBars data={funnel} caption={t('Số nhu cầu theo bước xử lý','Enquiries by stage','各阶段需求数')} onSelect={key=>{choose('requests');setState(key)}}/>
     <div className="overview-request-stats">{[['',t('Tất cả','All','全部')],['active',t('Đang xử lý','In progress','处理中')],['success',t('Thành công','Successful','成功')]].map(([key,label])=><button key={key} aria-pressed={view==='requests'&&state===key} onClick={()=>{choose('requests');setState(key)}}><strong>{requests.filter(r=>!key||(key==='active'?activeRequest(r):successfulConnection(r))).length}</strong><span>{label}</span></button>)}</div></section>
   </div>}

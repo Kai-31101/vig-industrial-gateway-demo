@@ -465,3 +465,68 @@
 .vsip-admin .overview-filterbar label.overview-range{display:flex;flex-direction:row;align-items:center;gap:8px;text-align:left}
 .overview-columns.charts .chart-plot{height:250px}
 @media(max-width:600px){.overview-columns.charts .chart-plot{height:170px}}
+
+/* ── Chat: the conversation owns the full height; no FAB clearance here ── */
+.vsip-admin.workspace-chat .admin-surface{padding:0}
+
+/* ── Table hygiene: dates and short actions never break mid-word ── */
+.vsip-admin .clickable-rows td:last-child .button,.vsip-admin .quick-edit-trigger{white-space:nowrap}
+
+/* ── Collapsed sidebar (901–1200px): logo scales instead of being cropped ── */
+@media(max-width:1200px) and (min-width:901px){
+ .vsip-admin .workspace-sidebar .vsip-brand{display:flex;justify-content:center;align-items:center;width:100%;height:auto;padding:0}
+ .vsip-admin .workspace-sidebar .vsip-logo-window{flex:none;width:44px;height:14.5px;margin-top:0;overflow:hidden}
+ .workspace-sidebar .vsip-demo-pill{display:none}
+ .workspace-sidebar .admin-nav-group{margin-bottom:12px}
+}
+
+/* ── Laptop density: ≤1440px wide or ≤860px tall (1366×768, 1280×800, 1440×900 with browser chrome) ── */
+@media(min-width:901px) and (max-width:1440px),(min-width:901px) and (max-height:860px){
+ .vsip-admin{font-size:14px;grid-template-columns:224px minmax(0,1fr)}
+ .workspace-sidebar{padding:16px 12px}
+ .workspace-brand{padding:0 8px 14px;gap:8px}
+ .workspace-brand .brand-logo,.workspace-brand .vsip-brand{max-width:116px}
+ .admin-nav-group{margin:0 0 12px}
+ .admin-nav-group h2{margin-bottom:4px}
+ .admin-nav-group a{min-height:38px;padding:7px 10px;margin:1px 0;gap:10px}
+ .workspace-nav-actions{padding-top:10px;gap:2px}
+ .workspace-nav-actions button{min-height:36px;padding:6px 10px}
+ .workspace-header{height:64px;padding:10px 24px;gap:16px}
+ .admin-surface{padding:20px 24px 80px}
+ .vsip-admin .admin-title{margin-bottom:14px}
+ .vsip-admin .admin-title h1,.vsip-admin .admin-page>h1{font-size:24px;margin-bottom:4px}
+ .vsip-admin .admin-title p{font-size:14px;margin-top:4px}
+ .vsip-admin .admin-panel{padding:18px;margin:14px 0}
+ .vsip-admin .admin-panel h2{font-size:16px;margin-bottom:12px}
+ .vsip-admin .button,.native-confirm .button{min-height:38px;padding:7px 14px;font-size:13px}
+ .vsip-admin input:not([type=checkbox]):not([type=radio]),.vsip-admin select,.vsip-admin textarea{min-height:38px;padding:7px 10px}
+ .vsip-admin .admin-filter{padding:12px 14px;gap:10px;margin:12px 0}
+ .vsip-admin .admin-data-table{font-size:13.5px}
+ .vsip-admin .admin-data-table th{padding:9px 12px}
+ .vsip-admin .admin-data-table td{padding:10px 12px}
+ .vsip-admin .clickable-rows td b{font-size:14px}
+ .overview-ai{padding:16px 20px;gap:18px;margin-bottom:14px}
+ .overview-ai ul{font-size:14px;gap:4px}
+ .overview-ai-prompts a{min-height:30px;padding:4px 10px;font-size:12.5px}
+ .overview-kpis,.expo-kpis{gap:12px;margin-bottom:14px}
+ .overview-kpi{padding:14px 16px;gap:4px}
+ .overview-kpi>strong{font-size:24px}
+ .overview-kpi>span{font-size:13px}
+ .overview-filterbar{margin-bottom:12px;padding:8px 14px}
+ .overview-columns{gap:14px}
+ .vsip-admin .overview-columns .admin-panel{margin-bottom:14px}
+ .overview-columns.charts .chart-plot{height:200px}
+ .overview-todo li a{padding:9px 4px}
+ .overview-todo li b{font-size:14px}
+ .chart-stages button,.chart-stacked li{min-height:30px}
+ .editor-fields-head{top:64px}
+ .vsip-admin .editor-nav{top:84px}
+ .vsip-admin .editor-nav button{min-height:36px;padding:7px 10px}
+ .vsip-admin .editor-action-bar{padding:10px 14px}
+ .ai-fab{width:46px;height:46px;right:18px;bottom:18px}
+ .matrix-table thead th{top:64px}
+}
+@media(max-width:1200px) and (min-width:901px){.vsip-admin{grid-template-columns:72px minmax(0,1fr)}}
+/* KPI row holds five cards; wraps to 3+2 / 2-col on narrower screens */
+.overview-kpis{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+@media(max-width:600px){.overview-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}

@@ -13,10 +13,10 @@ describe('homepage advertisement carousels',()=>{
   vi.stubGlobal('IntersectionObserver',class {constructor(callback:(entries:{isIntersecting:boolean}[])=>void){callbacks.push(callback)}observe(){}disconnect(){}});
   setup();const first=screen.getByRole('region',{name:'Banner top 1'});
   act(()=>callbacks[0]([{isIntersecting:false}]));
-  act(()=>vi.advanceTimersByTime(9000));expect(within(first).getByRole('img').getAttribute('src')).toContain('industrial-1.jpg');
+  act(()=>vi.advanceTimersByTime(9000));expect(within(first).getByRole('img').getAttribute('src')).toContain('factory-construction.png');
   act(()=>callbacks[0]([{isIntersecting:true}]));
-  act(()=>vi.advanceTimersByTime(2999));expect(within(first).getByRole('img').getAttribute('src')).toContain('industrial-1.jpg');
-  act(()=>vi.advanceTimersByTime(1));expect(within(first).getByRole('img').getAttribute('src')).toContain('industrial-3.jpg');
+  act(()=>vi.advanceTimersByTime(2999));expect(within(first).getByRole('img').getAttribute('src')).toContain('factory-construction.png');
+  act(()=>vi.advanceTimersByTime(1));expect(within(first).getByRole('img').getAttribute('src')).toContain('industrial-catering.png');
  });
  it('renders two banners in each location and rotates independently every three seconds',()=>{
   vi.useFakeTimers();setup();
@@ -24,23 +24,23 @@ describe('homepage advertisement carousels',()=>{
   const first=screen.getByRole('region',{name:'Banner top 1'});
   const second=screen.getByRole('region',{name:'Banner top 2'});
   const src=(el:HTMLElement)=>within(el).getByRole('img').getAttribute('src');
-  expect(src(first)).toContain('industrial-1.jpg');
-  act(()=>vi.advanceTimersByTime(2999));expect(src(first)).toContain('industrial-1.jpg');
-  act(()=>vi.advanceTimersByTime(1));expect(src(first)).toContain('industrial-3.jpg');
+  expect(src(first)).toContain('factory-construction.png');
+  act(()=>vi.advanceTimersByTime(2999));expect(src(first)).toContain('factory-construction.png');
+  act(()=>vi.advanceTimersByTime(1));expect(src(first)).toContain('industrial-catering.png');
   fireEvent.mouseEnter(first);
-  act(()=>vi.advanceTimersByTime(3000));expect(src(first)).toContain('industrial-3.jpg');expect(src(second)).toContain('industrial-6.jpg');
+  act(()=>vi.advanceTimersByTime(3000));expect(src(first)).toContain('industrial-catering.png');expect(src(second)).toContain('industrial-catering.png');
   fireEvent.mouseLeave(first);
-  act(()=>vi.advanceTimersByTime(3000));expect(src(first)).toContain('industrial-5.jpg');
-  act(()=>vi.advanceTimersByTime(3000));expect(src(first)).toContain('industrial-1.jpg');
+  act(()=>vi.advanceTimersByTime(3000));expect(src(first)).toContain('factory-construction.png');
+  act(()=>vi.advanceTimersByTime(3000));expect(src(first)).toContain('industrial-catering.png');
   expect(first.querySelector('.ad-slide-in')).not.toBeNull();
-  expect(first.querySelector('.ad-slide-out')?.getAttribute('src')).toContain('industrial-5.jpg');
+  expect(first.querySelector('.ad-slide-out')?.getAttribute('src')).toContain('factory-construction.png');
  });
  it('keeps focus pause and safe CTAs without a visible control toolbar',()=>{
   vi.useFakeTimers();setup();
   const first=screen.getByRole('region',{name:'Banner top 1'});const q=within(first);
   expect(screen.queryAllByRole('button')).toHaveLength(0);
-  fireEvent.focus(q.getByRole('link'));act(()=>vi.advanceTimersByTime(3000));expect(q.getByRole('img').getAttribute('src')).toContain('industrial-1.jpg');
-  expect(q.getByRole('link').getAttribute('href')).toBe('/find-supply');
+  fireEvent.focus(q.getByRole('link'));act(()=>vi.advanceTimersByTime(3000));expect(q.getByRole('img').getAttribute('src')).toContain('factory-construction.png');
+  expect(q.getByRole('link').getAttribute('href')).toBe('/images/ads/factory-construction.png');
   expect(screen.getAllByRole('link').every(a=>!a.getAttribute('href')?.startsWith('tel:'))).toBe(true);
  });
 });

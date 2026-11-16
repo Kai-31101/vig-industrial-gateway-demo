@@ -1,10 +1,12 @@
 import {useEffect,useState,useRef} from 'react';
-import {Link} from 'react-router-dom';
 import {useApp} from './AppContext';
 import './HomeAds.css';
 
-const titles=['Nhà xưởng cho thuê','Đất công nghiệp cho thuê','Nhà xưởng xây sẵn','Đất công nghiệp','Kho logistics cho thuê','Nhà xưởng theo yêu cầu','Khu công nghiệp xanh','Kho xưởng cho thuê','Mặt bằng sản xuất','Quỹ đất cho doanh nghiệp'];
-const pools={top:[[1,3,5],[2,4,6]],bottom:[[2,7,9],[1,8,10]]};
+const ads=[
+  {image:'/images/ads/factory-construction.png',title:{vi:'Xây dựng nhà máy - nhà xưởng trong KCN',en:'Industrial park factory and warehouse construction',zh:'工业园区工厂与厂房建设'}},
+  {image:'/images/ads/industrial-catering.png',title:{vi:'Cung cấp suất ăn công nghiệp',en:'Industrial catering services',zh:'工业园区团餐服务'}},
+];
+const pools={top:[[0,1],[1,0]],bottom:[[0,1],[1,0]]};
 
 export function AdCarousel({ids,label}:{ids:number[];label:string}) {
   const {language}=useApp();
@@ -18,7 +20,7 @@ export function AdCarousel({ids,label}:{ids:number[];label:string}) {
   const [hidden,setHidden]=useState(document.hidden);
   const [reduced,setReduced]=useState(()=>window.matchMedia?.('(prefers-reduced-motion: reduce)').matches??false);
   useEffect(()=>{
-    ids.forEach(id=>{const image=new Image();image.src=`/images/ads/industrial-${id}.jpg`;});
+    ids.forEach(id=>{const image=new Image();image.src=ads[id].image;});
   },[ids]);
   useEffect(()=>{
     const query=window.matchMedia?.('(prefers-reduced-motion: reduce)');
@@ -34,14 +36,14 @@ export function AdCarousel({ids,label}:{ids:number[];label:string}) {
     return ()=>window.clearInterval(timer);
   },[offscreen,hover,focus,hidden,reduced,ids.length,index]);
   const id=ids[index%ids.length];
-  const land=[2,4,7,10].includes(id);
+  const ad=ads[id];
   return <div ref={regionRef} className="ad-carousel" role="region" aria-roledescription="carousel" aria-label={label}
     onMouseEnter={()=>setHover(true)} onMouseLeave={()=>setHover(false)}
     onFocusCapture={()=>setFocus(true)} onBlurCapture={e=>{if(!e.currentTarget.contains(e.relatedTarget as Node))setFocus(false);}}>
-    {index>0 && <img key={`out-${index}`} className="ad-slide-out" src={`/images/ads/industrial-${ids[(index-1)%ids.length]}.jpg`} alt="" aria-hidden="true" width="2172" height="724" />}
-    <Link key={index} className={`ad-artwork${index>0?' ad-slide-in':''}`} to={land?'/industrial-parks':'/find-supply'} aria-label={`${titles[id-1]} — ${text('Xem chi tiết','View details','查看详情')}`}>
-      <img src={`/images/ads/industrial-${id}.jpg`} alt={`${titles[id-1]}. ${text('Ảnh minh họa AI. Liên hệ 0900 000 000 là số minh họa.','AI illustration. Contact 0900 000 000 is a placeholder.','AI示意图。0900 000 000为示例号码。')}`} width="2172" height="724" loading="eager" decoding="async" />
-    </Link>
+    {index>0 && <img key={`out-${index}`} className="ad-slide-out" src={ads[ids[(index-1)%ids.length]].image} alt="" aria-hidden="true" width="2172" height="724" />}
+    <a key={index} className={`ad-artwork${index>0?' ad-slide-in':''}`} href={ad.image} target="_blank" rel="noreferrer" aria-label={`${ad.title[language]} — ${text('Xem ảnh quảng cáo','View advertisement','查看广告图片')}`}>
+      <img src={ad.image} alt={`${ad.title[language]}. ${text('Ảnh minh họa AI. Liên hệ 0900 000 000 là số minh họa.','AI illustration. Contact 0900 000 000 is a placeholder.','AI示意图。0900 000 000为示例号码。')}`} width="2172" height="724" loading="eager" decoding="async" />
+    </a>
 
   </div>;
 }

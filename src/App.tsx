@@ -1,3 +1,4 @@
+import {HomeHeroVideo} from "./HomeHeroVideo";
 import {DataTable} from './admin/components';
 import {AdminFrame} from './admin/AdminFrame';
 import {remoteEnabled} from './remote';
@@ -535,86 +536,121 @@ function PublicShell({ children }: { children: ReactNode }) {
 function HomePage() {
   const mobile=useMobile();
   const [keyword,setKeyword]=useState("");
+  const [region, setRegion] = useState("");
+  const [industry, setIndustry] = useState("");
+  const [status, setStatus] = useState("");
   const { language, parks, assets } = useApp();
   const navigate = useNavigate();
   const publishedParks = sortParksByCompleteness(parks.filter(p=>isPublicPark(p)));
   const featured = publishedParks.slice(0, 12);
+  const industries = [...new Set(publishedParks.flatMap(park => park.suitableIndustries))]
+    .sort((a, b) => industryLabel(a, language).localeCompare(industryLabel(b, language), language));
+  const all = emptyCopy(language, "Tất cả", "All", "全部");
+  function openParkResults() {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries({q: keyword.trim(), region, industry, status})) {
+      if (value) params.set(key, value);
+    }
+    navigate({pathname: "/industrial-parks", search: params.toString().replace(/\+/g, "%20")});
+  }
   return (
     <PublicShell>
-      <section className="hero">
-        <img
-          src="/images/vig-industrial-hero.png"
-          alt={
-            ui(language, "Toàn cảnh khu công nghiệp và cảng biển", "Industrial park and seaport panorama")
-          }
-        />
-        <div className="hero-overlay" />
+      <section className="hero hero-with-video">
+        <HomeHeroVideo title={emptyCopy(language, "Video giới thiệu VSIP", "VSIP introduction video", "VSIP 介绍视频")}/>
         <div className="hero-content">
-          <span className="hero-kicker">
-            <Sparkles size={16} />
-            {ui(language, "Đất công nghiệp · Nhà xưởng cho thuê", "Industrial land · Factories for lease")}
-          </span>
-          <h1
-            className={
-              language === "vi"
-                ? "hero-title-vi"
-                : language === "zh"
-                  ? "hero-title-zh"
-                  : undefined
-            }
-          >
-            {language === "vi" ? <><span>Khu công nghiệp</span><span>Việt Nam – Singapore</span></> : emptyCopy(language,"","Vietnam Singapore Industrial Park","越南—新加坡工业园区")}
-          </h1>
-          <p>
-            {language === "vi"
-              ? "Đất và nhà xưởng cho thuê tại các khu công nghiệp VSIP, phục vụ nhu cầu sản xuất của doanh nghiệp."
-              : language === "zh"
-                ? "VSIP园区提供工业用地和厂房租赁，满足企业生产需求。"
-                : "Industrial land and factories for lease in VSIP parks, supporting your manufacturing requirements."}
-          </p>
-          {mobile&&<form className="mobile-home-search" onSubmit={e=>{e.preventDefault();navigate(`/industrial-parks?q=${encodeURIComponent(keyword.trim())}`)}}><input aria-label={ui(language,"Tìm kiếm công nghiệp","Industrial search")} placeholder={ui(language,"Tên KCN, tỉnh, ngành…","Park, province, industry…")} value={keyword} onChange={e=>setKeyword(e.target.value)}/><button type="submit">{ui(language,"Tìm kiếm","Search")}</button></form>}
+          <div className="hero-intro">
+            <h1
+              className={
+                language === "vi"
+                  ? "hero-title-vi"
+                  : language === "zh"
+                    ? "hero-title-zh"
+                    : undefined
+              }
+            >
+              {language === "vi" ? <><span>Khu công nghiệp</span><span>Việt Nam – Singapore</span></> : emptyCopy(language,"","Vietnam Singapore Industrial Park","越南—新加坡工业园区")}
+            </h1>
+          </div>
           {mobile&&<div className="mobile-home-links"><Link to="/find-supply">{ui(language, "Tư vấn thuê", "Leasing consultation")}</Link><Link to="/assets">{ui(language,"Mặt bằng","Assets")}</Link></div>}
-          <div className="hero-actions">
-            <Link className="button gold" to="/industrial-parks">
-              {emptyCopy(language,"Xem khu công nghiệp","Explore parks","查看园区")}
-              <ArrowRight size={18} />
-            </Link>
-            <Link className="button ghost" to="/find-supply">
-              {ui(language,"Gửi nhu cầu thuê","Send leasing enquiry")}
-            </Link>
-          </div>
-          <div className="hero-stats">
-            <div>
-              <b>{publishedParks.length}</b>
-              <span>
-                {ui(language, "hồ sơ khu công nghiệp", "park profiles")}
-              </span>
+          <div className="hero-bottom">
+            <div className="hero-actions">
+              <Link className="button gold" to="/industrial-parks">
+                {emptyCopy(language,"Xem khu công nghiệp","Explore parks","查看园区")}
+                <ArrowRight size={18} />
+              </Link>
+              <Link className="button ghost" to="/find-supply">
+                {ui(language,"Gửi nhu cầu thuê","Send leasing enquiry")}
+              </Link>
             </div>
-            <div>
-              <b>{assets.filter(a=>isPublicAsset(a,parks)).length}</b>
-              <span>
-                {ui(language, "BĐS công nghiệp mẫu", "demo assets")}
-              </span>
+            <div className="hero-stats">
+              <div>
+                <b>{publishedParks.length}</b>
+                <span>
+                  {ui(language, "hồ sơ khu công nghiệp", "park profiles")}
+                </span>
+              </div>
+              <div>
+                <b>{assets.filter(a=>isPublicAsset(a,parks)).length}</b>
+                <span>
+                  {ui(language, "BĐS công nghiệp mẫu", "demo assets")}
+                </span>
+              </div>
             </div>
           </div>
         </div>
       </section>
-      <section className="search-band desktop-home-search">
-        <div>
-          <Search />
-          <input
-            aria-label={ui(language, "Tìm kiếm công nghiệp", "Industrial search")}
-            value={keyword} onChange={e=>setKeyword(e.target.value)}
-            onKeyDown={e=>{if(e.key==="Enter")navigate(`/industrial-parks?q=${encodeURIComponent(keyword.trim())}`)}}
-            placeholder={
-              ui(language, "Tìm KCN, tỉnh, ngành hoặc loại mặt bằng...", "Search park, province, industry or asset type...")
-            }
-          />
+      <form className="home-park-search" role="search" onSubmit={e => {
+        e.preventDefault();
+        openParkResults();
+      }}>
+        <div className="home-search-controls">
+          <div className="home-search-keyword">
+            <input
+              aria-label={ui(language, "Tìm kiếm công nghiệp", "Industrial search")}
+              value={keyword} onChange={e=>setKeyword(e.target.value)}
+              onKeyDown={e => {
+                if (e.key !== "Enter") return;
+                e.preventDefault();
+                if (!e.nativeEvent.isComposing && e.keyCode !== 229) openParkResults();
+              }}
+              placeholder={
+                ui(language, "Tìm KCN, tỉnh, ngành hoặc loại mặt bằng...", "Search park, province, industry or asset type...")
+              }
+            />
+            <button className="home-search-submit" type="submit" aria-label={emptyCopy(language,"Tìm kiếm","Search","搜索")}><Search size={18} /></button>
+          </div>
+          <label>{emptyCopy(language, "Vùng miền", "Region", "地区")}
+            <select value={region} onChange={e => setRegion(e.target.value)}>
+              <option value="">{all}</option>
+              <option value="North">{emptyCopy(language, "Miền Bắc", "North", "北部")}</option>
+              <option value="Central">{emptyCopy(language, "Miền Trung", "Central", "中部")}</option>
+              <option value="South">{emptyCopy(language, "Miền Nam", "South", "南部")}</option>
+            </select>
+          </label>
+          <label>{emptyCopy(language, "Ngành nghề", "Industry", "行业")}
+            <select value={industry} onChange={e => setIndustry(e.target.value)}>
+              <option value="">{all}</option>
+              {industries.map(value => <option key={value} value={value}>{industryLabel(value, language)}</option>)}
+            </select>
+          </label>
+          <label>{emptyCopy(language, "Trạng thái", "Status", "状态")}
+            <select value={status} onChange={e => setStatus(e.target.value)}>
+              <option value="">{all}</option>
+              <option value="operational">{emptyCopy(language, "Đang hoạt động", "Operational", "运营中")}</option>
+              <option value="developing">{emptyCopy(language, "Đang phát triển", "Developing", "开发中")}</option>
+              <option value="planned">{emptyCopy(language, "Quy hoạch", "Planned", "规划中")}</option>
+            </select>
+          </label>
         </div>
-        <button onClick={() => navigate(`/industrial-parks?q=${encodeURIComponent(keyword.trim())}`)}>
-          {ui(language, "Tìm kiếm", "Search")}
+        <button className="home-search-reset" type="button" disabled={!keyword && !region && !industry && !status} onClick={() => {
+          setKeyword("");
+          setRegion("");
+          setIndustry("");
+          setStatus("");
+        }}>
+          {emptyCopy(language, "Xóa bộ lọc", "Clear filters", "清除筛选")}
         </button>
-      </section>
+      </form>
       <HomeAds placement="top" />
       <section className="page section home-featured">
         <SectionTitle

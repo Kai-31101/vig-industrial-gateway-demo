@@ -30,7 +30,8 @@ console.log(neon?`Target: Neon (${process.env.DB_ENV_FILE||'.env.neon.dev'})`:'T
 const maxFail=Number(opt('max-consecutive-failures','3'));
 const TARGETS=['catalogue','internal','demo-template'];
 const sleep=(ms:number)=>new Promise(r=>setTimeout(r,ms));
-const db=new pg.Client({connectionString:adminUrl});await db.connect();
+// A pool, not one long-lived client: Neon closes idle connections while the Goong lookups run for minutes.
+const db=new pg.Pool({connectionString:adminUrl,max:2,idleTimeoutMillis:10000});db.on('error',()=>{});
 const summary:any={generatedAt:new Date().toISOString(),dryRun,sourceWorkspace:source,parks:[],totals:{}};
 try{
  const rows=(await db.query(`SELECT id,published_payload FROM vsip.content_items WHERE workspace_id=$1 AND kind='park' AND published_payload IS NOT NULL AND published_payload->>'publicationStatus'='published' ORDER BY id`,[source])).rows.filter(r=>!only||only.includes(r.id));
@@ -47,25 +48,27 @@ try{
    entry.withDriving=places.filter(x=>x.drivingKm!=null).length;entry.routes=places.filter(x=>x.route).map(x=>x.category);
    entry.nearest=Object.fromEntries(NEARBY_CATEGORIES.map(c=>{const x=places.filter(y=>y.category===c).sort((a,b)=>(a.drivingKm??a.straightKm)-(b.drivingKm??b.straightKm))[0];return [c,x?{name:x.name.vi,drivingKm:x.drivingKm,drivingMinutes:x.drivingMinutes,straightKm:x.straightKm}:null]}));
    if(!dryRun){
-    await db.query('BEGIN');
-    await db.query("SELECT pg_advisory_xact_lock(hashtext('vsip-public-catalogue'))");
+    const c=await db.connect();c.on('error',()=>{});
+    try{
+    await c.query('BEGIN');
+    await c.query("SELECT pg_advisory_xact_lock(hashtext('vsip-public-catalogue'))");
     let publicPlaces:unknown;
     for(const ws of TARGETS){
-     const row=(await db.query(`SELECT revision,state,payload,published_payload FROM vsip.content_items WHERE workspace_id=$1 AND kind='park' AND id=$2 FOR UPDATE`,[ws,r.id])).rows[0];
+     const row=(await c.query(`SELECT revision,state,payload,published_payload FROM vsip.content_items WHERE workspace_id=$1 AND kind='park' AND id=$2 FOR UPDATE`,[ws,r.id])).rows[0];
      if(!row)continue;
      const extra=seed?{coordinates:seed}:{},payload={...row.payload,...extra,places},published=row.published_payload?{...row.published_payload,...extra,places}:null,revision=row.revision+1;
-     await db.query(`UPDATE vsip.content_items SET payload=$4,published_payload=$5,revision=$6,updated_at=now(),updated_by='Geo batch' WHERE workspace_id=$1 AND kind='park' AND id=$2 AND revision=$3`,[ws,r.id,row.revision,JSON.stringify(payload),published?JSON.stringify(published):null,revision]);
-     await db.query(`INSERT INTO vsip.content_versions(workspace_id,kind,content_id,revision,state,payload,actor) VALUES($1,'park',$2,$3,$4,$5,'Geo batch') ON CONFLICT DO NOTHING`,[ws,r.id,revision,row.state,JSON.stringify(payload)]);
+     await c.query(`UPDATE vsip.content_items SET payload=$4,published_payload=$5,revision=$6,updated_at=now(),updated_by='Geo batch' WHERE workspace_id=$1 AND kind='park' AND id=$2 AND revision=$3`,[ws,r.id,row.revision,JSON.stringify(payload),published?JSON.stringify(published):null,revision]);
+     await c.query(`INSERT INTO vsip.content_versions(workspace_id,kind,content_id,revision,state,payload,actor) VALUES($1,'park',$2,$3,$4,$5,'Geo batch') ON CONFLICT DO NOTHING`,[ws,r.id,revision,row.state,JSON.stringify(payload)]);
      if(ws==='internal'&&published)publicPlaces=(publishedBundle([{id:r.id,kind:'park',data:payload,published,state:row.state,revision}] as any).parks[0] as any)?.places;
     }
-    if(publicPlaces)await db.query(`UPDATE vsip.public_catalogue SET payload=jsonb_set(payload,'{places}',$2::jsonb,true),revision=revision+1 WHERE kind='park' AND id=$1`,[r.id,JSON.stringify(publicPlaces)]);
-    if(seed)await db.query(`UPDATE vsip.public_catalogue SET payload=jsonb_set(payload,'{coordinates}',$2::jsonb,true) WHERE kind='park' AND id=$1`,[r.id,JSON.stringify(seed)]);
-    await db.query('COMMIT');
+    if(publicPlaces)await c.query(`UPDATE vsip.public_catalogue SET payload=jsonb_set(payload,'{places}',$2::jsonb,true),revision=revision+1 WHERE kind='park' AND id=$1`,[r.id,JSON.stringify(publicPlaces)]);
+    if(seed)await c.query(`UPDATE vsip.public_catalogue SET payload=jsonb_set(payload,'{coordinates}',$2::jsonb,true) WHERE kind='park' AND id=$1`,[r.id,JSON.stringify(seed)]);
+    await c.query('COMMIT');
+    }catch(e){await c.query('ROLLBACK').catch(()=>{});throw e}finally{c.release()}
    }
    entry.status='ok';consecutive=0;
    console.log(`OK   ${r.id}: ${entry.total} places (${NEARBY_CATEGORIES.map(c=>c[0]+c.slice(1,3)+'='+entry.counts[c]).join(' ')})${warnings.length?' warnings='+warnings.join(','):''}`);
   }catch(e:any){
-   if(!dryRun)await db.query('ROLLBACK').catch(()=>{});
    if((e as any)?.code==='goong_failed')consecutive++;else consecutive=0;
    entry.error=e instanceof Error?e.message+((e as any).detail?' ('+(e as any).detail+')':''):'error';console.log(`FAIL ${r.id}: ${entry.error}`);
   }

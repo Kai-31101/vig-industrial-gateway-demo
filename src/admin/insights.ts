@@ -8,6 +8,8 @@ export const ageDays=(iso:string,now=Date.now())=>{const at=Date.parse(iso);retu
 export const withinDays=(iso:string,from:number,to:number,now=Date.now())=>{const at=Date.parse(iso);return !Number.isNaN(at)&&at>now-to*DAY&&at<=now-from*DAY};
 export const areaM2=(a:{area:number;unit:string})=>(Number(a.area)||0)*(a.unit==='ha'?10000:1);
 export const formatArea=(m2:number,lang:string)=>m2>=10000?`${(m2/10000).toLocaleString(lang,{maximumFractionDigits:1})} ha`:`${m2.toLocaleString(lang)} m²`;
+/** "12.000 m²" when min equals max, otherwise "5.000–12.000 m²". */
+export const areaRange=(min:number,max:number,lang:string)=>min===max?`${min.toLocaleString(lang)} m²`:`${min.toLocaleString(lang)}–${max.toLocaleString(lang)} m²`;
 /** Trims float noise such as 11.440000000000001 for display and editing. */
 export const tidyNumber=(value:unknown,digits=6)=>typeof value==='number'&&Number.isFinite(value)?Number(value.toFixed(digits)):value;
 /** Normalises free-text request values ("Ready-built factory", "Northern Vietnam") to catalogue keys. */

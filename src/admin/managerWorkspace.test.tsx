@@ -16,7 +16,7 @@ const mount=(node:ReactNode)=>{const wrapper=({children}:{children:ReactNode})=>
 describe('manager overview',()=>{
  it('leads with the AI brief and work queue, and keeps the detail table closed until asked',()=>{
   const h=mount(<OverviewDashboard/>);
-  expect(screen.getByRole('region',{name:'AI tóm tắt hôm nay'})).toBeTruthy();
+  expect(screen.getByRole('region',{name:'Tóm tắt hôm nay'})).toBeTruthy();
   expect(screen.queryByRole('table')).toBeNull();
   const drafts=h.result.current.store.drafts.filter(d=>d.state==='draft').length;
   const todo=screen.getByRole('heading',{name:'Việc cần làm'}).closest('section')!;
@@ -63,7 +63,7 @@ describe('quick edit',()=>{
 describe('permission matrix',()=>{
  it('shows business roles only, hides internal codes and offers save only after a change',()=>{
   const h=mount(<PermissionMatrix/>);
-  act(()=>{h.result.current.login('superadmin@vig.example','VigDemo@2026')});
+  act(()=>{h.result.current.login('superadmin@vsip.example','VigDemo@2026')});
   expect(screen.queryByRole('columnheader',{name:'Super Admin'})).toBeNull();
   expect(screen.queryByText('P01')).toBeNull();
   expect(screen.queryByRole('button',{name:'Lưu thay đổi'})).toBeNull();

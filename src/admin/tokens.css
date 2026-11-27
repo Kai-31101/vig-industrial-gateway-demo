@@ -1,7 +1,12 @@
+/* Admin aliases of the shared theme (src/theme.css). Do not define raw colours here. */
 :root,.vsip-admin,.workspace-drawer,.native-confirm{
- --admin-ink:#12374b;--admin-muted:#627787;--admin-bg:#f5f7fa;--admin-card:#fff;--admin-line:#dfe7ec;--admin-soft:#f0f5f7;
- --admin-accent:#082f49;--admin-blue:#0369a1;--admin-gold:#c8872b;--admin-green:#0f766e;--admin-tint:#e7f3f4;
- --admin-red:#a33232;--admin-red-bg:#fff1f0;--admin-focus:#0891b2;--admin-warn:#9a5b0c;--admin-warn-bg:#fdf3e2;--admin-info:#0b5394;--admin-info-bg:#e8f1fb;--admin-line-strong:#b9c9d2;--admin-approved:#3730a3;--admin-approved-bg:#eef2ff;--chart-1:#0d9488;--chart-2:#b7791f;--chart-grid:#e3eaee;--admin-shadow:0 4px 20px #12374b08;
+ --admin-ink:var(--text-strong);--admin-muted:var(--text-light);--admin-bg:var(--neutral-50);--admin-card:var(--white);--admin-line:var(--border-medium);--admin-soft:var(--neutral-100);
+ --admin-accent:var(--brand);--admin-blue:var(--brand);--admin-gold:var(--brand);--admin-green:var(--success);--admin-tint:var(--brand-tint);
+ --admin-red:var(--danger);--admin-red-bg:var(--danger-bg);--admin-focus:var(--brand);--admin-warn:var(--warning);--admin-warn-bg:var(--warning-bg);--admin-info:var(--action);--admin-info-bg:var(--brand-50);--admin-line-strong:var(--neutral-300);--admin-approved:var(--violet);--admin-approved-bg:var(--violet-bg);
+ --admin-success:var(--success);--admin-success-bg:var(--success-bg);
+ --chart-grid:var(--border-medium);--admin-shadow:var(--shadow-sm);
  --space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--space-7:32px;--space-8:40px;
- --radius-sm:6px;--radius-md:10px;--radius-lg:16px;--control-h:44px;
+ --radius-sm:8px;--radius-md:12px;--radius-lg:16px;--control-h:44px;
+ --admin-fs-12:12px;--admin-fs-13:13px;--admin-fs-14:14px;--admin-fs-16:16px;--admin-fs-20:20px;--admin-fs-24:24px;
+ --color-action:var(--brand);--color-selection:var(--brand-tint);
 }

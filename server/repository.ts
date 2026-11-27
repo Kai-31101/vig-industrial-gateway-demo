@@ -2,13 +2,15 @@ import type {PoolClient} from 'pg';
 import {initialAdmin,type AdminStore} from '../src/admin/model';
 import {publishedBundle} from '../src/contentRepository';
 import type {IndustrialRequest} from '../src/types';
+import {normalizeMockContact,normalizeDemoIdentities} from '../src/mockContacts';
 export async function state(c:PoolClient,w:string){
  await c.query("SELECT set_config('app.workspace_id',$1,true)",[w]);
  const items=(await c.query('SELECT kind,id,revision,state,payload,published_payload,updated_at,updated_by FROM vsip.content_items WHERE workspace_id=$1 ORDER BY kind DESC,id',[w])).rows;
- const store=initialAdmin(items.filter(r=>r.kind==='park').map(r=>r.payload),items.filter(r=>r.kind==='asset').map(r=>r.payload));
- store.drafts=items.map(r=>({id:r.id,kind:r.kind,revision:r.revision,state:r.state,data:r.payload,...(r.published_payload?{published:r.published_payload}:{}),updatedAt:r.updated_at.toISOString(),updatedBy:r.updated_by}));
+ const store=initialAdmin(items.filter(r=>r.kind==='park').map(r=>normalizeMockContact(r.payload)),items.filter(r=>r.kind==='asset').map(r=>r.payload));
+ store.drafts=items.map(r=>({id:r.id,kind:r.kind,revision:r.revision,state:r.state,data:normalizeMockContact(r.payload),...(r.published_payload?{published:normalizeMockContact(r.published_payload)}:{}),updatedAt:r.updated_at.toISOString(),updatedBy:r.updated_by}));
  const configs=(await c.query('SELECT key,value FROM vsip.workspace_config WHERE workspace_id=$1',[w])).rows;
  for(const r of configs){if(r.key==='adminMeta')Object.assign(store,r.value);if(r.key==='packages')store.packages=r.value}
+ store.users=normalizeDemoIdentities(store.users);
  store.audit=(await c.query('SELECT id,actor,domain,target_id,action,before_data,after_data,reason,created_at FROM vsip.audit_events WHERE workspace_id=$1 ORDER BY created_at DESC LIMIT 300',[w])).rows.map(r=>({id:r.id,actor:r.actor,domain:r.domain,target:r.target_id,action:r.action,before:JSON.stringify(r.before_data),after:JSON.stringify(r.after_data),reason:r.reason,at:r.created_at.toISOString()}));
  store.batches=(await c.query('SELECT payload FROM vsip.import_batches WHERE workspace_id=$1 ORDER BY created_at DESC LIMIT 100',[w])).rows.map(r=>r.payload);
  const requests=(await c.query('SELECT payload FROM vsip.leasing_requests WHERE workspace_id=$1 ORDER BY submitted_at DESC,id',[w])).rows.map(r=>r.payload) as IndustrialRequest[];

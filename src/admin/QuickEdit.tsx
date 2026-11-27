@@ -18,7 +18,8 @@ export function QuickEdit({record,onClose}:{record:Draft;onClose:()=>void}){
  const live=a.store.drafts.find(d=>d.id===record.id&&d.kind===record.kind)||record;
  const dirty=JSON.stringify(data)!==JSON.stringify(live.data),stale=live.revision!==record.revision&&dirty;
  const editable=a.can('P02')&&a.writable,issues=publicationIssues(data,a.store.drafts);
- useEffect(()=>{const d=ref.current;d?.showModal?.();return()=>d?.close?.()},[]);
+ // Return focus to the control that opened the drawer when it closes.
+ useEffect(()=>{const d=ref.current,opener=document.activeElement as HTMLElement|null;d?.showModal?.();return()=>{d?.close?.();if(opener?.isConnected)opener.focus()}},[]);
  const save=async()=>{setBusy(true);try{const r=await a.save(data,live.revision);setMessage(r.ok?'saved':r.error||'validation')}finally{setBusy(false)}};
  const step=async(action:'submit'|'approve'|'publish')=>{setBusy(true);try{const r=await a.workflow(live.id,live.revision,action);setMessage(r.ok?'success':r.error||'validation')}finally{setBusy(false)}};
  const path=`/admin/${record.kind==='park'?'industrial-parks':'assets'}/${record.id}/edit`;

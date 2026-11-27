@@ -18,7 +18,7 @@ export function CoordinatePicker({value,onChange,disabled,label}:{value:Coords;o
   if(!open||!host.current)return;
   const m=L.map(host.current,{scrollWheelZoom:true}).setView(has?[value.lat!,value.lng!]:VIETNAM,has?13:5);map.current=m;
   L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles &copy; Esri'}).addTo(m);
-  const place=(lat:number,lng:number)=>{if(marker.current)marker.current.setLatLng([lat,lng]);else marker.current=L.circleMarker([lat,lng],{radius:9,color:'#fff',weight:3,fillColor:'#0f766e',fillOpacity:1}).addTo(m)};
+  const place=(lat:number,lng:number)=>{if(marker.current)marker.current.setLatLng([lat,lng]);else marker.current=L.circleMarker([lat,lng],{radius:9,color:'#fff',weight:3,fillColor:'#0643d7',fillOpacity:1}).addTo(m)};
   if(has)place(value.lat!,value.lng!);
   if(!disabled)m.on('click',(e:L.LeafletMouseEvent)=>{const lat=round(e.latlng.lat),lng=round(e.latlng.lng);place(lat,lng);latest.current({lat,lng})});
   const observer=typeof ResizeObserver!=='undefined'?new ResizeObserver(()=>m.invalidateSize()):null;observer?.observe(host.current);

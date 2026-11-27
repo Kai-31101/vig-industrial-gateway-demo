@@ -1,0 +1,148 @@
+/* VIG design foundation — Arobid Gateway visual language, Investment blue palette.
+   Single owner of colour, type, radius, shadow and focus tokens for public and admin UI.
+   Source evidence: arobid-gateway styles/styles.css (:root, .btn, font-face) and styles/contact-form.css (fields, dialog).
+   Components use role tokens only (legacy aliases removed 2026-11-17). */
+
+@font-face {
+  font-family: "Inter Tight";
+  src: url("/fonts/inter-tight-latin.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+  font-family: "Inter Tight";
+  src: url("/fonts/inter-tight-latin-ext.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+@font-face {
+  font-family: "Inter Tight";
+  src: url("/fonts/inter-tight-vietnamese.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;
+}
+
+:root {
+  /* Type: Inter Tight for Latin/Vietnamese; Chinese falls back to the platform CJK face. */
+  --font-sans: "Inter Tight", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", "Noto Sans CJK SC", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Arobid neutrals */
+  --white: #fff;
+  --text-strong: #030712;
+  --text-medium: #1f2937;
+  --text-light: #646b77; /* 5.37 white, 5.14 #f9fafb, 4.88 #f3f4f6, 4.61 #e6eeff; NOT on #e5e7eb (4.34) */
+  --neutral-50: #f9fafb;
+  --neutral-100: #f3f4f6;
+  --border-light: #f3f4f6;
+  --border-medium: #e5e7eb;
+  --neutral-300: #d1d5db;
+  --neutral-400: #9ca3af;
+  --neutral-600: #4b5563;
+
+  /* Arobid Investment blue */
+  --brand: #0643d7;
+  --brand-hover: #0536b0;
+  --brand-bright: #3d7bff;
+  --brand-deep: #022582;
+  --brand-200: #a8c1ff;
+  --brand-tint: #e6eeff;
+  --brand-50: #f5f8ff;
+  --hover-tint: var(--brand-tint);
+
+  /* Semantic states (no orange: warning uses yellow with dark text) */
+  --danger: #b91c1c;
+  --danger-border: #fca5a5;
+  --danger-bg: #fef2f2;
+  --success: #15803d;
+  --success-border: #86efac;
+  --success-bg: #f0fdf4;
+  --warning: #5b4b00;
+  --warning-border: #fde047;
+  --warning-bg: #fefce8;
+  --violet: #3730a3;
+  --violet-bg: #eef2ff;
+
+  /* Shape and depth */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+  --shadow-sm: 0 0 8px -2px rgba(0, 0, 0, .1), 0 0 4px -2px rgba(0, 0, 0, .06);
+  --shadow-md: 0 0 12px rgba(0, 0, 0, .08);
+  --shadow-lg: 0 12px 16px -4px rgba(0, 0, 0, .08), 0 0 8px rgba(0, 0, 0, .04);
+  --focus-ring: 0 0 0 4px var(--brand-tint);
+  --control-h: 44px;
+  --control-h-sm: 36px;
+
+  /* ---- Role tokens (2026-11-17 system repair). Rules use roles, not hues. ---- */
+  /* Surfaces */
+  --surface: #ffffff;
+  --surface-subtle: #f9fafb;
+  --surface-muted: #f3f4f6;
+  /* Text: --text-light is >=4.5:1 on surface, surface-subtle, surface-muted and selection-bg (never on #e5e7eb fills); --text-muted for body copy. */
+  --text-body: #1f2937;
+  --text-muted: #4b5563;
+  --text-disabled: #9ca3af;
+  /* Borders: --border-subtle is decorative; form controls use --border-control (>=3.05:1 on all neutral surfaces). */
+  --border-subtle: #e5e7eb;
+  --border-control: #848d9b;
+  /* Actions and selection (blue roles) */
+  --action: #0643d7;
+  --action-hover: #0536b0;
+  --action-strong: #022582;
+  --selection-bg: #e6eeff;
+  --info-bg: #f5f8ff;
+  /* Inverse surface: only for photo scrims and at most one dark band per page. Never blue text on it. */
+  --inverse-bg: #0b1f4d;
+  --inverse-fg: #ffffff;
+  --inverse-muted: #c7d7ff;
+  --inverse-eyebrow: #a8c1ff;
+  --inverse-border: rgba(255, 255, 255, .32);
+  --scrim: rgba(3, 7, 18, .72);
+  --overlay: rgba(3, 7, 18, .45);
+  /* Supporting accent (palette rationale, 2026-11-17): blue leads; one restrained cool teal supports it
+     for second data series and category accents. Teal #0e7490 is 5.4:1 on white, clearly separate from
+     the brand blue in hue and lightness, and distinct from success green. No orange in UI chrome; the
+     Lotus AI mark keeps its original warm accents as artwork. */
+  --accent: #0e7490;
+  --accent-bg: #ecfeff;
+  /* Data visualisation: series 1 brand blue, series 2 teal accent (both >=3:1 on white as graphics). */
+  --chart-1: #0643d7;
+  --chart-2: #0e7490;
+
+  /* Legacy aliases used by the restored baseline CSS (UI rollback 2026-11-17). Rules whose colour was corrected in
+     the colour round now use role tokens directly; these keep the remaining baseline usages resolving. */
+  --navy: var(--brand);
+  --navy2: var(--brand);
+  --blue: var(--brand);
+  --gold: var(--brand);
+  --gold2: var(--brand-bright);
+  --green: var(--brand);
+  --line: var(--border-medium);
+  --muted: var(--text-light);
+  --shadow: var(--shadow-md);
+
+  font-family: var(--font-sans);
+  color: var(--text-strong);
+  background: var(--white);
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Shared focus treatment */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,4 +1,5 @@
 import {remoteEnabled} from '../remote';
+import {demoLoginAlias} from '../mockContacts';
 import {RemoteAdminProvider} from './RemoteAdminProvider';
 import {invalidateChangedApprovals} from './contentIntegrity';
 import {CONTENT_KEY,hasDeploymentDrift,parseContentSnapshot,reconcileDrafts,loadContent,persistContent,hydrateContent,deploymentInventory} from '../contentRepository';
@@ -40,7 +41,7 @@ function LocalAdminProvider({children}:{children:ReactNode}){
   const can=(p:string)=>permissions(ref.current.users.find(u=>u.id===session.current),ref.current.matrix).includes(p);
   const enterDemo=()=>{session.current='sa';setUserId('sa');app.setRole('admin')};
   const logout=()=>{session.current='';setUserId('');app.setRole('public')};
-  const login=(username:string,password:string):Result=>{const u=ref.current.users.find(u=>u.email===username.trim().toLowerCase());if(!u||passwords.current[u.id]!==password)return {ok:false,error:'credentials'};if(u.account!=='active')return {ok:false,error:'disabled'};session.current=u.id;setUserId(u.id);app.setRole('admin');return {ok:true,id:u.id}};
+  const login=(username:string,password:string):Result=>{const address=demoLoginAlias(username.trim().toLowerCase());const u=ref.current.users.find(u=>u.email===address);if(!u||passwords.current[u.id]!==password)return {ok:false,error:'credentials'};if(u.account!=='active')return {ok:false,error:'disabled'};session.current=u.id;setUserId(u.id);app.setRole('admin');return {ok:true,id:u.id}};
   const commit=(s:AdminStore)=>{ref.current=s;setStore(s)};
   const fail=(error:string):Result=>({ok:false,error});
   const savePackage:AdminState['savePackage']=(id,content,revision)=>{

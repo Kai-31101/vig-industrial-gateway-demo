@@ -33,12 +33,12 @@ export interface AdminStore { packages:ServicePackage[]; users:AdminUser[]; invi
 export function initialAdmin(parks:IndustrialParkProfile[],assets:IndustrialAsset[]):AdminStore {
   const now=Date.now();
   return {packages:structuredClone(packageSeeds),matrix:structuredClone(rolePermissions),matrixRevision:1,users:[
-    {id:'sa',name:'VSIP Super Admin',email:'superadmin@vig.example',phone:'',role:'SA',account:'active',access:'active',revision:1},
-    {id:'admin',name:'Nguyễn Lan Anh',email:'admin@vig.example',phone:'0901234567',role:'ADMIN',account:'active',access:'active',revision:1},
-    {id:'operator',name:'Phạm An',email:'operator@vig.example',phone:'',role:'OPERATOR',account:'active',access:'active',revision:1},
-    {id:'existing',name:'Existing account',email:'existing@vig.example',phone:'',role:null,account:'active',access:'removed',revision:1},
-    {id:'pending',name:'Invited user',email:'invited@vig.example',phone:'',role:null,account:'invited',access:'pending',revision:1},
-    {id:'expired',name:'Expired invitation',email:'expired@vig.example',phone:'',role:null,account:'invited',access:'pending',revision:1},
+    {id:'sa',name:'VSIP Super Admin',email:'superadmin@vsip.example',phone:'',role:'SA',account:'active',access:'active',revision:1},
+    {id:'admin',name:'Nguyễn Lan Anh',email:'admin@vsip.example',phone:'0901234567',role:'ADMIN',account:'active',access:'active',revision:1},
+    {id:'operator',name:'Phạm An',email:'operator@vsip.example',phone:'',role:'OPERATOR',account:'active',access:'active',revision:1},
+    {id:'existing',name:'Existing account',email:'existing@vsip.example',phone:'',role:null,account:'active',access:'removed',revision:1},
+    {id:'pending',name:'Invited user',email:'invited@vsip.example',phone:'',role:null,account:'invited',access:'pending',revision:1},
+    {id:'expired',name:'Expired invitation',email:'expired@vsip.example',phone:'',role:null,account:'invited',access:'pending',revision:1},
   ], invites:[
     {id:'INV-DEMO-01',token:'demo-invitation',userId:'pending',role:'ADMIN',createdAt:new Date(now).toISOString(),expiresAt:new Date(now+72*3600000).toISOString(),status:'pending',delivery:'queued'},
     {id:'INV-DEMO-02',token:'demo-expired',userId:'expired',role:'OPERATOR',createdAt:new Date(now-96*3600000).toISOString(),expiresAt:new Date(now-24*3600000).toISOString(),status:'pending',delivery:'failed'},

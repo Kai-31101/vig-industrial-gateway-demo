@@ -8,10 +8,12 @@ afterEach(()=>{cleanup();vi.useRealTimers();vi.unstubAllGlobals();});
 const LanguagePicker=()=>{const {setLanguage}=useApp();return <><button onClick={()=>setLanguage('en')}>English test</button><button onClick={()=>setLanguage('zh')}>Chinese test</button></>};
 const setup=()=>render(<AppProvider><MemoryRouter><LanguagePicker/><HomeAds placement="top"/><HomeAds placement="bottom"/></MemoryRouter></AppProvider>);
 describe('homepage advertisement carousels',()=>{
- it('keeps the first banner fixed and labels every banner as Ads',()=>{
+ it('keeps the first banner fixed and labels the ad sections as Ads without overlays',()=>{
   vi.useFakeTimers();setup();
   const first=screen.getByRole('region',{name:'Banner top 1'});
-  expect(screen.getAllByText('Quảng cáo')).toHaveLength(4);
+  // Original advertisement images only (user request 2026-11-17): no visible overlay text; ads are identified by the localized region label.
+  expect(screen.getAllByRole('region',{name:'Quảng cáo'})).toHaveLength(2);
+  expect(document.querySelectorAll('.ad-copy,.ad-disclosure,.ad-bank-brand,.ad-localized')).toHaveLength(0);
   act(()=>vi.advanceTimersByTime(15000));
   expect(first.querySelector('.ad-artwork img')?.getAttribute('src')).toContain('advertise-here.png');
   expect(first.querySelector('.ad-slide-in')).toBeNull();

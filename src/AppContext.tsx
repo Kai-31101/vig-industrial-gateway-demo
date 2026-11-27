@@ -5,6 +5,7 @@ const initialRequests=[...baseRequests,...mockLeasingRequests];
 import {publicInventory,CONTENT_KEY} from './contentRepository';
 import {registerPublished,resetMembership} from './publicMembership';
 import {validLeasingContext,isPublicPark,isPublicAsset} from './leasing';
+import {clearPublicChatStorage} from './publicChatStore';
 import { createContext, useContext, useMemo, useState, useRef, useEffect } from 'react';
 import {candidateChecks} from './matching';
 import {validOutcome} from './connectionLogic';
@@ -15,6 +16,7 @@ const expos=seedExpos.filter(e=>visibleVigExpos(mockTradeExpos).some(m=>m.id===e
 import type { IndustrialAsset } from './types';
 import { canTransition } from './logic';
 import { translateToChinese } from './i18n';
+import { normalizeMockContacts } from './mockContacts';
 import type { IndustrialParkProfile, IndustrialRequest, Language, ParkChatMessage, PublicationStatus, RequestStatus } from './types';
 
 type Role = 'public' | 'admin';
@@ -27,7 +29,7 @@ interface AppState { dataLoading?:boolean; dataError?:string; createRequestRemot
   transitionRequest: (id: string, to: RequestStatus, reason?: string, outcome?:ConnectionOutcome, expectedRevision?:number, actor?:string, selectedParkId?:string) => boolean;
   assignRequest: (id:string,assignee:string,revision:number,actor:string)=>boolean;
   updateParkPublication: (id: string, status: PublicationStatus) => void; resetDemo: () => void;
-  chatParkId: string | null; chatOpen: boolean; chatThreads: Record<string, ParkChatMessage[]>;
+  chatParkId: string | null; chatSelection: {parkId:string;assetId?:string;nonce:number}|null; chatOpen: boolean; chatThreads: Record<string, ParkChatMessage[]>;
   openParkChat: (parkId: string, assetId?:string) => void; closeParkChat: () => void; toggleParkChat: () => void; sendParkChatMessage: (text: string, fail?:boolean) => void; retryParkChatMessage:(id:string)=>void;
 }
 
@@ -37,6 +39,8 @@ const now = () => new Date().toISOString();
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguage] = useState<Language>('vi');
+  // Expose the active language to assistive tech and to font fallback (Chinese picks the CJK face).
+  useEffect(()=>{document.documentElement.lang=language==='zh'?'zh-CN':language},[language]);
   const [role, setRole] = useState<Role>('public');
   const [parks, setParks] = useState<IndustrialParkProfile[]>(()=>remoteEnabled?[]:publicInventory().parks);
   const [assets, setAssets] = useState<IndustrialAsset[]>(()=>remoteEnabled?[]:publicInventory().assets);
@@ -51,10 +55,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const requestRef=useRef(requests);requestRef.current=requests;
   const [ownRequestIds,setOwnRequestIds]=useState<string[]>([]);
   const [chatParkId, setChatParkId] = useState<string | null>(null);
+  // Explicit "Chat" action selection (card/detail button), kept separately from the route-derived page context.
+  const [chatSelection, setChatSelection] = useState<{parkId:string;assetId?:string;nonce:number}|null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatThreads, setChatThreads] = useState<Record<string, ParkChatMessage[]>>({});
   useEffect(()=>{if(!remoteEnabled)return;
-    const update=(r:any)=>{r.parks.forEach((p:IndustrialParkProfile)=>registerPublished('park',p.id));r.assets.forEach((a:IndustrialAsset)=>registerPublished('asset',a.id));setParks(r.parks);setAssets(r.assets)};
+    const update=(r:any)=>{const parks=normalizeMockContacts(r.parks) as IndustrialParkProfile[];parks.forEach((p:IndustrialParkProfile)=>registerPublished('park',p.id));r.assets.forEach((a:IndustrialAsset)=>registerPublished('asset',a.id));setParks(parks);setAssets(r.assets)};
     const refresh=()=>{setDataLoading(true);api('catalogue').then(r=>{update(r);setDataError('')}).catch(()=>setDataError('network')).finally(()=>setDataLoading(false))};
     const admin=(e:Event)=>{const r=(e as CustomEvent).detail;update(r.inventory);setRequests(r.requests);requestRef.current=r.requests};
     const receipt=(e:Event)=>{const r=(e as CustomEvent).detail;setRequests(rows=>[...rows.filter(x=>x.id!==r.id),r]);setOwnRequestIds(ids=>{const next=[...new Set([...ids,r.id])];sessionStorage.setItem('vsip-own-requests',JSON.stringify(next));return next})};window.addEventListener('vsip-request-created',receipt);
@@ -94,6 +100,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
     if(assetId){const asset=assets.find(a=>a.id===assetId)!;setChatThreads(threads=>{const rows=threads[parkId]||[];if(rows.some(m=>m.contextOnly&&m.assetId===assetId))return threads;return {...threads,[parkId]:[...rows,{id:crypto.randomUUID(),sender:'user',assetId,contextOnly:true,status:'sent',at:now(),text:{vi:'Đang trao đổi về: '+asset.name.vi,en:'Discussing: '+asset.name.en,zh:'咨询产品：'+(asset.name.zh||asset.name.en)}}]}})}
     setChatParkId(parkId);
+    setChatSelection(old=>({parkId,assetId,nonce:(old?.nonce||0)+1}));
     setChatOpen(true);
   };
   const closeParkChat = () => setChatOpen(false);
@@ -122,8 +129,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setChatThreads(threads=>({...threads,[chatParkId]:threads[chatParkId].map(m=>m.id===id?{...m,status:'sending'}:m)}));
     deliver(chatParkId,id);
   };
-  const resetDemo = () => { localStorage.removeItem(CONTENT_KEY);resetMembership();window.dispatchEvent(new Event('vsip-content-updated')); pendingChat.current.forEach(clearTimeout);pendingChat.current.clear(); const restored=publicInventory();setParks(restored.parks); setAssets(restored.assets);requestRef.current=initialRequests; setRequests(initialRequests);setOwnRequestIds([]); setChatParkId(null); setChatOpen(false); setChatThreads({}); setRole('public'); setLanguage('vi'); };
-  const value = useMemo(() => ({ dataLoading,dataError,createRequestRemote:remoteEnabled?createRequestRemote:undefined,language, setLanguage, role, setRole, parks, assets, expos, requests, ownRequestIds,createRequest, transitionRequest,assignRequest, updateParkPublication, publishContent, resetDemo, chatParkId, chatOpen, chatThreads, openParkChat, closeParkChat, toggleParkChat, sendParkChatMessage,retryParkChatMessage }), [dataLoading,dataError,language, role, parks, assets, requests,ownRequestIds, chatParkId, chatOpen, chatThreads]);
+  const resetDemo = () => { clearPublicChatStorage(); localStorage.removeItem(CONTENT_KEY);resetMembership();window.dispatchEvent(new Event('vsip-content-updated')); pendingChat.current.forEach(clearTimeout);pendingChat.current.clear(); const restored=publicInventory();setParks(restored.parks); setAssets(restored.assets);requestRef.current=initialRequests; setRequests(initialRequests);setOwnRequestIds([]); setChatParkId(null); setChatOpen(false); setChatThreads({}); setRole('public'); setLanguage('vi'); };
+  const value = useMemo(() => ({ dataLoading,dataError,createRequestRemote:remoteEnabled?createRequestRemote:undefined,language, setLanguage, role, setRole, parks, assets, expos, requests, ownRequestIds,createRequest, transitionRequest,assignRequest, updateParkPublication, publishContent, resetDemo, chatParkId, chatSelection, chatOpen, chatThreads, openParkChat, closeParkChat, toggleParkChat, sendParkChatMessage,retryParkChatMessage }), [dataLoading,dataError,language, role, parks, assets, requests,ownRequestIds, chatParkId, chatSelection, chatOpen, chatThreads]);
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 export const useApp = () => { const x = useContext(Context); if (!x) throw new Error('AppProvider required'); return x; };

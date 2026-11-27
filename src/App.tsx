@@ -6,24 +6,33 @@ import {AiChat,InternalAccess,AdminAssistant} from './AiChat';
 import {LotusChatIcon} from './LotusChatIcon';
 import type {IndustrialAsset} from './types';
 import {ParkLocationMap,ParkMasterplan} from "./ParkMaps";
+import {NearbyConnectivity} from "./NearbyPlaces";
+import {ParksMapView} from "./ParksMapView";
 import {AreaInput,areaFactors,convertArea,type AreaUnit} from "./AreaInput";
 import {BrandLogo} from "./BrandLogo";
 import {industryLabel} from "./industryLabels";
+import {HomeHeroVideo} from "./HomeHeroVideo";
+import {useSearchDraft,isComposingKey,searchIncludes} from "./searchDraft";
 import {portfolioMode,isPublicPark,isPublicAsset,leasingIntents,leasingIntentLabel,leasingTeam,validLeasingContext} from './leasing';
 import {useMobile,MobileMenu,MobileActionBar,MobileDisclosure,PublicScrollRestore} from './MobileUX';
 import {HomeAds} from './HomeAds';
 import {PackageSettings} from './admin/PackageSettings';
 import {PermissionMatrix} from './admin/PermissionMatrix';
 import {TradeExpoSection} from './TradeExpoSection';
-import {DiscoveryFilters,matchesParkFilters,matchesAssetFilters} from './DiscoveryFilters';
+import {DiscoveryFilters,matchesParkFilters,matchesAssetFilters,assetTypeLabel,assetTypeLabels,hasPublishedSale,homeSearchTarget,parkTypeOptionsOf} from './DiscoveryFilters';
 import {assetPriceText} from './assetPrice';
 import {sortParksByCompleteness} from './parkCompleteness';
 import {ConnectionDetail,ConnectionDashboard,ExpoDirectoryAdmin} from './admin/Connections';
 import {successfulConnection} from './connectionLogic';
 import {validPhone} from './admin/model';
-import {ageDays,assetTypeKey,regionKey} from './admin/insights';
+import {ageDays,areaRange,assetTypeKey,regionKey} from './admin/insights';
 import {optionText} from './admin/copy';
-import { CSSProperties, FormEvent, ReactNode, Fragment, useMemo, useState, useRef, useEffect } from "react";
+import { CSSProperties, FormEvent, ReactNode, Fragment, useMemo, useState, useRef, useEffect, lazy, Suspense } from "react";
+// Park management portal and its /admin Owner provisioning screens load on demand.
+const PortalApp=lazy(()=>import("./portal/PortalApp"));
+const AdminOwnersList=lazy(()=>import("./portal/AdminOwners").then(m=>({default:m.AdminOwnersList})));
+const AdminOwnerDetail=lazy(()=>import("./portal/AdminOwners").then(m=>({default:m.AdminOwnerDetail})));
+const portalFallback=<p role="status" style={{padding:24}}>Đang tải…</p>;
 import {
   BrowserRouter,
   Link,
@@ -54,7 +63,6 @@ import {
   FileCheck2,
   FileText,
   Filter,
-  Globe2,
   Handshake,
   HardHat,
   LayoutDashboard,
@@ -90,7 +98,6 @@ import { BatchImport } from './admin/BatchImport';
 import { ExpoReport } from './admin/ExpoReport';
 import { Access } from './admin/ui';
 import { firstAdminPage, routePermission } from './admin/model';
-import './admin/admin.css';
 import { translateToChinese, ui } from "./i18n";
 import {
   canPublish,
@@ -509,12 +516,12 @@ function FloatingParkChat() {
       )}
       <button
         type="button"
-        className={`floating-chat-launcher ${chatOpen ? "open" : ""}`}
+        className="floating-chat-launcher"
         onClick={toggleParkChat}
         aria-expanded={chatOpen}
-        aria-label={ui(language, "Mở trao đổi với khu công nghiệp", "Open industrial park chat")}
+        aria-label={chatOpen ? ui(language, "Đóng trao đổi với khu công nghiệp", "Close industrial park chat") : ui(language, "Mở trao đổi với khu công nghiệp", "Open industrial park chat")}
       >
-        {chatOpen ? <X /> : <LotusChatIcon/>}
+        <LotusChatIcon/>
         {threadIds.length > 0 && <span>{threadIds.length}</span>}
       </button>
     </div>
@@ -535,86 +542,142 @@ function PublicShell({ children }: { children: ReactNode }) {
 function HomePage() {
   const mobile=useMobile();
   const [keyword,setKeyword]=useState("");
+  const [region, setRegion] = useState("");
+  const [industry, setIndustry] = useState("");
+  const [status, setStatus] = useState("");
+  const [kind, setKind] = useState("");
+  const [deal, setDeal] = useState("");
   const { language, parks, assets } = useApp();
   const navigate = useNavigate();
   const publishedParks = sortParksByCompleteness(parks.filter(p=>isPublicPark(p)));
   const featured = publishedParks.slice(0, 12);
+  const industries = [...new Set(publishedParks.flatMap(park => park.suitableIndustries))]
+    .sort((a, b) => industryLabel(a, language).localeCompare(industryLabel(b, language), language));
+  const all = emptyCopy(language, "Tất cả", "All", "全部");
+  const parkTypes = parkTypeOptionsOf(parks, language);
+  const assetTypes = Object.keys(assetTypeLabels).filter(v => assets.some(a => a.type === v && isPublicAsset(a, parks)));
+  const sale = hasPublishedSale(assets, parks);
+  function openParkResults() {
+    navigate(homeSearchTarget({q: keyword, region, industry, status, kind, deal}));
+  }
   return (
     <PublicShell>
-      <section className="hero">
-        <img
-          src="/images/vig-industrial-hero.png"
-          alt={
-            ui(language, "Toàn cảnh khu công nghiệp và cảng biển", "Industrial park and seaport panorama")
-          }
-        />
-        <div className="hero-overlay" />
+      <section className="hero hero-with-video">
+        <HomeHeroVideo title={emptyCopy(language, "Video giới thiệu VSIP", "VSIP introduction video", "VSIP 介绍视频")}/>
         <div className="hero-content">
-          <span className="hero-kicker">
-            <Sparkles size={16} />
-            {ui(language, "Đất công nghiệp · Nhà xưởng cho thuê", "Industrial land · Factories for lease")}
-          </span>
-          <h1
-            className={
-              language === "vi"
-                ? "hero-title-vi"
-                : language === "zh"
-                  ? "hero-title-zh"
-                  : undefined
-            }
-          >
-            {language === "vi" ? <><span>Khu công nghiệp</span><span>Việt Nam – Singapore</span></> : emptyCopy(language,"","Vietnam Singapore Industrial Park","越南—新加坡工业园区")}
-          </h1>
-          <p>
-            {language === "vi"
-              ? "Đất và nhà xưởng cho thuê tại các khu công nghiệp VSIP, phục vụ nhu cầu sản xuất của doanh nghiệp."
-              : language === "zh"
-                ? "VSIP园区提供工业用地和厂房租赁，满足企业生产需求。"
-                : "Industrial land and factories for lease in VSIP parks, supporting your manufacturing requirements."}
-          </p>
-          {mobile&&<form className="mobile-home-search" onSubmit={e=>{e.preventDefault();navigate(`/industrial-parks?q=${encodeURIComponent(keyword.trim())}`)}}><input aria-label={ui(language,"Tìm kiếm công nghiệp","Industrial search")} placeholder={ui(language,"Tên KCN, tỉnh, ngành…","Park, province, industry…")} value={keyword} onChange={e=>setKeyword(e.target.value)}/><button type="submit">{ui(language,"Tìm kiếm","Search")}</button></form>}
+          <div className="hero-intro">
+            <h1
+              className={
+                language === "vi"
+                  ? "hero-title-vi"
+                  : language === "zh"
+                    ? "hero-title-zh"
+                    : undefined
+              }
+            >
+              {language === "vi" ? <><span>Khu công nghiệp</span><span>Việt Nam – Singapore</span></> : emptyCopy(language,"","Vietnam Singapore Industrial Park","越南—新加坡工业园区")}
+            </h1>
+          </div>
           {mobile&&<div className="mobile-home-links"><Link to="/find-supply">{ui(language, "Tư vấn thuê", "Leasing consultation")}</Link><Link to="/assets">{ui(language,"Mặt bằng","Assets")}</Link></div>}
-          <div className="hero-actions">
-            <Link className="button gold" to="/industrial-parks">
-              {emptyCopy(language,"Xem khu công nghiệp","Explore parks","查看园区")}
-              <ArrowRight size={18} />
-            </Link>
-            <Link className="button ghost" to="/find-supply">
-              {ui(language,"Gửi nhu cầu thuê","Send leasing enquiry")}
-            </Link>
-          </div>
-          <div className="hero-stats">
-            <div>
-              <b>{publishedParks.length}</b>
-              <span>
-                {ui(language, "hồ sơ khu công nghiệp", "park profiles")}
-              </span>
+          <div className="hero-bottom">
+            <div className="hero-actions">
+              <Link className="button gold" to="/industrial-parks">
+                {emptyCopy(language,"Xem khu công nghiệp","Explore parks","查看园区")}
+                <ArrowRight size={18} />
+              </Link>
+              <Link className="button ghost" to="/find-supply">
+                {ui(language,"Gửi nhu cầu thuê","Send leasing enquiry")}
+              </Link>
             </div>
-            <div>
-              <b>{assets.filter(a=>isPublicAsset(a,parks)).length}</b>
-              <span>
-                {ui(language, "BĐS công nghiệp mẫu", "demo assets")}
-              </span>
+            <div className="hero-stats">
+              <div>
+                <b>{publishedParks.length}</b>
+                <span>
+                  {ui(language, "hồ sơ khu công nghiệp", "park profiles")}
+                </span>
+              </div>
+              <div>
+                <b>{assets.filter(a=>isPublicAsset(a,parks)).length}</b>
+                <span>
+                  {ui(language, "BĐS công nghiệp mẫu", "demo assets")}
+                </span>
+              </div>
             </div>
           </div>
         </div>
       </section>
-      <section className="search-band desktop-home-search">
-        <div>
-          <Search />
-          <input
-            aria-label={ui(language, "Tìm kiếm công nghiệp", "Industrial search")}
-            value={keyword} onChange={e=>setKeyword(e.target.value)}
-            onKeyDown={e=>{if(e.key==="Enter")navigate(`/industrial-parks?q=${encodeURIComponent(keyword.trim())}`)}}
-            placeholder={
-              ui(language, "Tìm KCN, tỉnh, ngành hoặc loại mặt bằng...", "Search park, province, industry or asset type...")
-            }
-          />
+      <form className="home-park-search" role="search" onSubmit={e => {
+        e.preventDefault();
+        openParkResults();
+      }}>
+        <div className="home-search-controls">
+          <div className="home-search-keyword">
+            <input
+              aria-label={ui(language, "Tìm kiếm công nghiệp", "Industrial search")}
+              value={keyword} onChange={e=>setKeyword(e.target.value)}
+              onKeyDown={e => {
+                if (e.key !== "Enter") return;
+                e.preventDefault();
+                if (!isComposingKey(e)) openParkResults();
+              }}
+              placeholder={
+                ui(language, "Tìm KCN, tỉnh, ngành hoặc loại mặt bằng...", "Search park, province, industry or asset type...")
+              }
+            />
+            <button className="home-search-submit" type="submit" aria-label={emptyCopy(language,"Tìm kiếm","Search","搜索")}><Search size={18} /></button>
+          </div>
+          <label>{emptyCopy(language, "Vùng miền", "Region", "地区")}
+            <select value={region} onChange={e => setRegion(e.target.value)}>
+              <option value="">{all}</option>
+              <option value="North">{emptyCopy(language, "Miền Bắc", "North", "北部")}</option>
+              <option value="Central">{emptyCopy(language, "Miền Trung", "Central", "中部")}</option>
+              <option value="South">{emptyCopy(language, "Miền Nam", "South", "南部")}</option>
+            </select>
+          </label>
+          <label>{emptyCopy(language, "Loại hình", "Type", "类型")}
+            <select value={kind} onChange={e => setKind(e.target.value)}>
+              <option value="">{all}</option>
+              <optgroup label={emptyCopy(language, "Khu công nghiệp", "Industrial parks", "工业园区")}>
+                {parkTypes.map(([value, label]) => <option key={value} value={"park:" + value}>{label}</option>)}
+              </optgroup>
+              {assetTypes.length > 0 && <optgroup label={emptyCopy(language, "Bất động sản công nghiệp", "Industrial property", "工业地产")}>
+                {assetTypes.map(value => <option key={value} value={"asset:" + value}>{assetTypeLabel(value, language)}</option>)}
+              </optgroup>}
+            </select>
+          </label>
+          <label>{emptyCopy(language, "Hình thức", "Transaction", "交易形式")}
+            <select value={deal} onChange={e => setDeal(e.target.value)}>
+              <option value="">{all}</option>
+              <option value="lease">{emptyCopy(language, "Cho thuê", "For lease", "租赁")}</option>
+              {sale && <option value="sale">{emptyCopy(language, "Mua", "Purchase", "购买")}</option>}
+            </select>
+          </label>
+          <label>{emptyCopy(language, "Ngành nghề", "Industry", "行业")}
+            <select value={industry} onChange={e => setIndustry(e.target.value)}>
+              <option value="">{all}</option>
+              {industries.map(value => <option key={value} value={value}>{industryLabel(value, language)}</option>)}
+            </select>
+          </label>
+          <label>{emptyCopy(language, "Trạng thái", "Status", "状态")}
+            <select value={status} onChange={e => setStatus(e.target.value)}>
+              <option value="">{all}</option>
+              <option value="operational">{emptyCopy(language, "Đang hoạt động", "Operational", "运营中")}</option>
+              <option value="developing">{emptyCopy(language, "Đang phát triển", "Developing", "开发中")}</option>
+              <option value="planned">{emptyCopy(language, "Quy hoạch", "Planned", "规划中")}</option>
+            </select>
+          </label>
         </div>
-        <button onClick={() => navigate(`/industrial-parks?q=${encodeURIComponent(keyword.trim())}`)}>
-          {ui(language, "Tìm kiếm", "Search")}
+        <button className="home-search-reset" type="button" disabled={!keyword && !region && !industry && !status && !kind && !deal} onClick={() => {
+          setKeyword("");
+          setRegion("");
+          setIndustry("");
+          setStatus("");
+          setKind("");
+          setDeal("");
+        }}>
+          {emptyCopy(language, "Xóa bộ lọc", "Clear filters", "清除筛选")}
         </button>
-      </section>
+      </form>
       <HomeAds placement="top" />
       <section className="page section home-featured">
         <SectionTitle
@@ -678,18 +741,20 @@ function HomePage() {
           })}
         </div>
       </section>
-      <section className="page section expo-banner">
-        <div>
-          <span>{ui(language, "KHẢO SÁT KHU CÔNG NGHIỆP", "VISIT AN INDUSTRIAL PARK")}</span>
-          <h2>
-            {ui(language, "Tìm hiểu mặt bằng sản xuất tại VSIP", "Explore manufacturing space at VSIP")}
-          </h2>
-          <p>{ui(language, "Trao đổi với Bộ phận Tiếp thị & Cho thuê để tư vấn và sắp xếp khảo sát.", "Contact the Marketing & Leasing Department for advice and a site visit request.")}</p>
-          <Link className="button gold" to="/find-supply?support=meeting">
+      {/* User-approved exception to the 2026-11-17 rollback: Arobid ContactCtaCard pattern (compact white card). */}
+      <section className="page section home-survey-cta" aria-labelledby="home-survey-cta-title">
+        <div className="contact-cta-card">
+          <div>
+            <p className="contact-cta-card__eyebrow">{ui(language, "KHẢO SÁT KHU CÔNG NGHIỆP", "VISIT AN INDUSTRIAL PARK")}</p>
+            <h2 id="home-survey-cta-title">
+              {ui(language, "Tìm hiểu mặt bằng sản xuất tại VSIP", "Explore manufacturing space at VSIP")}
+            </h2>
+            <p className="contact-cta-card__description" id="home-survey-cta-description">{ui(language, "Trao đổi với Bộ phận Tiếp thị & Cho thuê để tư vấn và sắp xếp khảo sát.", "Contact the Marketing & Leasing Department for advice and a site visit request.")}</p>
+          </div>
+          <Link className="button primary contact-cta-card__action" to="/find-supply?support=meeting" aria-describedby="home-survey-cta-description">
             {ui(language, "Yêu cầu khảo sát", "Request a site visit")}
           </Link>
         </div>
-        <Globe2 size={150} />
       </section>
     </PublicShell>
   );
@@ -754,7 +819,8 @@ function ParksPage() {
   const [params,setParams]=useSearchParams();
   const q=params.get("q")||"",region=params.get("region")||"all",status=params.get("status")||"all",industry=params.get("industry")||"all";
   const setFilter=(key:string,value:string)=>setParams(previous=>{const next=new URLSearchParams(previous);if(value&&value!=="all")next.set(key,value);else next.delete(key);return next},{replace:true});
-  const setQ=(value:string)=>setFilter("q",value),setRegion=(value:string)=>setFilter("region",value),setStatus=(value:string)=>setFilter("status",value),setIndustry=(value:string)=>setFilter("industry",value);
+  const view=params.get("view")==="map"?"map":"list",setView=(value:string)=>setFilter("view",value==="map"?"map":"");
+  const setQ=(value:string)=>setFilter("q",value),qInput=useSearchDraft(q,value=>setQ(value)),setRegion=(value:string)=>setFilter("region",value),setStatus=(value:string)=>setFilter("status",value),setIndustry=(value:string)=>setFilter("industry",value);
   const industryOptions = useMemo(
     () =>
       [...new Set(parks.flatMap((park) => park.suitableIndustries))].sort(
@@ -768,10 +834,8 @@ function ParksPage() {
   );
   const filtered = sortParksByCompleteness(parks.filter(
     (p) =>
-      isPublicPark(p) && matchesParkFilters(p,params) && (!q ||
-        `${tr(p.name, language)} ${p.province} ${p.suitableIndustries}`
-          .toLowerCase()
-          .includes(q.toLowerCase())) &&
+      isPublicPark(p) && matchesParkFilters(p,params) && (!q.trim() ||
+        searchIncludes(`${tr(p.name, language)} ${p.name.vi} ${p.name.en} ${p.province} ${p.suitableIndustries.map(i=>`${i} ${industryLabel(i,language)} ${industryLabel(i,"vi")}`).join(" ")}`, q)) &&
       (region === "all" || p.region === region) &&
       (industry === "all" || p.suitableIndustries.includes(industry)) &&
       (status === "all" || p.status === status),
@@ -792,8 +856,7 @@ function ParksPage() {
           <label>
             <Search size={17} />
             <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
+              {...qInput}
               placeholder={
                 ui(language, "Tìm theo tên khu công nghiệp, tỉnh/thành hoặc ngành nghề...", "Search name, province, industry...")
               }
@@ -845,12 +908,18 @@ function ParksPage() {
             {filtered.length}{" "}
             {ui(language, "khu công nghiệp", "industrial parks")}
           </b>
+          <div className="view-toggle" role="group" aria-label={emptyCopy(language,"Chế độ xem","View mode","查看方式")}>
+            <button type="button" aria-pressed={view==="list"} className={view==="list"?"active":""} onClick={() => setView("list")}>{emptyCopy(language,"Danh sách","List","列表")}</button>
+            <button type="button" aria-pressed={view==="map"} className={view==="map"?"active":""} onClick={() => setView("map")}>{emptyCopy(language,"Bản đồ","Map","地图")}</button>
+          </div>
           <span>
             <ShieldCheck size={16} />
             {ui(language, "Dữ liệu có nguồn đối chiếu", "Source-aware fields")}
           </span>
         </div>
-        {filtered.length ? (
+        {filtered.length && view==="map" ? (
+          <ParksMapView parks={filtered} language={language} />
+        ) : filtered.length ? (
           <div className="park-grid">
             {filtered.map((p) => (
               <ParkCard key={p.id} park={p} />
@@ -1118,8 +1187,9 @@ export function ParkDetailPage({draft,draftAssets}:{draft?:IndustrialParkProfile
               ui(language, "Vị trí và kết nối chiến lược", "Location and strategic connectivity")
             }
           />
+          {!!park.places?.length && park.coordinates && Number.isFinite(park.coordinates.lat) && Number.isFinite(park.coordinates.lng) && <NearbyConnectivity park={park} language={language}/>}
           <div className="connect-grid">
-            {park.coordinates && Number.isFinite(park.coordinates.lat) && Number.isFinite(park.coordinates.lng) && <ParkLocationMap park={park} language={language}/>}<div className="connect-list">
+            {!park.places?.length && park.coordinates && Number.isFinite(park.coordinates.lat) && Number.isFinite(park.coordinates.lng) && <ParkLocationMap park={park} language={language}/>}<div className="connect-list">
               {park.connectivity.map((c, i) => (
                 <article key={i}>
                   {c.type === "port" ? (
@@ -1561,7 +1631,7 @@ function AssetsPage() {
   const [params,setParams]=useSearchParams();const type=params.get("type")||"all";const setType=(value:string)=>setParams(old=>{const next=new URLSearchParams(old);if(value==="all")next.delete("type");else next.set("type",value);return next},{replace:true});
   const [retiredTransaction,setRetiredTransaction]=useState(false);
   const requestedTransaction=params.get('transaction');
-  useEffect(()=>{if(requestedTransaction && requestedTransaction!=='lease'){setRetiredTransaction(true);setParams(old=>{const next=new URLSearchParams(old);next.delete('transaction');return next},{replace:true})}},[requestedTransaction,setParams]);
+  useEffect(()=>{if(requestedTransaction && requestedTransaction!=='lease' && !(requestedTransaction==='sale' && hasPublishedSale(assets,parks))){setRetiredTransaction(true);setParams(old=>{const next=new URLSearchParams(old);next.delete('transaction');return next},{replace:true})}},[requestedTransaction,setParams,assets,parks]);
   const filtered = assets.filter((a) => isPublicAsset(a,parks) && parks.some(p=>p.id===a.parkId&&isPublicPark(p)&&matchesAssetFilters(a,p,params))&&(type === "all" || a.type === type));
   const assetTypeFilters = [
     { value: "all", icon: PackageSearch, vi: "Tất cả loại hình", en: "All assets" },
@@ -1884,7 +1954,7 @@ function RequestFormPage({ kind }: { kind: RequestKind }) {
                   : ui(language, "Ngành nghề tiếp nhận", "Suitable industry"),
               )}
               {!dateUnknown&&field("availabilityDate",ui(language,"Thời điểm bàn giao","Required date"),"date")}
-              <label><input type="checkbox" checked={dateUnknown} onChange={e=>setDateUnknown(e.target.checked)}/>{ui(language,"Chưa xác định ngày bàn giao","Date not specified")}</label>
+              <label className="date-unknown-row"><input type="checkbox" checked={dateUnknown} onChange={e=>setDateUnknown(e.target.checked)}/>{ui(language,"Chưa xác định ngày bàn giao","Date not specified")}</label>
             </div>
             <label>
               <span>
@@ -2070,6 +2140,7 @@ function ExpoStatus({ expo }: { expo: ExpoProgram }) {
 
 function RequestTable({ requests }: { requests: IndustrialRequest[] }) {
   const { language } = useApp();
+  const admin = useAdmin();
   return (
     <div className="table-wrap">
       <DataTable>
@@ -2078,6 +2149,9 @@ function RequestTable({ requests }: { requests: IndustrialRequest[] }) {
             <th>ID</th>
             <th>{ui(language, "Doanh nghiệp", "Organisation")}</th>
             <th>{ui(language, "Tỉnh/thành, khu vực", "Location")}</th>
+            <th>{emptyCopy(language,"Ngành","Industry","行业")}</th>
+            <th>{emptyCopy(language,"Diện tích","Area","面积")}</th>
+            <th>{emptyCopy(language,"Người phụ trách","Assignee","负责人")}</th>
             <th>{ui(language, "Trạng thái", "Status")}</th>
             <th>{emptyCopy(language,"Thời gian chờ","Waiting","等待时间")}</th>
           </tr>
@@ -2093,8 +2167,11 @@ function RequestTable({ requests }: { requests: IndustrialRequest[] }) {
                 <small>{optionText(assetTypeKey(r.assetType),language)}{r.kind!=='find_supply'?` · ${emptyCopy(language,'Yêu cầu cũ','Legacy','历史记录')}`:''}</small>
               </td>
               <td>{optionText(regionKey(r.location),language)}</td>
+              <td>{r.industry?industryLabel(r.industry,language):"—"}</td>
+              <td className="num">{areaRange(r.areaMin,r.areaMax,language)}</td>
+              <td>{admin.store.users.find((u) => u.id === r.assignedTo)?.name || <span className="muted">{emptyCopy(language,"Chưa phân công","Unassigned","未分配")}</span>}</td>
               <td>
-                <Badge value={r.status} />
+                <Badge value={r.status} tone={`status-${r.status}`} />
               </td>
               <td>
                 <span
@@ -2106,7 +2183,7 @@ function RequestTable({ requests }: { requests: IndustrialRequest[] }) {
                 >
                   {["submitted", "under_review"].includes(r.status)
                     ? (ageDays(r.submittedAt)?`${ageDays(r.submittedAt)} ${emptyCopy(language,"ngày chờ","days waiting","天待处理")}`:emptyCopy(language,"Mới hôm nay","New today","今日新增"))
-                    : ui(language, "Đúng tiến độ", "On track")}
+                    : emptyCopy(language, "Không chờ phản hồi", "Not awaiting response", "无需等待回复")}
                 </span>
               </td>
             </tr>
@@ -2163,7 +2240,7 @@ function AdminRequests() {
             ))}
           </select></label>
         </div>
-        <section className="admin-panel">
+        <section className="admin-flat">
           {filtered.length ? <RequestTable requests={filtered} /> : <StatePanel kind={requests.length ? "no_results" : "empty"}
             title={emptyCopy(language,requests.length ? "Không có yêu cầu phù hợp" : "Chưa có yêu cầu kết nối",requests.length ? "No matching requests" : "No connection requests yet",requests.length ? "没有符合条件的需求" : "暂无连接需求")}
             text={emptyCopy(language,"Yêu cầu sẽ xuất hiện tại đây khi được tiếp nhận. Nếu đang lọc, hãy thử mở rộng điều kiện.","Requests appear here once received. If filters are active, try broadening them.","收到需求后将在此显示。如果已筛选，请扩大筛选范围。")}
@@ -2175,7 +2252,7 @@ function AdminRequests() {
 }
 function AppRoutes() {
   const {dataLoading,dataError,language}=useApp();const location=useLocation();
-  if(remoteEnabled&&!location.pathname.startsWith('/admin')&&(dataLoading||dataError))return <><Header/><main className="page section"><p role="status">{dataError?emptyCopy(language,'Không tải được dữ liệu. Vui lòng thử lại.','Unable to load data. Please retry.','无法加载数据，请重试。'):emptyCopy(language,'Đang tải dữ liệu…','Loading data…','正在加载数据…')}</p>{dataError&&<button className="button" onClick={()=>window.dispatchEvent(new Event('vsip-public-refresh'))}>{emptyCopy(language,'Thử lại','Retry','重试')}</button>}</main></>;
+  if(remoteEnabled&&!location.pathname.startsWith('/admin')&&!location.pathname.startsWith('/portal')&&(dataLoading||dataError))return <><Header/><main className="page section"><p role="status">{dataError?emptyCopy(language,'Không tải được dữ liệu. Vui lòng thử lại.','Unable to load data. Please retry.','无法加载数据，请重试。'):emptyCopy(language,'Đang tải dữ liệu…','Loading data…','正在加载数据…')}</p>{dataError&&<button className="button" onClick={()=>window.dispatchEvent(new Event('vsip-public-refresh'))}>{emptyCopy(language,'Thử lại','Retry','重试')}</button>}</main></>;
   return (
     <Routes>
       {import.meta.env.DEV && <Route path="/demo/empty-states" element={<PublicShell><StatePreview /></PublicShell>} />}
@@ -2199,6 +2276,9 @@ function AppRoutes() {
       <Route path="/admin/login" element={<Navigate to="/admin" replace/>}/>
       <Route path="/admin/assistant" element={<AdminGuard><AdminShell><AdminAssistant/></AdminShell></AdminGuard>}/>
       <Route path="/admin/internal" element={<InternalAccess/>}/>
+      <Route path="/portal/*" element={<Suspense fallback={portalFallback}><PortalApp/></Suspense>}/>
+      <Route path="/admin/park-owners" element={<Suspense fallback={portalFallback}><AdminOwnersList/></Suspense>}/>
+      <Route path="/admin/industrial-parks/:parkId/owners" element={<Suspense fallback={portalFallback}><AdminOwnerDetail/></Suspense>}/>
       <Route path="/admin" element={<AdminEntry/>}/>
       <Route path="/admin/packages" element={<AdminGuard><AdminShell><PackageSettings/></AdminShell></AdminGuard>}/>
       <Route path="/admin/permissions" element={<AdminGuard><AdminShell><PermissionMatrix/></AdminShell></AdminGuard>}/>
@@ -2267,10 +2347,12 @@ function AppRoutes() {
           </AdminGuard>
         }
       />
+      <Route path="/admin/*" element={<AdminGuard><AdminShell><AdminNotFound/></AdminShell></AdminGuard>}/>
       <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>
   );
 }
+export function AdminNotFound(){const a=useAdmin(),{language}=useApp();return <div className="admin-page"><StatePanel kind="not_found" title={emptyCopy(language,"Không tìm thấy trang quản trị","Admin page not found","未找到管理页面")} text={emptyCopy(language,"Địa chỉ này không tồn tại trong khu quản trị. Kiểm tra lại đường dẫn hoặc quay về Tổng quan.","This address does not exist in the admin area. Check the link or go back to the overview.","管理区域中不存在此地址。请检查链接或返回概览。")} action={<Link className="button primary" to={firstAdminPage(a.current,a.store.matrix)}>{emptyCopy(language,"Về Tổng quan","Back to Overview","返回概览")}</Link>}/></div>}
 function AdminNoAccess(){const {language}=useApp();return <StatePanel kind="forbidden" title={emptyCopy(language,"Chưa có quyền truy cập","No accessible modules","无可访问模块")} text={emptyCopy(language,"Liên hệ Super Admin để được cấp quyền.","Contact your Super Admin to review your access.","请联系超级管理员审核权限。")}/>}
 function AdminEntry(){const a=useAdmin();return <AdminGuard><Navigate to={firstAdminPage(a.current,a.store.matrix)} replace/></AdminGuard>}
 export default function App() {

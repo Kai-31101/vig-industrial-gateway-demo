@@ -20,7 +20,7 @@ export function ParkLocationMap({park,language}:{park:IndustrialParkProfile;lang
   const map=L.map(host.current,{scrollWheelZoom:false,zoomControl:false}).setView([lat,lng],region?10:13);
   L.control.zoom({zoomInTitle:copy(language,'Phóng to','Zoom in','放大'),zoomOutTitle:copy(language,'Thu nhỏ','Zoom out','缩小')}).addTo(map);
   L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles &copy; Esri — Esri, HERE, Garmin, USGS, NGA' }).addTo(map);
-  if(!region){const label=document.createElement('span');label.textContent=tr(park.name,language);L.circleMarker([lat,lng],{radius:9,color:'#fff',weight:3,fillColor:'#007b9c',fillOpacity:1}).addTo(map).bindTooltip(label);}
+  if(!region){const label=document.createElement('span');label.textContent=tr(park.name,language);L.circleMarker([lat,lng],{radius:9,color:'#fff',weight:3,fillColor:'#0643d7',fillOpacity:1}).addTo(map).bindTooltip(label);}
   const observer=new ResizeObserver(()=>map.invalidateSize());observer.observe(host.current);
   return()=>{observer.disconnect();map.remove()};
  },[lat,lng,region,language,park.name]);

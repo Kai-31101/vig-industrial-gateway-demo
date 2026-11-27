@@ -20,4 +20,25 @@ export function validateLeasingRequest(r:any,parks?:any[],assets?:any[]){
  if(parks&&!['Not specified',...parks.flatMap(p=>p.suitableIndustries)].includes(r.industry))errors.industry='invalid';
  return errors;
 }
-export const maskContact=(s:string)=>s.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,'[email omitted]').replace(/(?:\+?\d[\d ()-]{6,}\d)/g,m=>m.replace(/\D/g,'').length>=8?'[contact number omitted]':m);
+// Phone detection shared by client/server masking. Numbers adjacent to an area, currency
+// or quantity unit (e.g. "10000-20000 m2", "500000000 VND") are business data, not phones,
+// unless explicitly labelled as a phone or shaped like one (+country code / leading 0).
+const PHONE_RE=/\+?\d[\d ().-]{6,}\d/g;
+const UNIT_AFTER=/^\s*(m²|m2|㎡|sqm|ha\b|hecta|héc|hec|km|vnd|vnđ|usd|đ|dong\b|đồng|trieu|triệu|ty\b|tỷ|tỉ|nghin|nghìn|ngàn|k\b|%|平方|公顷|元|美元|万|亿|years?\b|năm|nam\b|tháng|thang\b|months?\b|mva|kva|kv\b|mw\b|kw\b|tấn|tan\b|tons?\b)/i;
+const CUR_BEFORE=/(usd|vnd|\$|giá|gia|price|budget|ngân sách|ngan sach|预算|价格)\s*[:：]?\s*$/i;
+const PHONE_LABEL=/(phone|mobile|tel|telephone|call me|whatsapp|zalo|sđt|sdt|số điện thoại|so dien thoai|điện thoại|dien thoai|liên hệ|lien he|电话|手机|联系方式)\s*(number)?\s*[:：]?\s*(is|là|la|是)?\s*$/i;
+export function findPhones(text:string){
+ const out:{value:string;start:number;end:number;strong:boolean}[]=[];let m;PHONE_RE.lastIndex=0;
+ while((m=PHONE_RE.exec(text))){
+  const raw=m[0],digits=raw.replace(/\D/g,'');if(digits.length<8||digits.length>15)continue;
+  const before=text.slice(Math.max(0,m.index-30),m.index),after=text.slice(m.index+raw.length);
+  const labelled=PHONE_LABEL.test(before),shaped=/^\+/.test(raw)||/^0\d/.test(raw)&&digits.length>=9&&digits.length<=11&&!/[.,]/.test(raw);
+  const range=/^[1-9]\d{2,6}\s*[-–~]\s*\d{3,7}$/.test(raw.trim());
+  const unitish=UNIT_AFTER.test(after)||CUR_BEFORE.test(before);
+  if(labelled||shaped)out.push({value:raw.trim(),start:m.index,end:m.index+raw.length,strong:true});
+  else if(unitish||range)continue;
+  else out.push({value:raw.trim(),start:m.index,end:m.index+raw.length,strong:false});
+ }
+ return out;
+}
+export const maskContact=(s:string)=>{let out=s.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,'[email omitted]');for(const p of findPhones(out).sort((a,b)=>b.start-a.start))out=out.slice(0,p.start)+'[contact number omitted]'+out.slice(p.end);return out};

@@ -57,15 +57,9 @@ export function AdCarousel({ids,label}:{ids:number[];label:string}) {
 }
 
 function AdArtwork({id,language}:{id:number;language:Language}) {
-  const copy=adCopy[id];
-  return <div className={`ad-localized ad-theme-${id}`} lang={language}>
-    <img src={ads[id].image} alt="" aria-hidden="true" width="2172" height="724" decoding="async"/>
-    {id===2&&<span className="ad-bank-brand">{language==='vi'?'Chi nhánh Nam Sài Gòn':language==='zh'?'南西贡分行':'South Saigon Branch'}</span>}
-    <div className="ad-copy"><strong>{copy.heading[language]}</strong><span>{copy.description[language]}</span><span className="ad-cta">{copy.action[language]} →</span>
-      {id!==2&&id!==4&&<small>{language==='vi'?'Liên hệ':language==='zh'?'联系':'Contact'}: 0900 000 000</small>}
-    </div>
-    <span className="ad-disclosure">{language==='vi'?'Quảng cáo':language==='zh'?'广告':'Ads'}</span>
-  </div>;
+  // Original advertisement image only: the artwork already carries its own text, CTA and contact details.
+  const ad=ads[id];
+  return <img className="ad-image" src={ad.image} alt={ad.title[language]} lang={language} decoding="async"/>;
 }
 
 export function HomeAds({placement}:{placement:'top'|'bottom'}) {

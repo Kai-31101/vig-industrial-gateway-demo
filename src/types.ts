@@ -83,3 +83,6 @@ export interface IndustrialParkProfile { masterplan?:ParkMasterplanData; mapMode
 export interface IndustrialAsset { pricing?:AssetPricing; }
 
 export interface IndustrialRequest { budget?:import('./requestSchema').RequestBudget;dateUnknown?:boolean;idempotencyKey?:string; }
+export type NearbyCategory = 'airport' | 'seaport' | 'highway' | 'rail' | 'hospital' | 'college' | 'industrial_park' | 'town';
+export interface NearbyPlace { id: string; category: NearbyCategory; name: LocalizedText; coordinates: { lat: number; lng: number }; straightKm: number; drivingKm: number | null; drivingMinutes: number | null; ref?: string; route?: string; source: 'goong' | 'curated+goong' | 'manual'; computedAt: string; }
+export interface IndustrialParkProfile { places?: NearbyPlace[]; }

@@ -146,6 +146,17 @@ const demoParkDefinitions: DemoParkDefinition[] = [
   { province: 'An Giang', name: l('KCN thủy sản Tứ Giác Long Xuyên', 'Long Xuyen Quadrangle Aquaculture Park'), focus: l('Chuỗi giá trị thủy sản gồm chế biến, thức ăn chăn nuôi, kho lạnh và logistics xuất khẩu.', 'Aquaculture value chain spanning processing, feed, cold storage and export logistics.'), parkType: l('Khu công nghiệp thủy sản', 'Aquaculture industrial park'), industries: ['Aquaculture processing', 'Animal feed', 'Cold storage', 'Export logistics'], restrictedIndustries: ['Untreated aquaculture discharge'], image: 'food', galleryImage: 'logistics' },
 ];
 
+// Approximate industrial-zone locations in each demo province, so maps and nearby amenities land in the right province.
+const demoCoordinates: Record<string, { lat: number; lng: number }> = {
+  'Hải Phòng': { lat: 20.84, lng: 106.70 }, 'Quảng Ninh': { lat: 20.99, lng: 106.99 }, 'Bắc Ninh': { lat: 21.14, lng: 106.12 },
+  'Hà Nội': { lat: 21.11, lng: 105.80 }, 'Ninh Bình': { lat: 20.30, lng: 105.95 }, 'Thanh Hóa': { lat: 19.88, lng: 105.50 },
+  'Nghệ An': { lat: 18.86, lng: 105.64 }, 'Đà Nẵng': { lat: 16.07, lng: 108.15 }, 'Quảng Ngãi': { lat: 15.38, lng: 108.77 },
+  'Bình Định': { lat: 13.86, lng: 109.27 }, 'Khánh Hòa': { lat: 12.53, lng: 109.24 }, 'Bình Dương': { lat: 11.05, lng: 106.68 },
+  'Đồng Nai': { lat: 10.78, lng: 106.95 }, 'Long An': { lat: 10.70, lng: 106.50 }, 'Tây Ninh': { lat: 11.09, lng: 106.20 },
+  'Bà Rịa–Vũng Tàu': { lat: 10.56, lng: 107.05 }, 'Cần Thơ': { lat: 10.10, lng: 105.72 }, 'Hậu Giang': { lat: 9.97, lng: 105.70 },
+  'An Giang': { lat: 10.40, lng: 105.43 },
+};
+
 const basePark = (index: number, definition: DemoParkDefinition): IndustrialParkProfile => {
   const id = `park-demo-${String(index).padStart(2, '0')}`;
   const { province } = definition;
@@ -158,7 +169,7 @@ const basePark = (index: number, definition: DemoParkDefinition): IndustrialPark
       definition.focus.zh || translateToChinese(definition.focus.en),
     ),
     parkType: definition.parkType,
-    province, region: index < 8 ? 'North' : index < 13 ? 'Central' : 'South', coordinates: { lat: 10.8 + index * .32, lng: 105.4 + (index % 5) * .48 },
+    province, region: index < 8 ? 'North' : index < 13 ? 'Central' : 'South', coordinates: demoCoordinates[province] ?? { lat: 10.8 + index * .32, lng: 105.4 + (index % 5) * .48 },
     address: l(`${province}, Việt Nam`, `${province}, Vietnam`, `${province}, 越南`), economicZone: l('Khu kinh tế', 'Economic zone'), establishmentYear: 2026,
     operator: { ...vsipThaiBinh.operator, name: `Industrial Developer ${index}`, overview: l('Đơn vị phát triển khu công nghiệp.', 'Industrial park developer.'), portfolioStats: [] },
     provinceProfile: { ...vsipThaiBinh.provinceProfile, province: l(province, province), population: unavailable('people'), grdp: unavailable('USD billion'), growthRate: unavailable('%'), context: l('Chưa cung cấp dữ liệu kinh tế địa phương.', 'Provincial economic data has not been provided.') },
@@ -177,8 +188,8 @@ const basePark = (index: number, definition: DemoParkDefinition): IndustrialPark
       office: l(`Văn phòng điều hành ${definition.name.vi}`, `${definition.name.en} Administration Office`, `${definition.name.zh || translateToChinese(definition.name.en)}管理办公室`),
       address: l(`${province}, Việt Nam`, `${province}, Vietnam`, `${province}, 越南`),
       person: 'VSIP Service Desk',
-      email: `contact${index}@vig.example`,
-      website: 'vig.example',
+      email: `contact${index}@vsip.example`,
+      website: 'vsip.example',
     },
     media: [
       { id: `media-${id}-hero`, type: 'hero', title: l(`Hình ảnh: ${definition.parkType.vi}`, `View: ${definition.parkType.en}`, `图片：${definition.parkType.zh || translateToChinese(definition.parkType.en)}`), url: parkImages[definition.image], capturedAt: '2026-08-19', approved: true },

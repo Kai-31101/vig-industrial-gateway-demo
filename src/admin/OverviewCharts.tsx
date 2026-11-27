@@ -1,7 +1,7 @@
 import {useState} from 'react';
 
 /* Lightweight HTML/CSS charts for the manager overview. Palette validated with the dataviz checker:
-   series 1 #0d9488, series 2 #b7791f (light surface). Values always render in ink, never series colour. */
+   series 1 var(--chart-1) brand blue, series 2 var(--chart-2) sky (light surface). Values always render in ink, never series colour. */
 
 type Bar={key:string;label:string;value:number;hint?:string};
 

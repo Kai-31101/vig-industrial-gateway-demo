@@ -12,7 +12,7 @@ const wrapper=({children}:{children:ReactNode})=><MemoryRouter><AppProvider><Adm
 afterEach(()=>{cleanup();localStorage.clear()});
 it('renders incomplete linked drafts and carries the parent park into creation',()=>{
  const hook=renderHook(()=>useAdmin(),{wrapper});
- act(()=>hook.result.current.login('superadmin@vig.example','VigDemo@2026'));
+ act(()=>hook.result.current.login('superadmin@vsip.example','VigDemo@2026'));
  const asset={...emptyAsset('qa-incomplete-linked'),parkId:parks[0].id,name:{vi:'QA linked draft',en:'QA linked draft',zh:'测试草稿'}};
  act(()=>expect(hook.result.current.save(asset).ok).toBe(true));
  const view=screen;

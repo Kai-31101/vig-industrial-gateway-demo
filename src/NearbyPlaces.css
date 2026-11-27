@@ -1,0 +1,40 @@
+.nearby{min-width:0;max-width:100%;margin:0 0 28px;display:grid;grid-template-columns:minmax(0,1fr)}
+.nearby h3{margin:0 0 8px;font-size:1.25rem}
+.nearby-demo{margin:0 0 12px;padding:8px 12px;border-radius:8px;background:#fff6dd;color:#5b4300;font-size:.9rem}
+.nearby-toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between;margin-bottom:14px}
+.nearby-chips{display:flex;flex-wrap:wrap;gap:8px;min-width:0}
+.nearby-chips button{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:6px 12px;border:1px solid var(--border-medium,#c5d0d6);border-radius:999px;background:#fff;color:inherit;font:inherit;font-size:.9rem;cursor:pointer}
+.nearby-chips button.active{border-color:#0643d7;background:#eaf0ff;font-weight:600}
+.nearby-chips button i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.nearby-chips button small{color:#5b6b73}
+.nearby-radius{display:grid;gap:4px;font-size:.85rem;color:#5b6b73}
+.nearby-radius select{min-height:40px;min-width:120px;padding:6px 10px;border:1px solid var(--border-medium,#c5d0d6);border-radius:8px;font:inherit;background:#fff}
+.nearby-body{display:grid;grid-template-columns:minmax(280px,380px) minmax(0,1fr);gap:20px;align-items:start}
+.nearby-map{order:2;height:480px;min-width:0;border:1px solid var(--border-subtle,#d8e0e4);border-radius:16px;overflow:hidden}
+.nearby-side{order:1;min-width:0}
+.nearby-list{list-style:none;margin:0;padding:0;max-height:430px;overflow:auto;display:grid;gap:8px}
+.nearby-list button{all:unset;box-sizing:border-box;width:100%;display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border:1px solid var(--border-subtle,#d8e0e4);border-radius:12px;background:#fff;cursor:pointer;min-height:44px}
+.nearby-list button:focus-visible{outline:3px solid #ffbf47;outline-offset:1px}
+.nearby-list button.active{border-color:#0643d7;box-shadow:0 0 0 2px #0643d7 inset;background:#f3f6ff}
+.nearby-list i{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;font:700 13px/1 system-ui,sans-serif;font-style:normal}
+.nearby-list span{min-width:0;display:grid;gap:2px}
+.nearby-list b{overflow-wrap:anywhere}
+.nearby-list small{color:#5b6b73}.nearby-list em{font-style:normal;color:#0b4a2f;font-weight:600}.nearby-route{color:#0643d7}
+.nearby-empty{padding:14px;border:1px dashed var(--border-medium,#c5d0d6);border-radius:12px;color:#5b6b73}
+.nearby-note{margin:10px 0 0;font-size:.8rem;color:#5b6b73}
+@media(max-width:900px){.nearby-body{grid-template-columns:minmax(0,1fr)}.nearby-map{order:1;height:340px}.nearby-side{order:2}.nearby-list{max-height:none}}
+.view-toggle{display:inline-flex;border:1px solid var(--border-medium,#c5d0d6);border-radius:10px;overflow:hidden;margin-left:auto}
+.view-toggle button{min-height:40px;min-width:88px;padding:6px 14px;border:0;background:#fff;color:inherit;font:inherit;cursor:pointer}
+.view-toggle button+button{border-left:1px solid var(--border-medium,#c5d0d6)}
+.view-toggle button.active{background:#0643d7;color:#fff;font-weight:600}
+.parks-map-frame{height:560px;border:1px solid var(--border-subtle,#d8e0e4);border-radius:16px;overflow:hidden}
+.parks-map-note{margin:8px 0 0;font-size:.85rem;color:#5b6b73}
+@media(max-width:680px){.parks-map-frame{height:420px}.view-toggle{margin-left:0}}
+.result-bar{flex-wrap:wrap;gap:10px}
+.nearby-editor .nearby-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:.9rem}
+.nearby-editor .nearby-table th,.nearby-editor .nearby-table td{padding:6px 8px;border-bottom:1px solid var(--border-subtle,#d8e0e4);text-align:left;vertical-align:top}
+.nearby-editor .nearby-preview{margin:12px 0;padding:12px;border:1px solid #0643d7;border-radius:10px;background:#f3f6ff}
+.nearby-editor .nearby-preview-list{list-style:none;margin:0 0 10px;padding:0;max-height:320px;overflow:auto;display:grid;gap:6px}
+.nearby-editor .nearby-manual{margin-top:12px}
+@media(max-width:680px){.nearby-editor .nearby-table{display:block;overflow-x:auto}}
+@media(max-width:680px){.nearby-chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin}.nearby-chips button{flex:none;white-space:nowrap}.nearby-toolbar{flex-direction:column;flex-wrap:nowrap;align-items:stretch}.nearby-radius select{width:100%}}

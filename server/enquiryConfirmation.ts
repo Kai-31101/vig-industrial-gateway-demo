@@ -1,8 +1,7 @@
 import {createHmac,timingSafeEqual} from 'node:crypto';
 
-const normalize=(text:string)=>text.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/[.!。！]+$/,'').trim();
-export const confirmsEnquiry=(text:string)=>['xac nhan','toi xac nhan','dong y gui','gui yeu cau','gui di','confirm','i confirm','yes, send','yes send','send enquiry','确认','确认发送','确认提交','发送需求'].includes(normalize(text));
-export const cancelsEnquiry=(text:string)=>['huy','huy yeu cau','cancel','cancel enquiry','取消','取消需求'].includes(normalize(text));
+// Command phrases are shared with the client so routing and server intake use one exact-match definition.
+export {confirmsEnquiry,cancelsEnquiry} from '../src/enquiryCommands';
 export function signEnquiry(draft:unknown,session:string,secret:string,now=Date.now()){
  const payload=Buffer.from(JSON.stringify({draft,session,expires:now+30*60*1000})).toString('base64url');
  return payload+'.'+createHmac('sha256',secret).update(payload).digest('base64url');

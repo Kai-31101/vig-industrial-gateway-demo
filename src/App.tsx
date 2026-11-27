@@ -8,6 +8,7 @@ import type {IndustrialAsset} from './types';
 import {ParkLocationMap,ParkMasterplan} from "./ParkMaps";
 import {NearbyConnectivity} from "./NearbyPlaces";
 import {ParksMapView} from "./ParksMapView";
+import {HomeParkMap} from "./HomeParkMap";
 import {AreaInput,areaFactors,convertArea,type AreaUnit} from "./AreaInput";
 import {BrandLogo} from "./BrandLogo";
 import {industryLabel} from "./industryLabels";
@@ -679,6 +680,7 @@ function HomePage() {
         </button>
       </form>
       <HomeAds placement="top" />
+      <HomeParkMap parks={publishedParks} assets={assets} language={language} />
       <section className="page section home-featured">
         <SectionTitle
           eyebrow={emptyCopy(language,"KHU CÔNG NGHIỆP VSIP","VSIP INDUSTRIAL PARKS","VSIP工业园区")}
@@ -1322,7 +1324,7 @@ export function ParkDetailPage({draft,draftAssets}:{draft?:IndustrialParkProfile
             />
           )}
         </OptionalSection>
-        <section className="park-assets-panel">
+        <section id="park-assets" className="park-assets-panel">
           <SectionTitle
             eyebrow={ui(language, "SẢN PHẨM SẴN CÓ", "AVAILABILITY")}
             title={

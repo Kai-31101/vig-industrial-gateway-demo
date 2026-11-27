@@ -43,6 +43,7 @@ export default function GoongMap(p:Props){
   const map=mapRef.current;if(!map||ready!==map)return;
   const {markers,origin,cluster,selectedId}=latest.current;
   const bounds=new LngLatBounds();let count=0;
+  const reportBounds=()=>{const cb=latest.current.onBounds;if(!cb)return;const b=map.getBounds();cb({west:b.getWest(),south:b.getSouth(),east:b.getEast(),north:b.getNorth()})};
   const extend=(lng:number,lat:number)=>{bounds.extend([lng,lat]);count++};
   if(origin)extend(origin.lng,origin.lat);markers.forEach(m=>extend(m.lng,m.lat));
   if(cluster){
@@ -56,10 +57,13 @@ export default function GoongMap(p:Props){
     if(font)map.addLayer({id:'geo-cluster-count',type:'symbol',source:'geo-parks',filter:['has','point_count'],layout:{'text-field':['get','point_count_abbreviated'],'text-font':font,'text-size':13,'text-allow-overlap':true},paint:{'text-color':'#fff'}});
     map.addLayer({id:'geo-points',type:'circle',source:'geo-parks',filter:['!',['has','point_count']],paint:{'circle-color':'#0643d7','circle-radius':9,'circle-stroke-width':3,'circle-stroke-color':'#fff'}});
     map.on('click','geo-clusters',async e=>{const f=e.features?.[0];if(!f)return;const z=await (map.getSource('geo-parks') as any).getClusterExpansionZoom((f.properties as any).cluster_id);map.easeTo({center:(f.geometry as any).coordinates,zoom:z+0.5})});
-    map.on('click','geo-points',e=>{const f=e.features?.[0];if(!f)return;const pr=f.properties as any;popup.current?.remove();popup.current=new Popup({offset:12,closeButton:true}).setLngLat((f.geometry as any).coordinates).setDOMContent(popupContent({label:pr.label,subtitle:pr.subtitle,href:pr.href},latest.current.openLabel||'',h=>(latest.current.onNavigate||((x:string)=>location.assign(x)))(h))).addTo(map)});
+    map.addLayer({id:'geo-selected',type:'circle',source:'geo-parks',filter:['==',['get','id'],''],paint:{'circle-color':'#0643d7','circle-radius':13,'circle-stroke-width':4,'circle-stroke-color':'#ffbf47'}});
+    map.addLayer({id:'geo-hover',type:'circle',source:'geo-parks',filter:['==',['get','id'],''],paint:{'circle-color':'#0643d7','circle-radius':12,'circle-stroke-width':3,'circle-stroke-color':'#3d7bff'}});
+    map.on('click','geo-points',e=>{const f=e.features?.[0];if(!f)return;const pr=f.properties as any;if(latest.current.onSelect){latest.current.onSelect(pr.id);return}popup.current?.remove();popup.current=new Popup({offset:12,closeButton:true}).setLngLat((f.geometry as any).coordinates).setDOMContent(popupContent({label:pr.label,subtitle:pr.subtitle,href:pr.href},latest.current.openLabel||'',h=>(latest.current.onNavigate||((x:string)=>location.assign(x)))(h))).addTo(map)});
     for(const l of ['geo-clusters','geo-points']){map.on('mouseenter',l,()=>{map.getCanvas().style.cursor='pointer'});map.on('mouseleave',l,()=>{map.getCanvas().style.cursor=''})}
    }
    if(count>1)map.fitBounds(bounds,{padding:48,maxZoom:9,duration:0});else if(count===1)map.jumpTo({center:bounds.getCenter(),zoom:9});
+   reportBounds();
    return;
   }
   pins.current.forEach(m=>m.remove());pins.current=[];
@@ -79,6 +83,33 @@ export default function GoongMap(p:Props){
   const sel=p.markers.find(m=>m.id===p.selectedId);
   if(sel){popup.current=new Popup({offset:22,closeButton:false,closeOnClick:false}).setLngLat([sel.lng,sel.lat]).setDOMContent(popupContent(sel,'',()=>{})).addTo(map);if(!p.route?.length)map.easeTo({center:[sel.lng,sel.lat],duration:300})}
  },[ready,p.selectedId,p.markers,p.origin,p.cluster,p.route]);
+ // Directory mode selection (opt-in via onSelect): highlight, fly to the park and open its card
+ useEffect(()=>{
+  const map=mapRef.current;if(!map||ready!==map||!p.cluster||!p.onSelect)return;
+  popup.current?.remove();popup.current=null;
+  if(map.getLayer('geo-selected'))map.setFilter('geo-selected',['==',['get','id'],p.selectedId||'']);
+  const sel=p.markers.find(m=>m.id===p.selectedId);if(!sel)return;
+  map.flyTo({center:[sel.lng,sel.lat],zoom:Math.max(map.getZoom(),11),duration:700});
+  popup.current=new Popup({offset:14,closeButton:true,closeOnClick:false}).setLngLat([sel.lng,sel.lat]).setDOMContent(popupContent(sel,latest.current.openLabel||'',h=>(latest.current.onNavigate||((x:string)=>location.assign(x)))(h))).addTo(map);
+ },[ready,p.cluster,p.selectedId,p.markers]);// eslint-disable-line react-hooks/exhaustive-deps
+ // Hover highlight from a list
+ useEffect(()=>{
+  const map=mapRef.current;if(!map||ready!==map||!p.cluster||!map.getLayer('geo-hover'))return;
+  map.setFilter('geo-hover',['==',['get','id'],p.hoverId||'']);
+ },[ready,p.cluster,p.hoverId,p.markers]);
+ // Viewport reporting (directory mode)
+ useEffect(()=>{
+  const map=mapRef.current;if(!map||ready!==map||!p.cluster||!p.onBounds)return;
+  const f=()=>{const b=map.getBounds();latest.current.onBounds?.({west:b.getWest(),south:b.getSouth(),east:b.getEast(),north:b.getNorth()})};
+  map.on('moveend',f);return()=>{map.off('moveend',f)};
+ },[ready,p.cluster,!!p.onBounds]);
+ // Reference pins (hubs) in directory mode
+ useEffect(()=>{
+  const map=mapRef.current;if(!map||ready!==map)return;
+  const list=p.cluster?p.extraMarkers||[]:[];
+  const made=list.map(m=>{const el=document.createElement('span');el.className='geo-pin hub';el.style.background=m.color;el.textContent=m.symbol||'';el.title=m.label;el.setAttribute('role','img');el.setAttribute('aria-label',m.label);return new Marker({element:el}).setLngLat([m.lng,m.lat]).addTo(map)});
+  return()=>made.forEach(m=>m.remove());
+ },[ready,p.cluster,p.extraMarkers]);
  // Route polyline
  useEffect(()=>{
   const map=mapRef.current;if(!map||ready!==map)return;

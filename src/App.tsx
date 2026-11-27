@@ -575,6 +575,7 @@ function HomePage() {
         <HomeHeroVideo title={emptyCopy(language, "Video giới thiệu VSIP", "VSIP introduction video", "VSIP 介绍视频")}/>
         <div className="hero-content">
           <div className="hero-intro">
+            <span className="hero-logo"><img src="/images/vsip-logo.webp" alt="VSIP" width={1920} height={900}/></span>
             <h1
               className={
                 language === "vi"
@@ -913,10 +914,6 @@ function ParksPage() {
             <button type="button" aria-pressed={view==="list"} className={view==="list"?"active":""} onClick={() => setView("list")}>{emptyCopy(language,"Danh sách","List","列表")}</button>
             <button type="button" aria-pressed={view==="map"} className={view==="map"?"active":""} onClick={() => setView("map")}>{emptyCopy(language,"Bản đồ","Map","地图")}</button>
           </div>
-          <span>
-            <ShieldCheck size={16} />
-            {ui(language, "Dữ liệu có nguồn đối chiếu", "Source-aware fields")}
-          </span>
         </div>
         {filtered.length && view==="map" ? (
           <ParksMapView parks={filtered} language={language} />

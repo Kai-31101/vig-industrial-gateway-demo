@@ -115,8 +115,8 @@ export function DiscoveryFilters({asset=false,resultCount=0,primary}:{asset?:boo
  const unitControl=<label data-filter="area-unit">{t('Đơn vị diện tích','Area unit','面积单位')}<select value={areaUnit} onChange={e=>changeUnit(e.target.value as AreaUnit)}><option value="m2">m²</option><option value="ha">{t('Hecta (ha)','Hectare (ha)','公顷 (ha)')}</option><option value="km2">km²</option></select></label>;
  const minControl=<label data-filter="area-min">{t('Diện tích từ','Area from','面积下限')} ({unitSymbol})<AreaInput value={min} onChange={value=>range(value,max)} language={language}/></label>;
  const maxControl=<label data-filter="area-max">{t('Diện tích đến','Area to','面积上限')} ({unitSymbol})<AreaInput value={max} onChange={value=>range(min,value)} language={language}/></label>;
- const advancedKeys=['province','minArea','maxArea','parkType','available','utility','connection'];
- const advancedCount=new Set([...s.keys()].filter(k=>advancedKeys.includes(k)&&s.get(k)).map(k=>k==='minArea'||k==='maxArea'?'area':k)).size;
+ const advancedKeys=asset?['minArea','maxArea','transaction','priceMin','priceMax','priceMode','priceBasis','leasing','minPower','zone']:['province','minArea','maxArea','parkType','available','utility','connection'];
+ const advancedCount=new Set([...s.keys()].filter(k=>advancedKeys.includes(k)&&s.get(k)).map(k=>k==='minArea'||k==='maxArea'?'area':k.startsWith('price')?'price':k)).size;
  const [advancedOpen,setAdvancedOpen]=useState(()=>advancedCount>0);
  const chips=(clearAll:boolean)=>[...s.keys()].some(k=>k!=='view'&&k!=='sort')&&<div className="applied-filters" aria-label={t('Bộ lọc đang áp dụng','Applied filters','当前筛选')}>{[...s.entries()].filter(([key])=>key!=='view'&&key!=='sort'&&key!=='minArea'&&key!=='maxArea'&&!key.startsWith('price')).map(([key,value])=><button key={key+value} onClick={()=>key==='utility'||key==='connection'?toggle(key,value):set(key,'')}>{key==='q'?`${t('Từ khóa','Search','关键词')}: `:''}{chipLabel(key,value)}<span aria-hidden="true"> ×</span></button>)}{priceChip}{(savedMin||savedMax)&&<button onClick={()=>range('','')}>{formatArea(convertArea(savedMin,'m2',areaUnit),language)||'0'}–{formatArea(convertArea(savedMax,'m2',areaUnit),language)||'∞'} {unitSymbol}<span aria-hidden="true"> ×</span></button>}{clearAll&&<button onClick={clear}>{t('Xóa tất cả','Clear all','清除全部')}</button>}</div>;
  if(mobile)return <section className="mobile-discovery">
@@ -150,17 +150,18 @@ export function DiscoveryFilters({asset=false,resultCount=0,primary}:{asset?:boo
  </div>{areaInvalid}</fieldset>;
  const title=`${t('Bộ lọc tìm kiếm','Search filters','搜索筛选')}${activeCount>0?` (${activeCount})`:''}`;
  return <section className={`discovery-extra ${asset?'is-asset':'is-park'}`} aria-label={t('Bộ lọc tìm kiếm','Search filters','搜索筛选')}>
-  <div className="discovery-head"><h2 className="discovery-title">{title}</h2><div className="discovery-head-actions">
-   {!asset&&<button type="button" className="discovery-more" aria-expanded={advancedOpen} aria-controls={filterId} onClick={()=>setAdvancedOpen(o=>!o)}>{advancedOpen?t('Ẩn bộ lọc nâng cao','Hide advanced filters','收起高级筛选'):t('Bộ lọc nâng cao','Advanced filters','高级筛选')}{!advancedOpen&&advancedCount>0?` (${advancedCount})`:''}</button>}
+  {asset?<h2 className="sr-only">{title}</h2>:<div className="discovery-head"><h2 className="discovery-title">{title}</h2><div className="discovery-head-actions">
+   <button type="button" className="discovery-more" aria-expanded={advancedOpen} aria-controls={filterId} onClick={()=>setAdvancedOpen(o=>!o)}>{advancedOpen?t('Ẩn bộ lọc nâng cao','Hide advanced filters','收起高级筛选'):t('Bộ lọc nâng cao','Advanced filters','高级筛选')}{!advancedOpen&&advancedCount>0?` (${advancedCount})`:''}</button>
    {filled&&<button type="button" className="discovery-clear" onClick={clear}>{t('Xóa bộ lọc','Clear filters','清除筛选')}</button>}
-  </div></div>
+  </div></div>}
   {asset?<div className="discovery-primary">
-   <label data-filter="keyword" className="discovery-keyword">{t('Từ khóa','Keyword','关键词')}<input {...qInput} placeholder={t('Tên mặt bằng hoặc KCN','Asset or park name','物业或园区名称')}/></label>
-   {provinceField}
-   {field('region',t('Vùng miền','Region','地区'),['North','Central','South'].map(v=>[v,valueLabel(v)] as [string,string]))}
-   <label>{t('Ngành','Industry','行业')}<select value={s.get('industry')||''} onChange={e=>set('industry',e.target.value)}><option value="">{t('Tất cả','All','全部')}</option>{[...new Set(parks.filter(isPublicPark).flatMap(p=>p.suitableIndustries))].map(i=><option key={i} value={i}>{industryLabel(i,language)}</option>)}</select></label>
+   <label data-filter="keyword" className="discovery-keyword"><span className="sr-only">{t('Từ khóa','Keyword','关键词')}</span><input type="search" {...qInput} placeholder={t('Tên mặt bằng, KCN, tỉnh…','Asset, park or province…','物业、园区或省份…')}/></label>
+   <label data-filter="province"><span className="sr-only">{t('Tỉnh/thành phố','Province','省市')}</span><select value={s.get('province')||''} onChange={e=>set('province',e.target.value)}><option value="">{t('Tất cả tỉnh/thành','All provinces','全部省市')}</option>{[...new Set(parks.filter(p=>isPublicPark(p)).map(p=>p.province))].map(p=><option key={p}>{p}</option>)}</select></label>
+   <label><span className="sr-only">{t('Vùng miền','Region','地区')}</span><select value={s.get('region')||''} onChange={e=>set('region',e.target.value)}><option value="">{t('Mọi vùng miền','All regions','全部地区')}</option>{['North','Central','South'].map(v=><option key={v} value={v}>{valueLabel(v)}</option>)}</select></label>
+   <label><span className="sr-only">{t('Ngành','Industry','行业')}</span><select value={s.get('industry')||''} onChange={e=>set('industry',e.target.value)}><option value="">{t('Mọi ngành','All industries','全部行业')}</option>{[...new Set(parks.filter(isPublicPark).flatMap(p=>p.suitableIndustries))].map(i=><option key={i} value={i}>{industryLabel(i,language)}</option>)}</select></label>
+   <button type="button" className="discovery-toggle" aria-expanded={advancedOpen} aria-controls={filterId} onClick={()=>setAdvancedOpen(o=>!o)}>{t('Bộ lọc chi tiết','More filters','更多筛选')}{advancedCount>0&&<span className="discovery-badge" aria-label={t(`${advancedCount} bộ lọc chi tiết đang bật`,`${advancedCount} detailed filters on`,`已启用 ${advancedCount} 个筛选`)}>{advancedCount}</span>}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
   </div>:primary}
-  {asset?<div id={filterId} className="discovery-groups">
+  {asset?<div id={filterId} className="discovery-groups" hidden={!advancedOpen}>
    {areaGroup}
    <fieldset className="discovery-group" data-group="price"><legend>{t('Giá & hình thức','Price & transaction','价格与交易')}</legend><div className="discovery-pair">{field('transaction',t('Hình thức','Transaction','交易形式'),transactionOptions)}{priceField}</div></fieldset>
    <fieldset className="discovery-group" data-group="status"><legend>{t('Tình trạng & hạ tầng','Status & infrastructure','状态与基础设施')}</legend><div className="discovery-pair">{field('leasing',t('Tình trạng','Leasing status','租赁状态'),leasingOptions)}{field('minPower',t('Điện tối thiểu','Minimum power','最低电力'),powerOptions)}{zonePick.length>0&&field('zone',t('Phân khu','Zone','分区'),zonePick)}</div></fieldset>
@@ -169,7 +170,7 @@ export function DiscoveryFilters({asset=false,resultCount=0,primary}:{asset?:boo
    {areaGroup}
    <fieldset className="discovery-group" data-group="infrastructure"><legend>{t('Quỹ đất, hạ tầng & kết nối','Land, utilities & connections','土地、基础设施与交通')}</legend><div className="discovery-checks"><label><input type="checkbox" checked={s.has('available')} onChange={e=>set('available',e.target.checked?'yes':'')}/>{t('Còn diện tích công khai','Publicly available land','有公开可用土地')}</label>{[['electricity',t('Điện','Electricity','电力')],['water',t('Nước','Water','供水')],['wastewater',t('Nước thải','Wastewater','污水')]].map(([key,label])=><label key={key}><input type="checkbox" checked={s.getAll('utility').includes(key)} onChange={()=>toggle('utility',key)}/>{label}</label>)}{[['port',t('Cảng','Port','港口')],['airport',t('Sân bay','Airport','机场')],['road',t('Đường chính','Major road','主干道路')]].map(([key,label])=><label key={key}><input type="checkbox" checked={s.getAll('connection').includes(key)} onChange={()=>toggle('connection',key)}/>{label}</label>)}</div></fieldset>
   </div>}
-  {filled&&<div className="discovery-applied"><p className="discovery-count" aria-live="polite"><b>{resultCount}</b> {t('kết quả','results','个结果')}</p>{chips(false)}</div>}
+  {filled&&<div className="discovery-applied"><p className="discovery-count" aria-live="polite"><b>{resultCount}</b> {t('kết quả','results','个结果')}</p>{chips(false)}{asset&&<button type="button" className="discovery-clear" onClick={clear}>{t('Xóa bộ lọc','Clear filters','清除筛选')}</button>}</div>}
  </section>;
 }
 /** Sort control shared by /assets and the park "Mặt bằng" tab. The choice lives in the URL (?sort=); "updated" is the default and leaves the URL clean. */

@@ -3,7 +3,7 @@
 // returned nationwide sources because "Thái Bình" is not a catalogue province; VSIP Thái Bình park is in Hưng Yên).
 import {beforeEach,describe,it,expect,vi} from 'vitest';
 const mocks=vi.hoisted(()=>({requestModel:vi.fn(),query:vi.fn()}));
-vi.mock('./aiTransport',()=>({requestModel:mocks.requestModel,openAIConfig:()=>({key:'test-key',model:'test-model'})}));
+vi.mock('./aiTransport',()=>({requestModel:mocks.requestModel,modelConfig:()=>({base:"https://test.example/v1",key:'test-key',model:'test-model'})}));
 vi.mock('./db',()=>({ApiError:class extends Error{constructor(public status:number,public code:string){super(code)}},pool:{query:mocks.query},tx:async(fn:any)=>fn({query:vi.fn().mockResolvedValue({rows:[]})})}));
 vi.mock('./repository',()=>({state:vi.fn()}));
 import {answer,resolveLocation} from './ai';

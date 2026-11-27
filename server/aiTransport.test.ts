@@ -1,52 +1,51 @@
 // @vitest-environment node
-// OpenAI Responses API transport (gpt-6.1-sol). Mocked fetch only; no live call.
+// Gemini transport (OpenAI-compatible Chat Completions). Mocked fetch only; no live call.
 import {afterEach,describe,it,expect,vi} from 'vitest';
-import {requestModel,outputText,normalizeUsage,openAIConfig,OPENAI_RESPONSES_URL,DEFAULT_OPENAI_MODEL} from './aiTransport';
+import {requestModel,outputText,normalizeUsage,modelConfig,completionEndpoint,DEFAULT_AI_BASE_URL,DEFAULT_AI_MODEL} from './aiTransport';
 afterEach(()=>vi.unstubAllGlobals());
-const cfg={key:'sk-test',model:'gpt-6.1-sol'};
+const cfg={base:DEFAULT_AI_BASE_URL,key:'gemini-test',model:'gemini-3.5-flash-lite'};
 const msgs=[{role:'system',content:'Return JSON only.'},{role:'user',content:'Hello'}];
-const ok=(text:string,extra:any={})=>Response.json({id:'resp_1',object:'response',status:'completed',output:[
- {type:'reasoning',id:'rs_1',summary:[]},
- {type:'message',id:'msg_1',role:'assistant',status:'completed',content:[{type:'output_text',text,annotations:[]}]}],
- usage:{input_tokens:120,output_tokens:30,total_tokens:150,output_tokens_details:{reasoning_tokens:10}},...extra});
+const ok=(text:string,extra:any={})=>Response.json({choices:[{index:0,finish_reason:'stop',message:{role:'assistant',content:text}}],usage:{prompt_tokens:120,completion_tokens:30,total_tokens:150},...extra});
 const body=(f:any,i=0)=>JSON.parse(f.mock.calls[i][1].body);
 
-describe('OpenAI Responses transport',()=>{
- it('posts to the Responses endpoint with the configured model, low reasoning, store:false and bounded output; no temperature',async()=>{
+describe('Gemini chat-completions transport',()=>{
+ it('posts to the Gemini OpenAI-compatible endpoint with the configured model, low reasoning and bounded output',async()=>{
   const f=vi.fn().mockResolvedValue(ok('Grounded answer.'));vi.stubGlobal('fetch',f);
   const r=await requestModel(msgs,false,cfg);
   expect(r.text).toBe('Grounded answer.');
-  expect(f.mock.calls[0][0]).toBe(OPENAI_RESPONSES_URL);
-  expect(f.mock.calls[0][1].headers.Authorization).toBe('Bearer sk-test');
-  const b=body(f);
-  expect(b).toMatchObject({model:'gpt-6.1-sol',reasoning:{effort:'low'},store:false,max_output_tokens:6000,input:msgs});
-  expect(b).not.toHaveProperty('temperature');expect(b).not.toHaveProperty('messages');expect(b).not.toHaveProperty('max_tokens');expect(b).not.toHaveProperty('text');
+  expect(f.mock.calls[0][0]).toBe('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions');
+  expect(f.mock.calls[0][1].headers.Authorization).toBe('Bearer gemini-test');
+  expect(body(f)).toMatchObject({model:'gemini-3.5-flash-lite',messages:msgs,reasoning_effort:'low',max_tokens:6000,temperature:0.1});
+  expect(body(f)).not.toHaveProperty('response_format');
  });
- it('requests JSON mode only when required and returns the raw output_text JSON',async()=>{
+ it('requests JSON mode only when required',async()=>{
   const f=vi.fn().mockResolvedValue(ok('{"allowed":true}'));vi.stubGlobal('fetch',f);
   expect((await requestModel(msgs,true,cfg)).text).toBe('{"allowed":true}');
-  expect(body(f).text).toEqual({format:{type:'json_object'}});
+  expect(body(f).response_format).toEqual({type:'json_object'});
  });
- it('normalizes Responses usage to the existing ledger fields',async()=>{
+ it('builds endpoints from OpenAI-compatible bases and requires HTTPS',()=>{
+  expect(completionEndpoint('https://generativelanguage.googleapis.com/v1beta/openai/')).toBe('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions');
+  expect(completionEndpoint('https://gateway.example/v1')).toBe('https://gateway.example/v1/chat/completions');
+  expect(completionEndpoint('https://gateway.example')).toBe('https://gateway.example/v1/chat/completions');
+  expect(()=>completionEndpoint('http://gateway.example/v1')).toThrow('HTTPS is required');
+ });
+ it('returns usage in the ledger shape',async()=>{
   vi.stubGlobal('fetch',vi.fn().mockResolvedValue(ok('ok')));
   expect((await requestModel(msgs,false,cfg)).usage).toEqual({prompt_tokens:120,completion_tokens:30,total_tokens:150});
   expect(normalizeUsage(undefined)).toEqual({prompt_tokens:0,completion_tokens:0,total_tokens:0});
  });
- it('joins multiple output_text blocks and ignores reasoning items',()=>{
-  expect(outputText({status:'completed',output:[{type:'reasoning'},{type:'message',role:'assistant',status:'completed',content:[{type:'output_text',text:'Hello '},{type:'output_text',text:'world'}]}]})).toBe('Hello world');
- });
- it('rejects incomplete, refused, failed, errored or empty responses',async()=>{
+ it('rejects truncated, filtered, errored or empty responses',async()=>{
   const bad=[
-   {status:'incomplete',incomplete_details:{reason:'max_output_tokens'},output:[{type:'message',role:'assistant',status:'incomplete',content:[{type:'output_text',text:'Partial'}]}]},
-   {status:'completed',output:[{type:'message',role:'assistant',status:'completed',content:[{type:'refusal',refusal:'I cannot help with that.'}]}]},
-   {status:'failed',error:{code:'server_error',message:'x'},output:[]},
-   {status:'completed',error:{code:'x'},output:[]},
-   {status:'completed',output:[{type:'message',role:'assistant',status:'completed',content:[{type:'output_text',text:'   '}]}]},
-   {status:'completed',output:[{type:'reasoning'}]},
-   {status:'completed'},
+   {choices:[{finish_reason:'length',message:{content:'Partial'}}]},
+   {choices:[{finish_reason:'content_filter',message:{content:'x'}}]},
+   {error:{message:'x'}},
+   {choices:[{finish_reason:'stop',message:{content:'   '}}]},
+   {choices:[]},
+   {},
   ];
   for(const d of bad){vi.stubGlobal('fetch',vi.fn().mockResolvedValue(Response.json(d)));await expect(requestModel(msgs,true,cfg)).rejects.toThrow('ai_unavailable');}
   vi.stubGlobal('fetch',vi.fn().mockResolvedValue(new Response('not json',{status:200})));await expect(requestModel(msgs,false,cfg)).rejects.toThrow('ai_unavailable');
+  expect(outputText({choices:[{finish_reason:'stop',message:{content:'Hi'}}]})).toBe('Hi');
  });
  it('maps quota and client errors to safe categories and never exposes response bodies',async()=>{
   vi.stubGlobal('fetch',vi.fn().mockResolvedValue(new Response('private upstream details',{status:429})));
@@ -68,11 +67,11 @@ describe('OpenAI Responses transport',()=>{
   const spy=vi.spyOn(AbortSignal,'timeout');vi.stubGlobal('fetch',vi.fn().mockResolvedValue(ok('ok')));
   await requestModel(msgs,false,cfg);expect(spy).toHaveBeenCalledWith(45000);spy.mockRestore();
  });
- it('reads only OPENAI_* config: default model gpt-6.1-sol, override via OPENAI_MODEL, no key => null; Gemini vars ignored',()=>{
-  expect(DEFAULT_OPENAI_MODEL).toBe('gpt-6.1-sol');
-  expect(openAIConfig({OPENAI_API_KEY:'sk-a'})).toEqual({key:'sk-a',model:'gpt-6.1-sol'});
-  expect(openAIConfig({OPENAI_API_KEY:'sk-a',OPENAI_MODEL:'gpt-6.1-sol-mini'})).toEqual({key:'sk-a',model:'gpt-6.1-sol-mini'});
-  expect(openAIConfig({OPENAI_API_KEY:'  '})).toBeNull();
-  expect(openAIConfig({AI_GATEWAY_API_KEY:'gemini-key',AI_GATEWAY_MODEL:'gemini-3.5-flash-lite',AI_GATEWAY_BASE_URL:'https://generativelanguage.googleapis.com/v1beta/openai'})).toBeNull();
+ it('reads AI_GATEWAY_* config with Gemini defaults; no key => null; OpenAI vars ignored',()=>{
+  expect(DEFAULT_AI_MODEL).toBe('gemini-3.5-flash-lite');
+  expect(modelConfig({AI_GATEWAY_API_KEY:'g-a'})).toEqual({key:'g-a',base:DEFAULT_AI_BASE_URL,model:'gemini-3.5-flash-lite'});
+  expect(modelConfig({AI_GATEWAY_API_KEY:'g-a',AI_GATEWAY_MODEL:'gemini-3.5-flash',AI_GATEWAY_BASE_URL:'https://gw.example/v1'})).toEqual({key:'g-a',base:'https://gw.example/v1',model:'gemini-3.5-flash'});
+  expect(modelConfig({AI_GATEWAY_API_KEY:'  '})).toBeNull();
+  expect(modelConfig({OPENAI_API_KEY:'sk-a',OPENAI_MODEL:'gpt-6.1-sol'})).toBeNull();
  });
 });

@@ -1,4 +1,4 @@
-import {requestModel,openAIConfig} from './aiTransport';
+import {requestModel,modelConfig} from './aiTransport';
 import {maskContact} from '../src/requestSchema';
 import {ApiError,pool,tx} from './db';
 import {state} from './repository';
@@ -9,7 +9,7 @@ import {validateContext,decideScope,markers,namedRecords,clarificationText,resol
 import {classifyTurn,inferAskedField,parseOrdinal,parseReply,sanitizeConversation,isBareAffirmation,todayVN,incompatiblePrices,isRepresentativeStatement,isExpansionRequest,quotedOnlyCreation} from './conversation';
 export async function model(messages:any[],json=false){
  // Missing server config fails safely before spending the model budget or calling the API.
- const config=openAIConfig();if(!config){console.error('VSIP AI upstream',{category:'config',status:null,cause:null});throw new ApiError(503,'ai_unavailable')}
+ const config=modelConfig();if(!config){console.error('VSIP AI upstream',{category:'config',status:null,cause:null});throw new ApiError(503,'ai_unavailable')}
  const budget=await pool.query("SELECT vsip.limit_request('model-day-'||current_date::text,450,86400) AND vsip.limit_request('model-minute',12,60) AS allowed");if(!budget.rows[0].allowed)throw new ApiError(429,'limited');
  try{return {...await requestModel(messages,json,config),model:config.model}}catch(e){const limited=e instanceof Error&&e.message==='limited';console.error('VSIP AI upstream',{category:limited?'quota':'unavailable',status:(e as any)?.upstreamStatus||null,cause:(e as any)?.cause?.code||null});throw new ApiError(limited?429:503,limited?'limited':'ai_unavailable')}
 }

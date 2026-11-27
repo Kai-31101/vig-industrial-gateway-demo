@@ -1,7 +1,7 @@
 // Public page-scope clarification. Model transport is STUBBED: proves server decisions, validation and prompt rules only.
 import {beforeEach,describe,it,expect,vi} from 'vitest';
 const mocks=vi.hoisted(()=>({requestModel:vi.fn(),query:vi.fn()}));
-vi.mock('./aiTransport',()=>({requestModel:mocks.requestModel,openAIConfig:()=>({key:'test-key',model:'test-model'})}));
+vi.mock('./aiTransport',()=>({requestModel:mocks.requestModel,modelConfig:()=>({key:'test-key',model:'test-model'})}));
 vi.mock('./db',()=>({ApiError:class extends Error{constructor(public status:number,public code:string){super(code)}},pool:{query:mocks.query},tx:async(fn:any)=>fn({query:vi.fn().mockResolvedValue({rows:[]})})}));
 vi.mock('./repository',()=>({state:vi.fn().mockResolvedValue({store:{drafts:[]},inventory:{parks:[],assets:[]},requests:[]})}));
 import {answer} from './ai';

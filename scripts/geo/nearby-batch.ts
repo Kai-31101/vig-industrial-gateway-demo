@@ -5,6 +5,7 @@
 // Writes places into payload + published_payload of the catalogue, internal and demo-template workspaces
 // (revision+1, content_versions row) and mirrors the public projection (publishedBundle) into public_catalogue.
 import pg from 'pg';
+import {loadEnvFile} from 'node:process';
 import {writeFile,mkdir} from 'node:fs/promises';
 import {dirname} from 'node:path';
 import {findNearbyDetailed,newGeoCache} from '../../server/geo';
@@ -18,9 +19,14 @@ const flag=(n:string)=>argv.includes('--'+n),opt=(n:string,d='')=>{const i=argv.
 const fromSeed=flag('coordinates-from-seed'),seedCoords=new Map(seedParks.map(p=>[p.id,p.coordinates]));
 const dryRun=flag('dry-run'),source=opt('workspace','catalogue'),only=opt('only')?opt('only').split(','):null;
 const outFile=opt('out',dryRun?'outputs/idea-roadmap-2026-11-26/phase2/nearby-summary-dryrun.json':'outputs/idea-roadmap-2026-11-26/phase2/nearby-summary.json');
-const adminUrl=process.env.PORTAL_LOCAL_ADMIN_URL;
+// --neon: explicit opt-in for the Neon VSIP database, loaded like the db:* scripts (DB_ENV_FILE, default .env.neon.dev;
+// production: DB_ENV_FILE=.env.neon.production). Without it only a loopback database is accepted.
+const neon=flag('neon');
+if(neon){try{loadEnvFile(process.env.DB_ENV_FILE||'.env.neon.dev')}catch{}}
+const adminUrl=neon?(()=>{const raw=process.env.DATABASE_URL_UNPOOLED;if(!raw)throw new Error('DATABASE_URL_UNPOOLED is required (DB_ENV_FILE)');const u=new URL(raw);if(u.hostname.includes('-pooler')||!u.hostname.endsWith('.neon.tech')||u.pathname!=='/vsip')throw new Error('Expected a direct connection to the Neon VSIP database');u.searchParams.set('sslmode','verify-full');return u.toString()})():process.env.PORTAL_LOCAL_ADMIN_URL;
 if(!adminUrl)throw new Error('PORTAL_LOCAL_ADMIN_URL is required');
-if(!['127.0.0.1','localhost','::1'].includes(new URL(adminUrl).hostname))throw new Error('Refusing non-loopback database host');
+if(!neon&&!['127.0.0.1','localhost','::1'].includes(new URL(adminUrl).hostname))throw new Error('Refusing non-loopback database host');
+console.log(neon?`Target: Neon (${process.env.DB_ENV_FILE||'.env.neon.dev'})`:'Target: local loopback database');
 const maxFail=Number(opt('max-consecutive-failures','3'));
 const TARGETS=['catalogue','internal','demo-template'];
 const sleep=(ms:number)=>new Promise(r=>setTimeout(r,ms));

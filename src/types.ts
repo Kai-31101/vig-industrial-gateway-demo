@@ -86,3 +86,8 @@ export interface IndustrialRequest { budget?:import('./requestSchema').RequestBu
 export type NearbyCategory = 'airport' | 'seaport' | 'highway' | 'rail' | 'hospital' | 'college' | 'industrial_park' | 'town';
 export interface NearbyPlace { id: string; category: NearbyCategory; name: LocalizedText; coordinates: { lat: number; lng: number }; straightKm: number; drivingKm: number | null; drivingMinutes: number | null; ref?: string; route?: string; source: 'goong' | 'curated+goong' | 'manual'; computedAt: string; }
 export interface IndustrialParkProfile { places?: NearbyPlace[]; }
+export type LeasingStatus = 'unknown' | 'available' | 'reserved' | 'leased';
+export interface AssetGalleryImage { url: string; caption?: LocalizedText; approved: boolean }
+export interface AssetSpecs { dimensions?: string; frontage?: LocalizedText; coverageMaxPct?: number | null; leaseTermUntil?: string; clearHeightM?: number | null; floorLoadTonM2?: number | null; officeAreaM2?: number | null; dockDoors?: number | null; floors?: number | null; builtYear?: number | null; fireSystem?: LocalizedText }
+export interface AssetTerms { vatIncluded?: boolean; minLeaseYears?: number | null; depositMonths?: number | null; paymentNote?: LocalizedText; feeNote?: LocalizedText }
+export interface IndustrialAsset { lotCode?: string; zone?: LocalizedText; leasingStatus?: LeasingStatus; waterM3Day?: number | null; gallery?: AssetGalleryImage[]; specs?: AssetSpecs; terms?: AssetTerms; specsAsOf?: string; specsVerification?: VerificationStatus; }

@@ -1,4 +1,5 @@
 import type { ExpoProgram, IndustrialAsset, IndustrialParkProfile, LocalizedText, SourcedValue } from './types';
+import { withDemoDetails } from './demoAssetDetails';
 import { translateToChinese } from './i18n';
 
 const l = (vi: string, en: string, zh = translateToChinese(en)): LocalizedText => ({ vi, en, zh });
@@ -246,7 +247,7 @@ const supplementalAssets: IndustrialAsset[] = parks.flatMap((park, parkIndex) =>
   });
 });
 
-export const assets: IndustrialAsset[] = [...originalAssets, ...supplementalAssets];
+export const assets: IndustrialAsset[] = withDemoDetails([...originalAssets, ...supplementalAssets], parks, Object.values(parkImages));
 
 export const expos: ExpoProgram[] = [
   {

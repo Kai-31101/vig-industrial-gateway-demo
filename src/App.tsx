@@ -21,7 +21,8 @@ import {PackageSettings} from './admin/PackageSettings';
 import {PermissionMatrix} from './admin/PermissionMatrix';
 import {TradeExpoSection} from './TradeExpoSection';
 import {DiscoveryFilters,matchesParkFilters,matchesAssetFilters,assetTypeLabel,assetTypeLabels,hasPublishedSale,homeSearchTarget,parkTypeOptionsOf} from './DiscoveryFilters';
-import {assetPriceText} from './assetPrice';
+import {assetPriceText,assetPriceParts} from './assetPrice';
+import {leasingBadge,isLeased,leasedLast,lotCodeOf,cardSpecChips,industriesLine,formatDate,formatHandover,vatNote,num} from './assetDisplay';
 import {sortParksByCompleteness} from './parkCompleteness';
 import {ConnectionDetail,ConnectionDashboard,ExpoDirectoryAdmin} from './admin/Connections';
 import {successfulConnection} from './connectionLogic';
@@ -59,6 +60,7 @@ import {
   Clock3,
   Database,
   Download,
+  Droplets,
   ExternalLink,
   Factory,
   FileCheck2,
@@ -976,11 +978,20 @@ export function ParkDetailPage({draft,draftAssets}:{draft?:IndustrialParkProfile
   const { language, parks, assets:publicAssets, openParkChat } = useApp();
   const assets=draftAssets||publicAssets;
   const [modal, setModal] = useState("");
+  const parkLocation=useLocation();
+  const wantsAssets=parkLocation.hash==="#park-assets"||new URLSearchParams(parkLocation.search).get("tab")==="assets";
   const [activeParkTab, setActiveParkTab] = useState<"information" | "assets">(
-    ()=>(sessionStorage.getItem(`park-tab:${slug}:${language}`)==="assets"?"assets":"information"),
+    ()=>(wantsAssets||sessionStorage.getItem(`park-tab:${slug}:${language}`)==="assets"?"assets":"information"),
   );
   const tabKey=useRef(`park-tab:${slug}:${language}`);
   useEffect(()=>{if(draft)return;const key=`park-tab:${slug}:${language}`;if(tabKey.current!==key){tabKey.current=key;setActiveParkTab(sessionStorage.getItem(key)==="assets"?"assets":"information");}else sessionStorage.setItem(key,activeParkTab)},[slug,language,activeParkTab]);
+  // /industrial-parks/<slug>#park-assets and ?tab=assets open the "Mặt bằng" tab and scroll to it.
+  useEffect(()=>{
+    if(draft||!wantsAssets)return;
+    setActiveParkTab("assets");
+    const frame=requestAnimationFrame(()=>requestAnimationFrame(()=>document.getElementById("park-assets")?.scrollIntoView({behavior:"auto",block:"start"})));
+    return()=>cancelAnimationFrame(frame);
+  },[slug,wantsAssets,parkLocation.key]);
   const [activeSection, setActiveSection] = useState("overview");
   const [previewParams] = useSearchParams();
   const previewMode = import.meta.env.DEV ? previewParams.get("demoState") : null;
@@ -1333,8 +1344,8 @@ export function ParkDetailPage({draft,draftAssets}:{draft?:IndustrialParkProfile
           />
           {linked.length ? (
             <div className="asset-grid profile-assets">
-              {linked.map((a) => (
-                <AssetCard key={a.id} asset={a} />
+              {leasedLast(linked).map((a) => (
+                <AssetCard key={a.id} asset={a} context="park" />
               ))}
             </div>
           ) : (
@@ -1580,49 +1591,67 @@ export function ParkDetailPage({draft,draftAssets}:{draft?:IndustrialParkProfile
   );
 }
 
+function AssetStatusBadge({asset}:{asset:IndustrialAsset}){
+  const {language}=useApp();const badge=leasingBadge(asset,language);
+  return badge?<span className={`badge ${badge.tone}`.trim()} data-asset-status={badge.key}>{badge.label}</span>:null;
+}
 function AssetCard({
   asset,
+  context = "list",
 }: {
-  asset: ReturnType<typeof useApp>["assets"][number];
+  asset: IndustrialAsset;
+  context?: "list" | "park";
 }) {
-  const { language, parks, openParkChat } = useApp();
+  const { language, parks } = useApp();
+  const t = (vi: string, en: string, zh: string) => emptyCopy(language, vi, en, zh);
   const park = parks.find((p) => p.id === asset.parkId);
   const requestUrl = `/find-supply?${new URLSearchParams({
     parkId: asset.parkId,
     assetId: asset.id,
   }).toString()}`;
+  const similarUrl = `/find-supply?${new URLSearchParams({ parkId: asset.parkId }).toString()}`;
+  const name = tr(asset.name, language);
+  const lot = lotCodeOf(asset, park);
+  const leased = isLeased(asset);
+  const price = assetPriceParts(asset, language);
+  const vat = price.specific ? vatNote(asset, language) : "";
+  const chips = cardSpecChips(asset, language);
+  const zone = asset.zone && hasValue(asset.zone) ? tr(asset.zone, language) : "";
+  const parkName = park ? tr(park.name, language) : t("Chưa có KCN liên kết", "Linked park unavailable", "关联园区暂不可用");
+  const subline = (context === "list" ? [parkName, zone] : [zone, industriesLine(asset, language)]).filter(Boolean).join(" · ");
+  const areaText = hasValue(asset.area) ? `${num(asset.area, language)} ${asset.unit}` : "";
   return (
-      <article className="asset-card">
+      <article className="asset-card" data-leasing-status={asset.leasingStatus||undefined}>
         <div className="asset-card-image">
-          <SafeImage fallbackIllustration src={asset.image} alt={tr(asset.name, language)} />
+          <SafeImage fallbackIllustration src={asset.image} alt={name} />
+          {lot && <span className="asset-lot-code"><span className="asset-vh">{t("Mã lô", "Lot", "地块编号")} </span>{lot}</span>}
         </div>
         <div className="asset-card-body">
-          <Badge value={asset.type} tone="blue" />
-          <h3><Link to={`/assets/${asset.id}`}>{tr(asset.name, language)}</Link></h3>
-          <p>
-            <MapPin size={14} />
-            {park ? tr(park.name, language) : emptyCopy(language,"Chưa có KCN liên kết","Linked park unavailable","关联园区暂不可用")}
-          </p>
-          <div className="asset-card-facts">
-            <b>
-              {(asset.area?.toLocaleString(language === "vi" ? "vi-VN" : language === "zh" ? "zh-CN" : "en-US")??"—")} {asset.unit}
-            </b>
-            <strong>{assetPriceText(asset,language)}</strong>
+          <div className="asset-card-badges">
+            <Badge value={asset.type} tone="blue" />
+            <AssetStatusBadge asset={asset} />
           </div>
+          <h3><Link to={`/assets/${asset.id}`}>{name}</Link>{areaText && <span className="asset-card-area"> · {areaText}</span>}</h3>
+          {subline && <p>
+            <MapPin size={14} />
+            {subline}
+          </p>}
+          <div className="asset-card-facts">
+            <strong className="asset-price"><span className="asset-price-amount">{price.amount}</span>{price.basis && <span className="asset-price-basis">{price.basis}</span>}</strong>
+            {vat && <small className="asset-price-note">{vat}</small>}
+          </div>
+          {chips.length > 0 && <ul className="asset-card-specs" aria-label={t("Thông số chính", "Key specifications", "主要参数")}>
+            {chips.map((chip) => <li key={chip}>{chip}</li>)}
+          </ul>}
           <div className="asset-card-actions">
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                if (park) openParkChat(park.id,asset.id);
-              }}
-              disabled={!park}
-            >
-              <MessageCircle /> {ui(language, "Trao đổi", "Chat")}
-            </button>
-            <Link to={park ? requestUrl : "/find-supply"} onClick={(event) => event.stopPropagation()}>
-              <Send /> {ui(language, "Hỏi thuê mặt bằng này", "Enquire about this property")}
+            <Link className="primary" to={`/assets/${asset.id}`}>
+              <ArrowRight /> {t("Xem chi tiết", "View details", "查看详情")}<span className="asset-vh"> — {name}</span>
             </Link>
+            {leased
+              ? <Link className="secondary" to={similarUrl}><Search /> {t("Tìm mặt bằng tương tự", "Find similar", "查找类似物业")}</Link>
+              : <Link className="secondary" to={park ? requestUrl : "/find-supply"}>
+                <Send /> {t("Hỏi thuê", "Enquire", "咨询租赁")}<span className="asset-vh"> — {name}</span>
+              </Link>}
           </div>
         </div>
       </article>
@@ -1687,8 +1716,8 @@ function AssetsPage() {
         </div>
         {filtered.length ? (
           <div className="asset-grid">
-            {filtered.map((a) => (
-              <AssetCard key={a.id} asset={a} />
+            {leasedLast(filtered).map((a) => (
+              <AssetCard key={a.id} asset={a} context="list" />
             ))}
           </div>
         ) : (
@@ -1704,37 +1733,138 @@ function AssetsPage() {
 }
 export function AssetDetailPage({draft,draftPark}:{draft?:IndustrialAsset;draftPark?:IndustrialParkProfile}={}) {
   const Shell=draft?Fragment:PublicShell;
-  const mobile=useMobile();
   const { id } = useParams();
   const { assets, parks, language, openParkChat } = useApp();
   const [params] = useSearchParams();
+  const [shot, setShot] = useState(0);
+  const t = (vi: string, en: string, zh: string) => emptyCopy(language, vi, en, zh);
   const mode = import.meta.env.DEV ? params.get("demoState") : null;
   const original = draft || assets.find(a => a.id === id && isPublicAsset(a,parks) && parks.some(p=>p.id===a.parkId&&isPublicPark(p)));
   const asset = original ? previewAsset(original,mode) : undefined;
   if (!asset) return <Shell><div className="page page-top"><DetailUnavailable to="/assets" label={ui(language,"Bất động sản công nghiệp","Assets")} /></div></Shell>;
   const park = draftPark || (mode === "orphan" ? undefined : parks.find(p => p.id === asset.parkId));
   const requestUrl = park ? `/find-supply?${new URLSearchParams({parkId:park.id,assetId:asset.id})}` : "/find-supply";
-  return <Shell><div className="page page-top asset-detail-page">
-    <div className="breadcrumbs"><Link to="/assets">{ui(language,"Bất động sản công nghiệp","Assets")}</Link><ChevronRight size={14}/><span>{tr(asset.name,language)}</span></div>
-    <div className="asset-detail">
-      <SafeImage fallbackIllustration src={asset.image} alt={tr(asset.name,language)} />
-      <div><Badge value={asset.type}/><h1>{tr(asset.name,language)}</h1>
-        {park ? <p><MapPin size={16}/><Link to={`/industrial-parks/${park.slug}`}>{tr(park.name,language)}</Link></p> : <p className="missing-summary">{emptyCopy(language,"Chưa xác định được KCN liên kết. VSIP có thể hỗ trợ tìm mặt bằng.","The linked park is unavailable. VSIP can help find a property.","关联园区暂不可用，VSIP可协助寻找场地。")}</p>}
-        {!mobile&&hasValue(asset.description)&&<p>{tr(asset.description,language)}</p>}
-        <FactGroup facts={[
-          {label:asset.listingKind === "project_inventory" ? ui(language,"Quỹ đất công bố toàn dự án","Published project inventory") : ui(language,"Diện tích chào thuê","Area"),value:asset.area,unit:asset.unit},
-          {label:ui(language,"Đơn giá tham khảo","Price"),value:assetPriceText(asset,language)},
-          {label:ui(language,"Thời điểm bàn giao","Available from"),value:asset.availableFrom},
-          {label:ui(language,"Công suất điện","Power"),value:asset.powerMva,unit:"MVA"},
-        ]}/>
-        {mobile && hasValue(asset.description) && <p>{tr(asset.description,language)}</p>}
-        <div className="asset-detail-actions">
+  const parkAssetsUrl = park?.slug ? `/industrial-parks/${park.slug}?tab=assets` : "/industrial-parks";
+  const name = tr(asset.name,language);
+  const specs = asset.specs || {}, terms = asset.terms || {};
+  const lot = lotCodeOf(asset, park);
+  const leased = isLeased(asset);
+  const price = assetPriceParts(asset, language);
+  const vat = price.specific ? vatNote(asset, language) : "";
+  const zone = asset.zone && hasValue(asset.zone) ? tr(asset.zone, language) : "";
+  const areaText = hasValue(asset.area) ? `${num(asset.area, language)} ${asset.unit}` : "";
+  const shots = [
+    ...(asset.image ? [{ url: asset.image, caption: undefined as LocalizedText | undefined }] : []),
+    ...(asset.gallery || []).filter(g => g && g.url && (draft || g.approved) && g.url !== asset.image).map(g => ({ url: g.url, caption: g.caption })),
+  ].slice(0, 12);
+  const current = shots[Math.min(shot, Math.max(0, shots.length - 1))];
+  const n = (v: unknown, unit = "") => typeof v === "number" && Number.isFinite(v) ? `${num(v, language)}${unit}` : "";
+  const sized = asset.type === "ready_built_factory" || asset.type === "warehouse";
+  const specFacts: { label: string; value?: unknown }[] = sized ? [
+    { label: t("Chiều cao thông thủy", "Clear height", "净高"), value: n(specs.clearHeightM, " m") },
+    { label: t("Tải trọng sàn", "Floor load", "地面承重"), value: n(specs.floorLoadTonM2, ` ${t("tấn/m²", "t/m²", "吨/m²")}`) },
+    { label: t("Diện tích văn phòng", "Office area", "办公面积"), value: n(specs.officeAreaM2, " m²") },
+    { label: t("Cửa/bến container", "Dock doors", "集装箱门/月台"), value: n(specs.dockDoors) },
+    { label: t("Số tầng", "Floors", "楼层数"), value: n(specs.floors) },
+    { label: t("Năm hoàn thành", "Year built", "建成年份"), value: typeof specs.builtYear === "number" ? String(specs.builtYear) : "" },
+    { label: t("Hệ thống PCCC", "Fire protection", "消防系统"), value: specs.fireSystem && hasValue(specs.fireSystem) ? tr(specs.fireSystem, language) : "" },
+  ] : [
+    { label: t("Kích thước", "Dimensions", "尺寸"), value: specs.dimensions },
+    { label: t("Mặt tiền", "Frontage", "临街面宽"), value: specs.frontage && hasValue(specs.frontage) ? tr(specs.frontage, language) : "" },
+    { label: t("Mật độ xây dựng tối đa", "Maximum building coverage", "最大建筑密度"), value: n(specs.coverageMaxPct, "%") },
+  ];
+  const visibleSpecs = specFacts.filter(f => hasValue(f.value));
+  const termRows = ([
+    [t("Bàn giao", "Available from", "交付时间"), formatHandover(asset.availableFrom, language)],
+    [t("Thuê tối thiểu", "Minimum lease", "最短租期"), typeof terms.minLeaseYears === "number" ? `${num(terms.minLeaseYears, language)} ${t("năm", "years", "年")}` : ""],
+    [t("Đặt cọc", "Deposit", "押金"), typeof terms.depositMonths === "number" ? `${num(terms.depositMonths, language)} ${t("tháng", "months", "个月")}` : ""],
+    [t("Thanh toán", "Payment", "付款方式"), terms.paymentNote && hasValue(terms.paymentNote) ? tr(terms.paymentNote, language) : ""],
+    [t("Phí quản lý/hạ tầng", "Management/infrastructure fees", "管理/基础设施费"), terms.feeNote && hasValue(terms.feeNote) ? tr(terms.feeNote, language) : ""],
+    [t("Hạn thuê đất", "Land lease until", "土地租期至"), formatDate(specs.leaseTermUntil, language)],
+  ] as [string, string][]).filter(([, v]) => v);
+  const ownUtilities = [
+    { key: "power", icon: <Zap />, label: t("Công suất điện", "Power", "电力容量"), value: n(asset.powerMva, " MVA") },
+    { key: "water", icon: <Droplets />, label: t("Cấp nước", "Water supply", "供水"), value: n(asset.waterM3Day, ` ${t("m³/ngày", "m³/day", "m³/天")}`) },
+  ].filter(u => u.value);
+  const parkUtilities = (park?.utilities || []).filter(u => hasValue(u.capacity));
+  const industries = (asset.industries || []).filter(Boolean);
+  const parkAssets = park ? assets.filter(a => a.parkId === park.id && (draft || isPublicAsset(a, parks))) : [];
+  const others = leasedLast(parkAssets.filter(a => a.id !== asset.id)).slice(0, 3);
+  const hasLot = !!park?.masterplan?.plots.some(p => p.assetId === asset.id);
+  const hasCoords = !!park?.coordinates && Number.isFinite(park.coordinates.lat) && Number.isFinite(park.coordinates.lng);
+  const publicDocs = (park?.documents || []).filter(d => d.visibility === "public");
+  const hasSpecData = visibleSpecs.length > 0 || termRows.length > 0 || ownUtilities.length > 0;
+  const verification = asset.specsVerification === "verified" ? t("Đã xác minh", "Verified", "已核验") : asset.specsVerification === "reviewed" ? t("Đã rà soát", "Reviewed", "已审阅") : t("Chưa xác minh", "Unverified", "未核验");
+  const asOf = formatDate(asset.specsAsOf, language);
+  return <Shell><div className="page page-top asset-detail-page asset-detail-v2">
+    <div className="breadcrumbs"><Link to="/assets">{ui(language,"Bất động sản công nghiệp","Assets")}</Link>{park && <><ChevronRight size={14}/><Link to={parkAssetsUrl}>{tr(park.name,language)}</Link></>}<ChevronRight size={14}/><span>{name}</span></div>
+    <header className="asset-detail-head">
+      <div className="asset-detail-badges"><Badge value={asset.type}/><AssetStatusBadge asset={asset}/>{lot && <span className="badge asset-lot-badge">{t("Lô", "Lot", "地块")} {lot}</span>}</div>
+      <h1>{name}{areaText ? ` · ${areaText}` : ""}</h1>
+      {park ? <p><MapPin size={16}/><Link to={`/industrial-parks/${park.slug}`}>{tr(park.name,language)}</Link>{zone && <span> · {zone}</span>}</p> : <p className="missing-summary">{t("Chưa xác định được KCN liên kết. VSIP có thể hỗ trợ tìm mặt bằng.","The linked park is unavailable. VSIP can help find a property.","关联园区暂不可用，VSIP可协助寻找场地。")}</p>}
+      {hasValue(asset.description) && <p className="asset-detail-description">{tr(asset.description,language)}</p>}
+      {asOf && <small className="asset-detail-asof">{t("Cập nhật", "Updated", "更新")} {asOf} · {verification}</small>}
+    </header>
+    <div className="asset-gallery">
+      <div className="asset-gallery-main"><SafeImage fallbackIllustration src={current?.url} alt={current?.caption && hasValue(current.caption) ? tr(current.caption, language) : name} /></div>
+      {shots.length > 1 && <ul className="asset-gallery-thumbs" aria-label={t("Bộ ảnh mặt bằng", "Asset photos", "物业图片")}>
+        {shots.map((s, i) => <li key={s.url}><button type="button" aria-pressed={i === shot} aria-label={`${t("Ảnh", "Photo", "图片")} ${i + 1}/${shots.length}`} onClick={() => setShot(i)}><SafeImage src={s.url} alt="" /></button></li>)}
+      </ul>}
+    </div>
+    <div className="asset-detail-grid">
+      <aside className="asset-offer" aria-label={t("Giá và điều kiện thuê", "Price and lease terms", "价格与租赁条件")}>
+        <h2>{t("Giá và điều kiện thuê", "Price and lease terms", "价格与租赁条件")}</h2>
+        <p className="asset-offer-price"><strong className="asset-price"><span className="asset-price-amount">{price.amount}</span>{price.basis && <span className="asset-price-basis">{price.basis}</span>}</strong>{vat && <small className="asset-price-note">{vat}</small>}</p>
+        {termRows.length > 0 && <dl className="asset-terms">{termRows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>}
+        <div className="asset-offer-actions">
+          {leased
+            ? <Link className="button primary" to={park ? `/find-supply?${new URLSearchParams({parkId:park.id})}` : "/find-supply"}><Search/>{t("Tìm mặt bằng tương tự", "Find similar properties", "查找类似物业")}</Link>
+            : <Link className="button primary" to={requestUrl}><Send/>{park ? ui(language, "Hỏi thuê mặt bằng này", "Enquire about this property") : ui(language, "Tư vấn thuê", "Leasing consultation")}</Link>}
           {park && <button className="button outline" type="button" onClick={() => openParkChat(park.id,asset.id)}><MessageCircle/>{ui(language, "Trao đổi với VSIP", "Chat with VSIP")}</button>}
-          <Link className="button primary" to={requestUrl}><Send/>{park ? ui(language, "Hỏi thuê mặt bằng này", "Enquire about this property") : ui(language, "Tư vấn thuê", "Leasing consultation")}</Link>
+          {park && !leased && <Link className="asset-visit-link" to={`${requestUrl}&support=meeting`}>{t("Đặt lịch khảo sát", "Book a site visit", "预约实地考察")}</Link>}
         </div>
+        <p className="asset-offer-note">{t("Giá tham khảo; VSIP xác nhận khi báo giá.", "Reference price; VSIP confirms when quoting.", "价格仅供参考，以VSIP报价确认为准。")}</p>
+      </aside>
+      <div className="asset-detail-main">
+        <OptionalSection show={visibleSpecs.length > 0} id="asset-specs" className="asset-detail-section">
+          <SectionTitle eyebrow={t("THÔNG SỐ", "SPECIFICATIONS", "技术参数")} title={t("Thông số kỹ thuật", "Technical specifications", "技术参数")} />
+          <FactGroup className="asset-spec-facts" facts={visibleSpecs} />
+          {hasSpecData && <small className="asset-source-note">{asOf ? `${t("Cập nhật", "Updated", "更新")} ${asOf} · ` : ""}{verification}</small>}
+        </OptionalSection>
+        <OptionalSection show={ownUtilities.length > 0 || parkUtilities.length > 0} id="asset-infrastructure" className="asset-detail-section">
+          <SectionTitle eyebrow={t("HẠ TẦNG", "INFRASTRUCTURE", "基础设施")} title={t("Hạ tầng và tiện ích", "Infrastructure and utilities", "基础设施与配套")} />
+          {ownUtilities.length > 0 && <div className="utility-grid asset-utilities">{ownUtilities.map(u => <article key={u.key}>{u.icon}<span>{u.label}</span><strong>{u.value}</strong></article>)}</div>}
+          {parkUtilities.length > 0 && <>
+            <h3 className="asset-subhead">{t("Hạ tầng chung của KCN", "Shared park infrastructure", "园区共用基础设施")}</h3>
+            <div className="utility-grid asset-utilities">{parkUtilities.map(u => <article key={u.key}><Activity /><span>{tr(u.label,language)}</span><SourceValue compact value={u.capacity} /></article>)}</div>
+          </>}
+        </OptionalSection>
+        <OptionalSection show={industries.length > 0} id="asset-industries" className="asset-detail-section">
+          <SectionTitle eyebrow={t("NGÀNH PHÙ HỢP", "SUITABLE INDUSTRIES", "适合行业")} title={t("Ngành nghề phù hợp", "Suitable industries", "适合行业")} />
+          <div className="pill-list">{industries.map(i => <span key={i}><Check />{industryLabel(i, language)}</span>)}</div>
+          {park?.slug && <p className="asset-section-link"><Link to={`/industrial-parks/${park.slug}`}>{t("Xem ngành thu hút đầu tư của KCN", "See the park's target industries", "查看园区重点行业")} <ArrowRight size={14}/></Link></p>}
+        </OptionalSection>
+        <OptionalSection show={!!park && (hasLot || hasCoords)} id="asset-location" className="asset-detail-section">
+          <SectionTitle eyebrow={t("VỊ TRÍ", "LOCATION", "位置")} title={t("Vị trí trong khu công nghiệp", "Location in the park", "园区内位置")} />
+          {park && hasLot && <ParkMasterplan assets={parkAssets} language={language} plan={park.masterplan} parkId={park.id} highlightAssetId={asset.id} />}
+          {park && hasCoords && (park.places?.length ? <NearbyConnectivity park={park} language={language} /> : <ParkLocationMap park={park} language={language} />)}
+        </OptionalSection>
+        <OptionalSection show={publicDocs.length > 0} id="asset-documents" className="asset-detail-section">
+          <SectionTitle eyebrow={t("TÀI LIỆU", "DOCUMENTS", "文件")} title={t("Tài liệu công khai của KCN", "Public park documents", "园区公开文件")} />
+          <div className="doc-list">{publicDocs.map(d => <article key={d.id}>
+            <span className="doc-icon"><FileCheck2 /></span>
+            <div><h3>{tr(d.title, language)}</h3><p>{tr(d.issuer, language)}{d.issueDate ? ` · ${d.issueDate}` : ""}</p></div>
+            {safeUrl(d.sourceUrl) ? <a href={d.sourceUrl} target="_blank" rel="noreferrer"><Download size={15}/>{ui(language, "Xem tài liệu", "View source")}</a> : <span className="document-unavailable">{emptyCopy(language,"Chưa có bản tải xuống","Download not available","暂无下载文件")}</span>}
+          </article>)}</div>
+        </OptionalSection>
       </div>
     </div>
-  </div>{!draft&&<MobileActionBar><Link className="button primary" to={requestUrl}><Send size={16}/>{ui(language,"Gửi yêu cầu","Inquiry")}</Link>{park&&<button data-chat onClick={()=>openParkChat(park.id,asset.id)}><MessageCircle size={16}/>{ui(language,"Trao đổi","Chat")}</button>}</MobileActionBar>}</Shell>;
+    {park && others.length > 0 && <section id="asset-others" className="asset-detail-section asset-others">
+      <SectionTitle eyebrow={t("TẠI CÙNG KCN", "IN THE SAME PARK", "同园区物业")} title={t("Mặt bằng khác trong khu công nghiệp", "Other assets in this park", "园区内其他物业")} />
+      <div className="asset-grid profile-assets">{others.map(a => <AssetCard key={a.id} asset={a} context="park" />)}</div>
+      <p className="asset-section-link"><Link className="button outline" to={parkAssetsUrl}>{t("Xem tất cả mặt bằng tại", "View all assets at", "查看全部物业：")} {tr(park.name,language)}</Link></p>
+    </section>}
+  </div>{!draft&&<MobileActionBar>{price.specific && <span className="mobile-bar-price">{price.amount}</span>}<Link className="button primary" to={requestUrl}><Send size={16}/>{ui(language,"Gửi yêu cầu","Inquiry")}</Link>{park&&<button data-chat onClick={()=>openParkChat(park.id,asset.id)}><MessageCircle size={16}/>{ui(language,"Trao đổi","Chat")}</button>}</MobileActionBar>}</Shell>;
 }
 
 const emptyForm = {

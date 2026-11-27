@@ -7,6 +7,7 @@ import {ApiError} from '../db';
 import {fieldsFor} from '../../src/portal/fields';
 import {contentErrors,publicationIssues,type Draft} from '../../src/admin/model';
 import {emptyAsset,emptyPark,withPricing,pricingOf} from '../../src/contentSchema';
+import {compactAsset} from '../../src/assetFields';
 import {publishedBundle} from '../../src/contentRepository';
 import type {IndustrialAsset,IndustrialParkProfile} from '../../src/types';
 
@@ -49,6 +50,7 @@ export function applyPatch(kind:Kind,base:any,patch:unknown,images:string[]=[]){
   if(typeof raw!=='string'||raw.length>(f.kind==='textarea'?4000:300)){errors[key]='length';continue}
   const v=raw.trim();
   if(f.kind==='select'&&!f.options!.some(o=>o[0]===v)){errors[key]='selection';continue}
+  if(key==='terms.vatIncluded'){set(data,key,v===''?undefined:v==='true');continue}
   if(f.kind==='number'){if(v===''){if(f.required){errors[key]='required';continue}set(data,key==='totalArea'?'totalArea.value':key,null);continue}const n=Number(v.replace(',','.'));if(!Number.isFinite(n)||n<=0){errors[key]='positive';continue}set(data,key==='totalArea'?'totalArea.value':key,n);continue}
   if(f.kind==='list'){const items=v?v.split(',').map(x=>x.trim()).filter(Boolean):[];if(items.length>20||items.some(x=>x.length>80||/[<>]/.test(x))){errors[key]='list';continue}set(data,key,[...new Set(items)]);continue}
   if(f.kind==='image'){if(!images.includes(v)){errors[key]='image';continue}data.image=v;data.imageApproved=true;continue}
@@ -57,7 +59,7 @@ export function applyPatch(kind:Kind,base:any,patch:unknown,images:string[]=[]){
   set(data,key,v);
  }
  if(Object.keys(errors).length)throw Object.assign(new ApiError(400,'validation'),{fields:errors});
- const out=kind==='asset'?withPricing(data as IndustrialAsset,(data as IndustrialAsset).pricing??pricingOf(data as IndustrialAsset)):data;
+ const out=kind==='asset'?compactAsset(withPricing(data as IndustrialAsset,(data as IndustrialAsset).pricing??pricingOf(data as IndustrialAsset))):data;
  const ce=contentErrors(out,base);if(Object.keys(ce).length)throw Object.assign(new ApiError(400,'validation'),{fields:ce});
  return out;
 }

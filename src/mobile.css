@@ -101,3 +101,9 @@
   .park-grid .park-card .industries span{white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
 }
 .mobile-filter-fields{padding-bottom:96px}.mobile-filter-footer{flex-wrap:wrap}.mobile-filter-footer>button{flex:1 1 auto;min-height:44px;white-space:nowrap}
+@media(max-width:680px){
+.asset-card-badges{grid-column:2}.asset-card-badges .badge{font-size:10px;padding:2px 8px}.asset-lot-code{left:4px;bottom:4px;font-size:10px;line-height:14px;padding:1px 6px}.asset-card-area{white-space:normal}.asset-card-facts{margin-top:8px;gap:2px}.asset-price{font-size:15px}.asset-card-specs{grid-column:1 / -1;display:block;margin:6px 0 0;font-size:12px;line-height:1.5;color:var(--text-light)}.asset-card-specs li{display:inline;padding:0;border-radius:0;background:none;color:var(--text-light)}.asset-card-specs li+li::before{content:' · '}.asset-card-actions{padding-top:8px;margin-top:0}
+.asset-detail-v2{gap:16px;padding-bottom:24px}.asset-detail-head h1{font-size:23px;line-height:1.3}.asset-gallery-main{height:220px;border-radius:8px}.asset-gallery-thumbs li{flex-basis:72px}.asset-gallery-thumbs button{width:72px;height:52px}.asset-detail-grid{gap:20px}.asset-detail-main{gap:24px}.asset-offer{padding:16px}.asset-offer .asset-price{font-size:22px}.asset-spec-facts{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.has-mobile-actions .asset-offer-actions{display:none}.asset-terms>div{grid-template-columns:minmax(0,110px) minmax(0,1fr)}
+.mobile-action-bar>.mobile-bar-price{flex:1.1;border:0;background:none;font-weight:700;font-size:13px;line-height:1.2;overflow:hidden;color:var(--text-strong)}
+}
+@media(max-width:359px){.mobile-action-bar>.mobile-bar-price{display:none}.asset-gallery-main{height:180px}}

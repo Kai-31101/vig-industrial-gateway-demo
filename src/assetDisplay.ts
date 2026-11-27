@@ -79,3 +79,26 @@ export function vatNote(asset:Pick<IndustrialAsset,'terms'>,l:Language):string{
  return v===false?c3(l,'chưa gồm VAT','excl. VAT','不含增值税'):v===true?c3(l,'đã gồm VAT','incl. VAT','含增值税'):'';
 }
 export {c3};
+
+// ---- Discovery helpers (P2): leasing-status filter, power thresholds, zone keys. Derived from the data only. ----
+export const LEASING_FILTERS=['available','reserved','upcoming','leased'] as const;
+export type LeasingFilter=typeof LEASING_FILTERS[number];
+export const leasingFilterLabel=(k:string,l:Language)=>k==='available'?c3(l,'Còn trống','Available','可租'):k==='reserved'?c3(l,'Đã giữ chỗ','Reserved','已预留'):k==='upcoming'?c3(l,'Sắp có','Coming soon','即将可租'):k==='leased'?c3(l,'Đã cho thuê','Leased','已出租'):k;
+/** Same derivation as the card chip (incl. the "coming soon" rule); '' when the card shows no status. */
+export const leasingKeyOf=(a:Pick<IndustrialAsset,'leasingStatus'|'availableFrom'>,now=new Date()):string=>leasingBadge(a,'en',now)?.key||'';
+/** Minimum-power options: up to four distinct values taken from the data (never hard-coded), ascending, in MVA. */
+export function powerThresholds(list:Pick<IndustrialAsset,'powerMva'>[]):number[]{
+ const d=[...new Set(list.map(a=>a.powerMva).filter((v):v is number=>has(v)&&v>0))].sort((a,b)=>a-b);
+ if(d.length<=4)return d;
+ return [...new Set([0,1,2,3].map(i=>d[Math.round(i*(d.length-1)/4)]))];
+}
+/** Values below 1 MVA are shown in kVA; the stored unit stays MVA. */
+export const powerLabel=(mva:number,l:Language)=>mva<1?`${num(Math.round(mva*1000),l)} kVA`:`${num(mva,l)} MVA`;
+const zoneText=(z?:{vi?:string;en?:string;zh?:string})=>(z?.vi||z?.en||z?.zh||'').trim();
+/** Zones repeat across parks ("Khu A"), so the filter value is always "<parkId>~<zone>". */
+export const zoneValue=(a:Pick<IndustrialAsset,'parkId'|'zone'>):string=>{const t=zoneText(a.zone);return t?`${a.parkId}~${t}`:''};
+export const zoneOptions=(list:Pick<IndustrialAsset,'parkId'|'zone'>[]):{value:string;parkId:string;zone:{vi?:string;en?:string;zh?:string}}[]=>{
+ const seen=new Map<string,{value:string;parkId:string;zone:any}>();
+ for(const a of list){const v=zoneValue(a);if(v&&!seen.has(v))seen.set(v,{value:v,parkId:a.parkId,zone:a.zone});}
+ return [...seen.values()];
+};

@@ -6,7 +6,7 @@ import {migratePark,withPricing,pricingOf,emptyPark,emptyAsset} from './contentS
 import {registerPublished,unregisterPublished} from './publicMembership';
 import deployed from './publishedContent.json';
 import {normalizeDraftsContacts,normalizeMockContacts} from './mockContacts';
-import {ASSET_DETAIL_KEYS,ASSET_DETAIL_NESTED_KEYS} from './assetFields';
+import {ASSET_DETAIL_KEYS,ASSET_DETAIL_NESTED_KEYS,INTERNAL_ASSET_KEYS} from './assetFields';
 export const CONTENT_KEY='vsip-content-v1';
 export const deploymentId=()=>contentFingerprint(deployed);
 export interface ContentSnapshot {baseDeploymentId?:string;version:1;revision:number;drafts:Draft[];audit:AdminStore['audit'];batches:AdminStore['batches'];}
@@ -27,7 +27,7 @@ const publicParkKeys=['id','slug','name','summary','logoText','status','parkType
 const publicAssetKeys=['id','parkId','name','description','type','area','unit','transaction','price','pricing','pricingBasis','priceMode','availableFrom','powerMva','industries','featured','image','imageApproved','listingKind',...ASSET_DETAIL_KEYS];
 function pick(o:object,keys:string[]){return Object.fromEntries(Object.entries(o).filter(([k])=>keys.includes(k)));}
 // Explicitly omit provenance and restricted documents from the deployable public projection.
-function stripInternal(value:any):any{if(Array.isArray(value))return value.map(stripInternal);if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).filter(([k])=>!['_rowId','sourceDocumentId','dataOwner','verifiedBy','conflicts','sourceUrl','osmId'].includes(k)).map(([k,v])=>[k,stripInternal(v)]));return value;}
+function stripInternal(value:any):any{if(Array.isArray(value))return value.map(stripInternal);if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).filter(([k])=>!(INTERNAL_ASSET_KEYS as readonly string[]).includes(k)).map(([k,v])=>[k,stripInternal(v)]));return value;}
 export function publishedBundle(drafts:Draft[]){const parks=drafts.filter(d=>d.kind==='park'&&d.published&&(d.published as IndustrialParkProfile).publicationStatus==='published').map(d=>{const p=d.published as IndustrialParkProfile;return {...stripInternal(pick(p,publicParkKeys)),documents:p.documents.filter(doc=>doc.visibility==='public').map(doc=>({id:doc.id,title:doc.title,category:doc.category,issuer:doc.issuer,issueDate:doc.issueDate,language:doc.language,visibility:'public',verificationStatus:doc.verificationStatus,sourceUrl:doc.sourceUrl})),media:stripInternal(p.media.filter(m=>m.approved))};});const assets=drafts.filter(d=>d.kind==='asset'&&d.published&&(d.published as IndustrialAsset).transaction==='lease'&&parks.some(p=>p.id===(d.published as IndustrialAsset).parkId)).map(d=>{const a=stripInternal(pick(d.published!,publicAssetKeys));if(Array.isArray(a.gallery)){const g=a.gallery.filter((x:any)=>x&&x.approved===true&&x.url);if(g.length)a.gallery=g;else delete a.gallery;}return a;});return {version:1,mode:"replace",baseDeploymentId:deploymentId(),parks,assets};}
 export function downloadJson(value:unknown,name:string){const url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 

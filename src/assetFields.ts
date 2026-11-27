@@ -111,3 +111,13 @@ export function mergeMissingDetails<T extends Record<string,any>>(existing:T,inc
  }
  return {value:value as T,changed:fields.length>0,fields};
 }
+
+/** Provenance/internal keys that never leave the server in a public projection (shared by publishedBundle and the AI catalogue). */
+export const INTERNAL_ASSET_KEYS=['_rowId','sourceDocumentId','dataOwner','verifiedBy','conflicts','sourceUrl','osmId'] as const;
+/** Public detail values for read-only consumers (the AI catalogue): gallery is omitted, internal keys are stripped, empties are dropped. */
+export function publicAssetDetails(a:Partial<IndustrialAsset>):Record<string,unknown>{
+ const strip=(v:any):any=>Array.isArray(v)?v.map(strip):v&&typeof v==='object'?Object.fromEntries(Object.entries(v).filter(([k])=>!(INTERNAL_ASSET_KEYS as readonly string[]).includes(k)).map(([k,x])=>[k,strip(x)])):v;
+ const out:Record<string,unknown>={};
+ for(const key of ASSET_DETAIL_KEYS){if(key==='gallery')continue;const v=prune(strip((a as any)[key]));if(v!==undefined)out[key]=v;}
+ return out;
+}

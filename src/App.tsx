@@ -20,7 +20,7 @@ import {HomeAds} from './HomeAds';
 import {PackageSettings} from './admin/PackageSettings';
 import {PermissionMatrix} from './admin/PermissionMatrix';
 import {TradeExpoSection} from './TradeExpoSection';
-import {DiscoveryFilters,matchesParkFilters,matchesAssetFilters,assetTypeLabel,assetTypeLabels,hasPublishedSale,homeSearchTarget,parkTypeOptionsOf} from './DiscoveryFilters';
+import {DiscoveryFilters,AssetSortSelect,sortAssets,sortKeyOf,matchesParkFilters,matchesAssetFilters,assetTypeLabel,assetTypeLabels,hasPublishedSale,homeSearchTarget,parkTypeOptionsOf} from './DiscoveryFilters';
 import {assetPriceText,assetPriceParts} from './assetPrice';
 import {leasingBadge,isLeased,leasedLast,lotCodeOf,cardSpecChips,industriesLine,formatDate,formatHandover,vatNote,num} from './assetDisplay';
 import {sortParksByCompleteness} from './parkCompleteness';
@@ -1343,11 +1343,12 @@ export function ParkDetailPage({draft,draftAssets}:{draft?:IndustrialParkProfile
             }
           />
           {linked.length ? (
+            <><div className="asset-result-bar"><b>{linked.length} {ui(language, "mặt bằng", "assets")}</b><AssetSortSelect list={linked}/></div>
             <div className="asset-grid profile-assets">
-              {leasedLast(linked).map((a) => (
+              {sortAssets(linked,sortKeyOf(previewParams)).map((a) => (
                 <AssetCard key={a.id} asset={a} context="park" />
               ))}
-            </div>
+            </div></>
           ) : (
             <Empty
               title={
@@ -1712,11 +1713,12 @@ function AssetsPage() {
           <b>
             {filtered.length} {ui(language, "bất động sản công nghiệp", "industrial assets")}
           </b>
+          <AssetSortSelect list={filtered}/>
 
         </div>
         {filtered.length ? (
           <div className="asset-grid">
-            {leasedLast(filtered).map((a) => (
+            {sortAssets(filtered,sortKeyOf(params)).map((a) => (
               <AssetCard key={a.id} asset={a} context="list" />
             ))}
           </div>

@@ -4456,3 +4456,7 @@ td small {
   .asset-offer { position:static; }
   .asset-gallery-main { height:360px; }
 }
+.asset-sort{display:flex;align-items:center;flex-wrap:wrap;gap:8px;min-width:0}
+.asset-sort label{font-size:13px;font-weight:600;color:var(--text-strong)}
+.asset-sort select{min-height:44px;max-width:100%;padding:6px 10px;border:1px solid var(--border-control);border-radius:8px;background:var(--surface);color:var(--text-body);font:inherit;font-size:14px}
+.asset-sort small{flex-basis:100%;font-size:12px;color:var(--text-light)}

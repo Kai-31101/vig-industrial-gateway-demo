@@ -16,12 +16,6 @@
 .chat-delivery{display:block;font-size:11px;margin-top:7px;opacity:.8}
 .chat-failure-demo{display:flex;align-items:center;gap:8px;padding:8px 14px;font-size:12px;background:var(--surface-subtle);flex-shrink:0}
 .chat-failure-demo input{width:auto}
-.discovery-extra{padding:20px;background:white;border:1px solid var(--admin-line);border-radius:12px;margin-bottom:16px}
-.discovery-extra .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
-.discovery-extra label{display:flex;flex-direction:column;gap:6px;font-size:13px;min-width:0}
-.discovery-extra input,.discovery-extra select{padding:10px;border:1px solid var(--border-control);border-radius:8px;min-width:0;width:100%}
-.discovery-checks{display:flex;flex-wrap:wrap;gap:16px;margin:16px 0}
-.discovery-checks label{flex-direction:row;align-items:center}.discovery-checks input{width:auto}
 .vig-tradexpo-section{padding:24px 0 64px}.vig-tradexpo-section .section-heading{margin-bottom:28px}.vig-tradexpo-section .section-heading p{color:var(--text-light)}
 .vig-tradexpo-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
 .vig-tradexpo-card{border:1px solid var(--border-subtle);border-radius:16px;padding:8px;background:white;box-shadow:0 3px 12px rgba(3,7,18,0.05);min-width:0}

@@ -2,7 +2,7 @@
 // Every key is optional: a record that never had them stays valid, and nothing is ever inferred when a value is missing.
 import type {IndustrialAsset} from './types';
 
-export const ASSET_DETAIL_KEYS=['lotCode','zone','leasingStatus','waterM3Day','gallery','specs','terms','specsAsOf','specsVerification'] as const;
+export const ASSET_DETAIL_KEYS=['lotCode','zone','leasingStatus','waterM3Day','gallery','specs','terms','specsAsOf','specsVerification','coordinates'] as const;
 /** Nested keys of specs/terms/gallery items; tolerated as absent when an older snapshot is restored. */
 export const ASSET_DETAIL_NESTED_KEYS=['caption','dimensions','frontage','coverageMaxPct','leaseTermUntil','clearHeightM','floorLoadTonM2','officeAreaM2','dockDoors','floors','builtYear','fireSystem','vatIncluded','minLeaseYears','depositMonths','paymentNote','feeNote'] as const;
 export const LEASING_STATUSES=['unknown','available','reserved','leased'] as const;
@@ -18,6 +18,7 @@ const wholePositive=(v:unknown)=>positive(v)&&Number.isInteger(v);
 export function assetDetailErrors(a:Partial<IndustrialAsset>):Record<string,string>{
  const e:Record<string,string>={};
  if(!blankValue(a.lotCode)&&!/^[A-Za-z0-9][A-Za-z0-9-]{0,11}$/.test(String(a.lotCode).trim()))e.lotCode='lotCode';
+ {const c:any=a.coordinates;if(c!=null&&(c.lat!=null||c.lng!=null)&&!(typeof c.lat==='number'&&typeof c.lng==='number'&&c.lat>=-90&&c.lat<=90&&c.lng>=-180&&c.lng<=180))e.coordinates='coordinates'}
  if(a.leasingStatus!=null&&!(LEASING_STATUSES as readonly string[]).includes(a.leasingStatus))e.leasingStatus='selection';
  if(a.waterM3Day!=null&&!positive(a.waterM3Day))e.waterM3Day='positive';
  if(a.specsVerification!=null&&!['unverified','reviewed','verified'].includes(a.specsVerification))e.specsVerification='selection';
@@ -50,11 +51,11 @@ export function assetDetailErrors(a:Partial<IndustrialAsset>):Record<string,stri
 
 const L=()=>({vi:'',en:'',zh:''});
 /** Empty editor shapes so the admin form shows every field; compactAsset() removes whatever stays empty on save. */
-export function assetEditorDefaults():Pick<IndustrialAsset,'lotCode'|'zone'|'leasingStatus'|'waterM3Day'|'gallery'|'specs'|'terms'|'specsAsOf'|'specsVerification'>{
+export function assetEditorDefaults():Pick<IndustrialAsset,'lotCode'|'zone'|'leasingStatus'|'waterM3Day'|'gallery'|'specs'|'terms'|'specsAsOf'|'specsVerification'|'coordinates'>{
  return {lotCode:'',zone:L(),leasingStatus:'unknown',waterM3Day:null,gallery:[],
   specs:{dimensions:'',frontage:L(),coverageMaxPct:null,leaseTermUntil:'',clearHeightM:null,floorLoadTonM2:null,officeAreaM2:null,dockDoors:null,floors:null,builtYear:null,fireSystem:L()},
   terms:{vatIncluded:undefined,minLeaseYears:null,depositMonths:null,paymentNote:L(),feeNote:L()},
-  specsAsOf:'',specsVerification:'unverified'};
+  specsAsOf:'',specsVerification:'unverified',coordinates:{lat:null as any,lng:null as any}};
 }
 
 const localizedLike=(v:any)=>v&&typeof v==='object'&&!Array.isArray(v)&&('vi' in v||'en' in v);

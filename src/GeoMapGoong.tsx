@@ -6,10 +6,10 @@ import {MAP_ATTRIBUTION,GOONG_STYLE_URL,type GeoMapProps} from './GeoMap';
 // MapLibre locates its worker next to the module, which breaks when Vite pre-bundles the dependency: bundle it explicitly.
 setWorkerUrl(workerUrl);
 type Props=GeoMapProps&{onFail:()=>void};
-const HELP:Record<string,[string,string,string,string,string]>={
- vi:['Dùng Ctrl + cuộn để thu phóng bản đồ','Dùng ⌘ + cuộn để thu phóng bản đồ','Dùng hai ngón tay để di chuyển bản đồ','Phóng to','Thu nhỏ'],
- en:['Use Ctrl + scroll to zoom the map','Use ⌘ + scroll to zoom the map','Use two fingers to move the map','Zoom in','Zoom out'],
- zh:['按住 Ctrl 并滚动以缩放地图','按住 ⌘ 并滚动以缩放地图','用双指移动地图','放大','缩小']};
+const HELP:Record<string,[string,string,string,string,string,string]>={
+ vi:['Dùng Ctrl + cuộn để thu phóng bản đồ','Dùng ⌘ + cuộn để thu phóng bản đồ','Dùng hai ngón tay để di chuyển bản đồ','Phóng to','Thu nhỏ','Đóng'],
+ en:['Use Ctrl + scroll to zoom the map','Use ⌘ + scroll to zoom the map','Use two fingers to move the map','Zoom in','Zoom out','Close'],
+ zh:['按住 Ctrl 并滚动以缩放地图','按住 ⌘ 并滚动以缩放地图','用双指移动地图','放大','缩小','关闭']};
 function popupContent(m:{label:string;subtitle?:string;href?:string},openLabel:string,navigate:(href:string)=>void){
  const box=document.createElement('div');box.className='geo-pop';const b=document.createElement('b');b.textContent=m.label;box.append(b);
  if(m.subtitle){const s=document.createElement('span');s.textContent=m.subtitle;box.append(s)}
@@ -25,7 +25,7 @@ export default function GoongMap(p:Props){
   const h=HELP[p.language]||HELP.en;let loaded=false,dead=false,map:MLMap;
   try{
    map=new MLMap({container:host.current,style:`${GOONG_STYLE_URL}?api_key=${key}`,center:[p.center.lng,p.center.lat],zoom:p.cluster?5:11,minZoom:3,maxZoom:18,cooperativeGestures:true,attributionControl:false,
-    locale:{'CooperativeGesturesHandler.WindowsHelpText':h[0],'CooperativeGesturesHandler.MacHelpText':h[1],'CooperativeGesturesHandler.MobileHelpText':h[2],'NavigationControl.ZoomIn':h[3],'NavigationControl.ZoomOut':h[4]}});
+    locale:{'CooperativeGesturesHandler.WindowsHelpText':h[0],'CooperativeGesturesHandler.MacHelpText':h[1],'CooperativeGesturesHandler.MobileHelpText':h[2],'NavigationControl.ZoomIn':h[3],'NavigationControl.ZoomOut':h[4],'Popup.Close':h[5]}});
   }catch{p.onFail();return}
   mapRef.current=map;
   map.addControl(new NavigationControl({showCompass:false}),'top-right');
@@ -57,7 +57,7 @@ export default function GoongMap(p:Props){
     if(font)map.addLayer({id:'geo-cluster-count',type:'symbol',source:'geo-parks',filter:['has','point_count'],layout:{'text-field':['get','point_count_abbreviated'],'text-font':font,'text-size':13,'text-allow-overlap':true},paint:{'text-color':'#fff'}});
     map.addLayer({id:'geo-points',type:'circle',source:'geo-parks',filter:['!',['has','point_count']],paint:{'circle-color':'#0643d7','circle-radius':9,'circle-stroke-width':3,'circle-stroke-color':'#fff'}});
     map.on('click','geo-clusters',async e=>{const f=e.features?.[0];if(!f)return;const z=await (map.getSource('geo-parks') as any).getClusterExpansionZoom((f.properties as any).cluster_id);map.easeTo({center:(f.geometry as any).coordinates,zoom:z+0.5})});
-    map.addLayer({id:'geo-selected',type:'circle',source:'geo-parks',filter:['==',['get','id'],''],paint:{'circle-color':'#0643d7','circle-radius':13,'circle-stroke-width':4,'circle-stroke-color':'#ffbf47'}});
+    map.addLayer({id:'geo-selected',type:'circle',source:'geo-parks',filter:['==',['get','id'],''],paint:{'circle-color':'#022582','circle-radius':14,'circle-stroke-width':4,'circle-stroke-color':'#ffffff'}});
     map.addLayer({id:'geo-hover',type:'circle',source:'geo-parks',filter:['==',['get','id'],''],paint:{'circle-color':'#0643d7','circle-radius':12,'circle-stroke-width':3,'circle-stroke-color':'#3d7bff'}});
     map.on('click','geo-points',e=>{const f=e.features?.[0];if(!f)return;const pr=f.properties as any;if(latest.current.onSelect){latest.current.onSelect(pr.id);return}popup.current?.remove();popup.current=new Popup({offset:12,closeButton:true}).setLngLat((f.geometry as any).coordinates).setDOMContent(popupContent({label:pr.label,subtitle:pr.subtitle,href:pr.href},latest.current.openLabel||'',h=>(latest.current.onNavigate||((x:string)=>location.assign(x)))(h))).addTo(map)});
     for(const l of ['geo-clusters','geo-points']){map.on('mouseenter',l,()=>{map.getCanvas().style.cursor='pointer'});map.on('mouseleave',l,()=>{map.getCanvas().style.cursor=''})}
@@ -67,9 +67,9 @@ export default function GoongMap(p:Props){
    return;
   }
   pins.current.forEach(m=>m.remove());pins.current=[];
-  if(origin){const el=document.createElement('button');el.type='button';el.className='geo-pin origin';el.textContent='KCN';el.setAttribute('aria-label',origin.label);el.addEventListener('click',()=>popup.current?.remove());pins.current.push(new Marker({element:el}).setLngLat([origin.lng,origin.lat]).addTo(map))}
+  if(origin){const el=document.createElement('button');el.type='button';el.className='geo-pin origin';el.textContent=origin.badge||'KCN';el.setAttribute('aria-label',origin.label);el.addEventListener('click',()=>popup.current?.remove());pins.current.push(new Marker({element:el}).setLngLat([origin.lng,origin.lat]).addTo(map))}
   for(const m of markers){
-   const el=document.createElement('button');el.type='button';el.className='geo-pin'+(m.id===selectedId?' selected':'');el.style.background=m.color;el.textContent=m.symbol||'';el.setAttribute('aria-label',m.label);el.setAttribute('aria-pressed',String(m.id===selectedId));
+   const el=document.createElement('button');el.type='button';el.className='geo-pin'+(m.id.startsWith('__')?' anchor':'')+(m.id===selectedId?' selected':'');el.style.background=m.color;if(m.icon)el.innerHTML=m.icon;else el.textContent=m.symbol||'';el.setAttribute('aria-label',m.label);el.setAttribute('aria-pressed',String(m.id===selectedId));
    el.addEventListener('click',e=>{e.stopPropagation();latest.current.onSelect?.(m.id)});
    pins.current.push(new Marker({element:el}).setLngLat([m.lng,m.lat]).addTo(map));
   }
@@ -107,7 +107,7 @@ export default function GoongMap(p:Props){
  useEffect(()=>{
   const map=mapRef.current;if(!map||ready!==map)return;
   const list=p.cluster?p.extraMarkers||[]:[];
-  const made=list.map(m=>{const el=document.createElement('span');el.className='geo-pin hub';el.style.background=m.color;el.textContent=m.symbol||'';el.title=m.label;el.setAttribute('role','img');el.setAttribute('aria-label',m.label);return new Marker({element:el}).setLngLat([m.lng,m.lat]).addTo(map)});
+  const made=list.map(m=>{const el=document.createElement('span');el.className='geo-pin hub';el.style.background=m.color;if(m.icon)el.innerHTML=m.icon;else el.textContent=m.symbol||'';el.title=m.label;el.setAttribute('role','img');el.setAttribute('aria-label',m.label);return new Marker({element:el}).setLngLat([m.lng,m.lat]).addTo(map)});
   return()=>made.forEach(m=>m.remove());
  },[ready,p.cluster,p.extraMarkers]);
  // Route polyline

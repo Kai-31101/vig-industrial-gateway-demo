@@ -4,9 +4,9 @@ import {afterEach,describe,it,expect,vi} from 'vitest';
 const {query,limited}=vi.hoisted(()=>({query:vi.fn(),limited:vi.fn(async()=>{})}));
 vi.mock('./db',()=>{class ApiError extends Error{constructor(public status:number,public code:string){super(code)}}return {ApiError,tx:async(fn:any)=>fn({query}),pool:{query}}});
 vi.mock('./security',()=>({limited}));
-import {adminGeoNearby} from './geoApi';
+import {adminGeoNearby,publicGeoRoute} from './geoApi';
 afterEach(()=>{vi.unstubAllGlobals();vi.unstubAllEnvs();query.mockReset();limited.mockClear();vi.useRealTimers()});
-const res=()=>{const r:any={code:200,body:undefined,status(c:number){r.code=c;return r},json(b:any){r.body=b;return r}};return r};
+const res=()=>{const r:any={code:200,body:undefined,setHeader(){},status(c:number){r.code=c;return r},json(b:any){r.body=b;return r}};return r};
 const req:any={headers:{}};
 describe('adminGeoNearby',()=>{
  it('rejects demo sessions with 403 before touching the database or the network',async()=>{
@@ -37,5 +37,41 @@ describe('adminGeoNearby',()=>{
   query.mockImplementation(async(sql:string)=>sql.includes('SELECT payload')?{rows:[{payload:{coordinates:{lat:20.5,lng:106.5},name:{vi:'A'}}}]}:{rows:[]});
   vi.stubGlobal('fetch',vi.fn(async()=>new Response('x',{status:500})));
   vi.useFakeTimers();const p=adminGeoNearby(req,res(),{scope:'internal',workspace_id:'internal'},{parkId:'p'});const done=expect(p).rejects.toMatchObject({status:502,code:'goong_failed'});await vi.runAllTimersAsync();await done;
+ });
+});
+
+describe('publicGeoRoute',()=>{
+ const park={id:'park-a',coordinates:{lat:20.5,lng:106.5},places:[{id:'sea-1',coordinates:{lat:20.8,lng:106.8}}]};
+ const asset={id:'asset-a',parkId:'park-a',coordinates:{lat:20.51,lng:106.51}};
+ const rq=(q:Record<string,string>):any=>({headers:{},query:q,url:'/api/geo/route'});
+ const db=()=>query.mockImplementation(async(_s:string,p:any[])=>({rows:p[0]==='park'&&p[1]==='park-a'?[{payload:park}]:p[0]==='asset'&&p[1]==='asset-a'?[{payload:asset}]:[]}));
+ const goongOk=()=>{const f=vi.fn(async(_u:string)=>Response.json({routes:[{overview_polyline:{points:'abc'},legs:[{distance:{value:5400},duration:{value:780},steps:[{html_instructions:'Rẽ <b>phải</b> vào QL10',distance:{value:120}},{html_instructions:'',distance:{value:5}}]}]}]}));vi.stubGlobal('fetch',f);return f};
+ it('uses the lot as origin, strips html, never returns the key, sets cache header',async()=>{
+  vi.stubEnv('GOONG_API_KEY','secret-key');db();const f=goongOk();
+  const headers:Record<string,string>={};const r=res();r.setHeader=(k:string,v:string)=>{headers[k]=v};
+  await publicGeoRoute(rq({kind:'asset',id:'asset-a',place:'sea-1',mode:'truck'}),r,);
+  const u=new URL(f.mock.calls[0][0]);expect(u.searchParams.get('origin')).toBe('20.51,106.51');expect(u.searchParams.get('destination')).toBe('20.8,106.8');expect(u.searchParams.get('vehicle')).toBe('truck');
+  expect(r.body).toEqual({distanceM:5400,durationS:780,polyline:'abc',steps:[{text:'Rẽ phải vào QL10',distanceM:120}]});
+  expect(JSON.stringify(r.body)).not.toContain('secret-key');expect(headers['Cache-Control']).toContain('s-maxage=604800');expect(limited).toHaveBeenCalledWith(expect.anything(),'route',120,3600);
+ });
+ it('falls back to the park for park pages and for assets without coordinates',async()=>{
+  vi.stubEnv('GOONG_API_KEY','k');query.mockImplementation(async(_s:string,p:any[])=>({rows:p[0]==='park'?[{payload:park}]:[{payload:{parentless:1,parkId:'park-a'}}]}));const f=goongOk();
+  await publicGeoRoute(rq({kind:'park',id:'park-a',place:'sea-1'}),res());expect(new URL(f.mock.calls[0][0]).searchParams.get('origin')).toBe('20.5,106.5');expect(new URL(f.mock.calls[0][0]).searchParams.get('vehicle')).toBe('car');
+  await publicGeoRoute(rq({kind:'asset',id:'asset-a',place:'sea-1'}),res());expect(new URL(f.mock.calls[1][0]).searchParams.get('origin')).toBe('20.5,106.5');
+ });
+ it('validates params (400), 404 for unknown park/asset/place, no network on bad input',async()=>{
+  vi.stubEnv('GOONG_API_KEY','k');db();const f=goongOk();
+  for(const q of [{kind:'x',id:'a',place:'b'},{kind:'park',id:'',place:'b'},{kind:'park',id:'park-a',place:'a b'},{kind:'park',id:'park-a',place:'sea-1',mode:'bike'},{kind:'park',id:'a;drop',place:'sea-1'}])
+   await expect(publicGeoRoute(rq(q),res())).rejects.toMatchObject({status:400});
+  await expect(publicGeoRoute(rq({kind:'park',id:'nope',place:'sea-1'}),res())).rejects.toMatchObject({status:404});
+  await expect(publicGeoRoute(rq({kind:'park',id:'park-a',place:'unknown'}),res())).rejects.toMatchObject({status:404});
+  await expect(publicGeoRoute(rq({kind:'asset',id:'nope',place:'sea-1'}),res())).rejects.toMatchObject({status:404});
+  expect(f).not.toHaveBeenCalled();
+ });
+ it('maps Goong failures to 502 without leaking details',async()=>{
+  vi.stubEnv('GOONG_API_KEY','k');db();vi.stubGlobal('fetch',vi.fn(async()=>Response.json({routes:[]})));
+  await expect(publicGeoRoute(rq({kind:'park',id:'park-a',place:'sea-1'}),res())).rejects.toMatchObject({status:502});
+  vi.stubGlobal('fetch',vi.fn(async()=>{throw new Error('boom k')}));
+  await expect(publicGeoRoute(rq({kind:'park',id:'park-a',place:'sea-1'}),res())).rejects.toMatchObject({status:502,code:'goong_failed'});
  });
 });

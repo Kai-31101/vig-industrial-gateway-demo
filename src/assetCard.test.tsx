@@ -113,8 +113,8 @@ describe('asset display helpers',()=>{
   expect(assetPriceText(a,'vi')).toMatch(/USD\/m²\/kỳ thuê$/);
   const priced=withPricing(a,pricingOf(a)),p=assetPriceParts(priced,'vi');expect(p.amount+p.basis).toBe(assetPriceText(priced,'vi'));expect(p.specific).toBe(true);
   const set=(mode:any)=>withPricing(a,{mode,amount:null,currency:'USD',areaBasis:'m²',period:'month'});
-  expect(assetPriceText(set('negotiable'),'vi')).toBe('Thỏa thuận');
-  expect(assetPriceText(set('not_available'),'vi')).toBe('Chưa có thông tin');
+  expect(assetPriceText(set('negotiable'),'vi')).toBe('Giá thỏa thuận');
+  expect(assetPriceText(set('not_available'),'vi')).toBe('Liên hệ để nhận giá');
   const hidden=withPricing({...a,price:{...a.price,value:null,disclosureStatus:'not_disclosed'}},{mode:'not_available',amount:null,currency:'USD',areaBasis:'m²',period:'month'});
   expect(hidden.price.disclosureStatus).toBe('not_disclosed');
   expect(assetPriceText(hidden,'vi')).toBe('Không công bố');expect(assetPriceText(hidden,'en')).toBe('Not disclosed');

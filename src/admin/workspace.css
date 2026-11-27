@@ -813,3 +813,17 @@
  .vsip-admin .content-language-tabs button{min-height:44px}
  .vsip-admin :is(li,div,section)>a:not(.button):not(.chart-col){display:inline-flex;align-items:center;min-height:44px}
 }
+/* Design review 2026-11-27 (#55 #56 #59 #60) */
+/* The sticky save bar never hides the last fields: the editor ends with room for it and focus scrolls clear of it. */
+html:has(.vsip-admin .editor-action-bar){scroll-padding-bottom:120px}
+.vsip-admin .editor-layout:has(~ .editor-action-bar),.vsip-admin #editor-content-panel{padding-bottom:24px}
+.vsip-admin .admin-surface:has(.editor-action-bar){padding-bottom:96px}
+/* Repeated rows: move buttons together, the destructive one set apart; gallery rows show a thumbnail; URLs get the full row. */
+.vsip-admin .repeat-head .repeat-remove{margin-left:12px;background:var(--surface);border-color:var(--danger-border);color:var(--danger)}
+.vsip-admin .repeat-head .repeat-remove:hover:not(:disabled){background:var(--danger-bg)}
+.vsip-admin .repeat-thumb{flex:none;width:64px;height:44px;object-fit:cover;border-radius:var(--radius-sm);border:1px solid var(--border-subtle);background:var(--surface-muted)}
+.vsip-admin .editor-fields .form-grid>label[data-field-path$=".url"],.vsip-admin .editor-fields .form-grid>label[data-field-path$=".sourceUrl"]{grid-column:1/-1}
+.vsip-admin .field-date-hint{color:var(--text-light)}
+/* Disabled primary actions read as unavailable, not as a lighter blue button. */
+.vsip-admin .button.primary:disabled{opacity:1;background:var(--surface-muted);border-color:var(--border-subtle);color:var(--text-disabled)}
+.vsip-admin .import-version{margin:8px 0 0;font-size:var(--admin-fs-12);color:var(--text-light)}

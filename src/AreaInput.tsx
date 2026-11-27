@@ -16,7 +16,7 @@ export function parseArea(value:string,language:Language){
   const raw=value.replace(/[\s\u00a0\u202f]/g,'').split(language==='vi'?'.':',').join('').replace(language==='vi'?',':'.','.');
   return /^\d*(\.\d*)?$/.test(raw)?raw:null;
 }
-export function AreaInput({value,onChange,language,disabled=false,...inputProps}:{value:string;onChange:(value:string)=>void;language:Language;disabled?:boolean}&Pick<InputHTMLAttributes<HTMLInputElement>,'id'|'aria-invalid'|'aria-describedby'>){
+export function AreaInput({value,onChange,language,disabled=false,...inputProps}:{value:string;onChange:(value:string)=>void;language:Language;disabled?:boolean}&Pick<InputHTMLAttributes<HTMLInputElement>,'id'|'aria-invalid'|'aria-describedby'|'aria-label'>){
   const ref=useRef<HTMLInputElement>(null);
   const caret=useRef<number|null>(null);
   useLayoutEffect(()=>{const input=ref.current,before=caret.current;caret.current=null;if(!input||before===null||document.activeElement!==input)return;

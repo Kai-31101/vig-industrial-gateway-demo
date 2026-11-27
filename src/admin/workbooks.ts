@@ -15,7 +15,7 @@ export function flatten(value:any,path=''):Record<string,unknown>{
 }
 // Asset detail columns (lot code, zone, leasing status, water, specs.*, terms.*, specsAsOf). Optional in a file: older files without them still import.
 // Gallery images (approval) and specsVerification are not importable; they are set in the editor, like other approvals and verification statuses.
-const detailShape=()=>{const d:any=assetEditorDefaults();delete d.gallery;delete d.specsVerification;d.terms={...d.terms,vatIncluded:false};return d;};
+const detailShape=()=>{const d:any=assetEditorDefaults();delete d.gallery;delete d.specsVerification;delete d.coordinates;d.terms={...d.terms,vatIncluded:false};return d;};
 const assetShape=()=>({...emptyAsset(''),...detailShape()});
 const BASE_PRODUCT_COLUMNS=['action','id',...Object.keys(flatten(emptyAsset('')))];
 export const ASSET_DETAIL_COLUMNS=Object.keys(flatten(detailShape()));

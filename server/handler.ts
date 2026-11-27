@@ -10,13 +10,14 @@ import {enquiryChat} from './enquiryChat';
 import {validEmail,validPhone} from '../src/admin/model';
 import {normalizeMockContact} from '../src/mockContacts';
 import {portalApi,adminPortalApi} from './portal/api';
-import {adminGeoNearby} from './geoApi';
+import {adminGeoNearby,publicGeoRoute} from './geoApi';
 export default async function handler(req:VercelRequest,res:VercelResponse){
  res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');
  try{
   csrf(req);const path='/api/'+String(req.query.route||new URL(req.url!,'http://localhost').pathname.replace(/^\/api\//,''));const body=typeof req.body==='string'?JSON.parse(req.body):req.body||{};
   if(JSON.stringify(body).length>3_000_000)throw new ApiError(413,'size');
   if(path==='/api/catalogue'&&req.method==='GET'){const rows=(await pool.query('SELECT kind,payload FROM vsip.public_catalogue ORDER BY kind,id')).rows;return res.json({parks:rows.filter(r=>r.kind==='park').map(r=>normalizeMockContact(r.payload)),assets:rows.filter(r=>r.kind==='asset').map(r=>r.payload)})}
+  if(path==='/api/geo/route'&&req.method==='GET')return await publicGeoRoute(req,res);
   if(path==='/api/session'&&req.method==='POST'){
    let token=cookie(req),scope='demo';
    if(body.internal){await limited(req,'login',5,900);if(!validAdminKey(body.accessToken))throw new ApiError(401,'credentials');token=newToken();scope='internal'}else {try{const s=await session(req);return res.json({scope:s.scope})}catch{await limited(req,'session',20,3600);token=newToken()}}

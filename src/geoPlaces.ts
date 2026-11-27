@@ -1,7 +1,19 @@
 // Shared, dependency-free helpers for park "nearby places" (used by server/geo.ts, the admin editor and the public map).
 import type {NearbyCategory,NearbyPlace,Language} from './types';
 export const NEARBY_CATEGORIES:NearbyCategory[]=['seaport','airport','highway','rail','hospital','college','industrial_park','town'];
-export const CATEGORY_COLORS:Record<NearbyCategory,string>={seaport:'#0b6fa4',airport:'#6a3fb5',highway:'#b25e09',rail:'#555b6e',hospital:'#c0262d',college:'#0f8a5f',industrial_park:'#7a6a00',town:'#8a4b7a'};
+/** Category colours come from theme.css tokens (literal values because map pins are drawn outside the CSS cascade).
+ * Transport uses the blue family, services teal/green/olive, places neutral greys; every colour is >=5:1 with the white icon.
+ * No red (danger) and no orange. Categories are told apart by their icon first, colour second. */
+export const CATEGORY_COLORS:Record<NearbyCategory,string>={
+ airport:'#0643d7',/* --brand */
+ seaport:'#0e7490',/* --accent */
+ highway:'#022582',/* --brand-deep */
+ rail:'#3730a3',/* --violet */
+ hospital:'#15803d',/* --success: medical green cross, never the error red */
+ college:'#5b4b00',/* --warning (dark olive text colour) */
+ industrial_park:'#1f2937',/* --text-medium */
+ town:'#4b5563',/* --neutral-600 */
+};
 export const CATEGORY_SYMBOLS:Record<NearbyCategory,string>={seaport:'⚓',airport:'✈',highway:'=',rail:'⇄',hospital:'+',college:'▲',industrial_park:'▣',town:'●'};
 const LABELS:Record<NearbyCategory,[string,string,string]>={seaport:['Cảng biển','Seaports','海港'],airport:['Sân bay','Airports','机场'],highway:['Quốc lộ / cao tốc','Highways','国道/高速'],rail:['Ga đường sắt','Rail stations','火车站'],hospital:['Bệnh viện','Hospitals','医院'],college:['Cao đẳng / đại học','Colleges','院校'],industrial_park:['KCN lân cận','Nearby parks','邻近园区'],town:['Thị trấn / thành phố','Towns','城镇']};
 export const categoryLabel=(c:NearbyCategory,l:Language)=>LABELS[c][l==='vi'?0:l==='zh'?2:1];

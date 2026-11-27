@@ -81,9 +81,40 @@ describe('Nearby connectivity block',()=>{
   fireEvent.change(screen.getByLabelText('Bán kính'),{target:{value:'0'}});fireEvent.click(chip(/Bệnh viện/));expect(items()).toHaveLength(sample.length);
  });
  it('marks the selected item and shows the Goong date note; demo parks get the illustrative-data line',()=>{
-  setup();fireEvent.click(screen.getAllByRole('button',{name:/Điểm a1/})[0]);expect(screen.getAllByRole('button',{name:/Điểm a1/})[0].getAttribute('aria-pressed')).toBe('true');
+  setup();fireEvent.click(screen.getAllByRole('button',{name:/Điểm a1/})[0]);expect(screen.getAllByRole('button',{name:/Điểm a1/})[0].getAttribute('aria-expanded')).toBe('true');
   expect(screen.getByText(/Khoảng cách lái xe theo Goong, cập nhật 26\/11\/2026/)).toBeTruthy();expect(screen.queryByText(/mang tính minh hoạ/)).toBeNull();
   cleanup();setup({...park,id:'park-demo-02'},'en');expect(screen.getByText(/illustrative \(demo data\)/)).toBeTruthy();
  });
- it('renders in Chinese',()=>{setup(park,'zh');expect(screen.getByRole('heading',{name:'交通连接与周边设施'})).toBeTruthy();expect(screen.getByText(/行车距离来自 Goong/)).toBeTruthy()});
+ it('expands a row into directions (one at a time): mode toggle, steps, Google Maps link; clear collapses',async()=>{
+  const steps=Array.from({length:8},(_,i)=>({text:`Bước đi ${i+1}`,distanceM:100*(i+1)}));
+  const f=vi.fn(async(u:string)=>({ok:true,json:async()=>({distanceM:12300,durationS:1500,polyline:'_p~iF~ps|U_ulLnnqC',steps})}));vi.stubGlobal('fetch',f);
+  setup();const row=()=>screen.getAllByRole('button',{name:/Điểm h1/})[0];fireEvent.click(row());
+  expect(row().getAttribute('aria-expanded')).toBe('true');
+  await waitFor(()=>expect(screen.getByText(/12,3 km/)).toBeTruthy());
+  expect(String(f.mock.calls[0][0])).toContain('/api/geo/route?kind=park&id=park-vsip-test&place=h1&mode=car');
+  expect(screen.getByText(/khoảng 25 phút bằng ô tô/)).toBeTruthy();expect(screen.getByText('Bước đi 6')).toBeTruthy();expect(screen.queryByText('Bước đi 7')).toBeNull();
+  fireEvent.click(screen.getByRole('button',{name:'Xem tất cả 8 bước'}));expect(screen.getByText('Bước đi 8')).toBeTruthy();
+  const link=screen.getByRole('link',{name:'Mở chỉ đường trong Google Maps'});expect(link.getAttribute('href')).toMatch(/^https:\/\/www\.google\.com\/maps\/dir\/\?api=1&origin=20\.54,106\.52&destination=.*&travelmode=driving$/);expect(link.getAttribute('target')).toBe('_blank');
+  fireEvent.click(screen.getByRole('button',{name:'Xe tải'}));await waitFor(()=>expect(f).toHaveBeenCalledTimes(2));expect(String(f.mock.calls[1][0])).toContain('mode=truck');
+  fireEvent.click(screen.getAllByRole('button',{name:/Điểm h2/})[0]);expect(row().getAttribute('aria-expanded')).toBe('false');expect(screen.getAllByRole('group',{name:'Chỉ đường'})).toHaveLength(1);
+  fireEvent.click(screen.getByRole('button',{name:'Xóa chỉ đường'}));expect(screen.queryByRole('group',{name:'Chỉ đường'})).toBeNull();
+ });
+ it('shows an error message but keeps the Google Maps link when the route is unavailable',async()=>{
+  vi.stubGlobal('fetch',vi.fn(async()=>({ok:false,json:async()=>({error:'goong_failed'})})));
+  setup();fireEvent.click(screen.getAllByRole('button',{name:/Điểm h1/})[0]);
+  await waitFor(()=>expect(screen.getByRole('alert').textContent).toMatch(/Chưa lấy được chỉ đường chi tiết/));
+  expect(screen.getByRole('link',{name:'Mở chỉ đường trong Google Maps'})).toBeTruthy();
+ });
+ it('starts from the lot when it has coordinates (asset scope), and says so honestly when it has none',async()=>{
+  const f=vi.fn(async()=>({ok:true,json:async()=>({distanceM:900,durationS:120,polyline:'_p~iF~ps|U_ulLnnqC',steps:[]})}));vi.stubGlobal('fetch',f);
+  vi.stubEnv('VITE_GOONG_MAPTILES_KEY','');vi.stubGlobal('ResizeObserver',class{observe(){}disconnect(){}unobserve(){}});
+  render(<NearbyConnectivity park={park} language="en" lot={{assetId:'asset-x',code:'A-01',coordinates:{lat:20.55,lng:106.53}}}/>);
+  expect(screen.getByText(/Directions start from Plot A-01 \(illustrative position\)/)).toBeTruthy();
+  fireEvent.click(screen.getAllByRole('button',{name:/h1/})[0]);await waitFor(()=>expect(f).toHaveBeenCalled());
+  expect(String((f.mock.calls as any)[0][0])).toContain('kind=asset&id=asset-x&place=h1');
+  expect(screen.getByRole('link',{name:'Open directions in Google Maps'}).getAttribute('href')).toContain('origin=20.55,106.53');
+  cleanup();render(<NearbyConnectivity park={park} language="vi" lot={{assetId:'asset-x',code:'A-01'}}/>);
+  expect(screen.getByText(/Vị trí KCN: lô này chưa có toạ độ/)).toBeTruthy();
+ });
+ it('renders in Chinese',()=>{setup(park,'zh');expect(screen.getByRole('heading',{name:'周边设施地图'})).toBeTruthy();expect(screen.getByText(/行车距离来自 Goong/)).toBeTruthy()});
 });

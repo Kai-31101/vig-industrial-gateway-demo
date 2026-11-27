@@ -4,6 +4,7 @@ import {GeoMap,type GeoMarker,type GeoBounds} from './GeoMap';
 import {SafeImage} from './EmptyStates';
 import {HUBS} from './geoHubs';
 import {CATEGORY_COLORS,CATEGORY_SYMBOLS,categoryLabel} from './geoPlaces';
+import {AmenityIcon,amenityIconSvg} from './amenityIcons';
 import {isPublicAsset} from './leasing';
 import type {IndustrialAsset,IndustrialParkProfile,Language} from './types';
 import './HomeParkMap.css';
@@ -26,8 +27,9 @@ export function useNearViewport(margin='400px'){
  },[near,margin]);
  return {ref,near};
 }
-/** Homepage overview map: every public park on one clustered Goong map next to a list that follows the visible map area. */
-export function HomeParkMap({parks,assets,language}:{parks:IndustrialParkProfile[];assets:IndustrialAsset[];language:Language}){
+/** Homepage overview map: every public park on one clustered Goong map next to a list that follows the visible map area.
+ * `bare` (directory map view): no heading, pills or province select; every given park is shown (the page filters them). */
+export function HomeParkMap({parks,assets,language,bare=false}:{parks:IndustrialParkProfile[];assets:IndustrialAsset[];language:Language;bare?:boolean}){
  const navigate=useNavigate();
  const pinned=useMemo(()=>parks.filter(hasCoords),[parks]);
  const counts=useMemo(()=>assetCountsByPark(parks,assets),[parks,assets]);
@@ -39,8 +41,8 @@ export function HomeParkMap({parks,assets,language}:{parks:IndustrialParkProfile
  const [bounds,setBounds]=useState<GeoBounds|null>(null);
  const [layers,setLayers]=useState<{airport:boolean;seaport:boolean}>({airport:false,seaport:false});
  const pc=useMemo(()=>pillCounts(pinned,counts,province),[pinned,counts,province]);
- const mode:MapPill=pill==='available'&&pc.available===0?'all':pill;
- const matching=useMemo(()=>applyFilters(pinned,counts,mode,province),[pinned,counts,mode,province]);
+ const mode:MapPill=bare||(pill==='available'&&pc.available===0)?'all':pill;
+ const matching=useMemo(()=>applyFilters(pinned,counts,mode,bare?'':province),[pinned,counts,mode,province,bare]);
  const timer=useRef<ReturnType<typeof setTimeout>>(undefined);
  // Moves caused by selecting a park (fly-to) must not shrink the list; only the user's own pan/zoom filters it.
  const hold=useRef(0);
@@ -48,7 +50,7 @@ export function HomeParkMap({parks,assets,language}:{parks:IndustrialParkProfile
  useEffect(()=>()=>clearTimeout(timer.current),[]);
  const visible=useMemo(()=>filterInBounds(matching,bounds),[matching,bounds]);
  const markers:GeoMarker[]=useMemo(()=>matching.map(p=>({id:p.id,lat:p.coordinates!.lat,lng:p.coordinates!.lng,color:'#0643d7',label:pick(p.name,language),subtitle:p.province,href:`/industrial-parks/${p.slug}`})),[matching,language]);
- const hubs:GeoMarker[]=useMemo(()=>HUBS.filter(h=>(h.category==='airport'||h.category==='seaport')&&layers[h.category]).map((h,i)=>({id:`hub-${i}`,lat:h.coordinates.lat,lng:h.coordinates.lng,color:CATEGORY_COLORS[h.category],symbol:CATEGORY_SYMBOLS[h.category],label:pick(h.name,language)})),[layers,language]);
+ const hubs:GeoMarker[]=useMemo(()=>HUBS.filter(h=>(h.category==='airport'||h.category==='seaport')&&layers[h.category]).map((h,i)=>({id:`hub-${i}`,lat:h.coordinates.lat,lng:h.coordinates.lng,color:CATEGORY_COLORS[h.category],symbol:CATEGORY_SYMBOLS[h.category],icon:amenityIconSvg(h.category,15),label:pick(h.name,language)})),[layers,language]);
  const selId=selected&&matching.some(p=>p.id===selected)?selected:null;
  const list=useRef<HTMLUListElement>(null);
  const choose=useCallback((id:string)=>{hold.current=Date.now()+1500;setSelected(old=>old===id?null:id)},[]);
@@ -62,28 +64,14 @@ export function HomeParkMap({parks,assets,language}:{parks:IndustrialParkProfile
  const center=matching[0]?.coordinates||{lat:16.05,lng:106.5};
  if(!pinned.length)return null;
  const nf=(n:number)=>n.toLocaleString(language==='vi'?'vi-VN':language==='zh'?'zh-CN':'en-US',{maximumFractionDigits:1});
- return <section className="home-map" aria-labelledby="home-map-title"><div className="page home-map-inner">
-  <div className="home-map-head">
-   <div><span className="home-map-eyebrow">{c3(language,'KHU CÔNG NGHIỆP','INDUSTRIAL PARKS','工业园区')}</span><h2 id="home-map-title">{c3(language,'Bản đồ khu công nghiệp','Industrial park map','工业园区地图')}</h2></div>
-   <div className="home-map-filters">
-    <div className="home-map-pills" role="group" aria-label={c3(language,'Lọc khu công nghiệp','Filter parks','筛选园区')}>
-     <button type="button" data-pill="available" aria-pressed={mode==='available'} className={mode==='available'?'active':''} onClick={()=>{setPill('available');setSelected(null)}}>{c3(language,'Đang có mặt bằng','With available assets','有可租物业')} ({pc.available})</button>
-     <button type="button" data-pill="all" aria-pressed={mode==='all'} className={mode==='all'?'active':''} onClick={()=>{setPill('all');setSelected(null)}}>{c3(language,'Tất cả','All','全部')} ({pc.all})</button>
-    </div>
-    <select value={province} aria-label={c3(language,'Tỉnh / thành phố','Province','省/市')} onChange={e=>{setProvince(e.target.value);setSelected(null)}}>
-     <option value="">{c3(language,'Mọi tỉnh','All provinces','所有省份')}</option>
-     {provinces.map(v=><option key={v} value={v}>{v}</option>)}
-    </select>
-   </div>
-  </div>
-  <div className="home-map-body">
+ const body=<div className="home-map-body">
    <div className="home-map-stage">
     <div className="home-map-frame" ref={ref} data-mounted={near?'true':'false'}>
      {near?<GeoMap cluster language={language} ariaLabel={c3(language,'Bản đồ tổng quan các khu công nghiệp','Overview map of industrial parks','工业园区总览地图')} center={center} markers={markers} extraMarkers={hubs} selectedId={selId} hoverId={hover} onBounds={onBounds} onSelect={choose} onNavigate={href=>navigate(href)} openLabel={c3(language,'Xem chi tiết','View details','查看详情')}/>
       :<div className="home-map-placeholder" role="status" aria-label={c3(language,'Đang chuẩn bị bản đồ','Preparing the map','正在准备地图')}/>}
     </div>
     <div className="home-map-layers" role="group" aria-label={c3(language,'Lớp bản đồ','Map layers','地图图层')}>
-     {(['airport','seaport'] as const).map(k=><button type="button" key={k} data-layer={k} aria-pressed={layers[k]} className={layers[k]?'active':''} onClick={()=>setLayers(o=>({...o,[k]:!o[k]}))}><i style={{background:CATEGORY_COLORS[k]}} aria-hidden="true">{CATEGORY_SYMBOLS[k]}</i>{categoryLabel(k,language)}</button>)}
+     {(['airport','seaport'] as const).map(k=><button type="button" key={k} data-layer={k} aria-pressed={layers[k]} className={layers[k]?'active':''} onClick={()=>setLayers(o=>({...o,[k]:!o[k]}))}><i style={{background:CATEGORY_COLORS[k]}} aria-hidden="true"><AmenityIcon category={k} size={14}/></i>{categoryLabel(k,language)}</button>)}
     </div>
    </div>
    <div className="home-map-side">
@@ -102,7 +90,23 @@ export function HomeParkMap({parks,assets,language}:{parks:IndustrialParkProfile
       </li>})}
     </ul>
    </div>
+  </div>;
+ if(bare)return <div className="home-map is-bare">{body}</div>;
+ return <section className="home-map" aria-labelledby="home-map-title"><div className="page home-map-inner">
+  <div className="home-map-head">
+   <div><span className="home-map-eyebrow">{c3(language,'KHU CÔNG NGHIỆP','INDUSTRIAL PARKS','工业园区')}</span><h2 id="home-map-title">{c3(language,'Bản đồ khu công nghiệp','Industrial park map','工业园区地图')}</h2></div>
+   <div className="home-map-filters">
+    <div className="home-map-pills" role="group" aria-label={c3(language,'Lọc khu công nghiệp','Filter parks','筛选园区')}>
+     <button type="button" data-pill="available" aria-pressed={mode==='available'} className={mode==='available'?'active':''} onClick={()=>{setPill('available');setSelected(null)}}>{c3(language,'Đang có mặt bằng','With available assets','有可租物业')} ({pc.available})</button>
+     {pc.all!==pc.available&&<button type="button" data-pill="all" aria-pressed={mode==='all'} className={mode==='all'?'active':''} onClick={()=>{setPill('all');setSelected(null)}}>{c3(language,'Tất cả','All','全部')} ({pc.all})</button>}
+    </div>
+    <select value={province} aria-label={c3(language,'Tỉnh / thành phố','Province','省/市')} onChange={e=>{setProvince(e.target.value);setSelected(null)}}>
+     <option value="">{c3(language,'Mọi tỉnh','All provinces','所有省份')}</option>
+     {provinces.map(v=><option key={v} value={v}>{v}</option>)}
+    </select>
+   </div>
   </div>
+  {body}
  </div></section>;
 }
 export default HomeParkMap;

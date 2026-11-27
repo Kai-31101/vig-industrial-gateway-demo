@@ -107,3 +107,37 @@
 .mobile-action-bar>.mobile-bar-price{flex:1.1;border:0;background:none;font-weight:700;font-size:13px;line-height:1.2;overflow:hidden;color:var(--text-strong)}
 }
 @media(max-width:359px){.mobile-action-bar>.mobile-bar-price{display:none}.asset-gallery-main{height:180px}}
+/* Design review 2026-11-27: mobile sheet, card labels, scroll hints, detail page (see outputs/design-review-2026-11-27/review.md). */
+@media(max-width:680px){
+ /* #9: the apply/clear bar stays in reach while the sheet is long; no blank tail, no second count line. */
+ .mobile-filter-fields{padding-bottom:0}
+ .mobile-filter-footer{position:sticky;bottom:0;z-index:2;flex-wrap:nowrap;margin:0 -14px -14px;padding:12px 14px calc(12px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:1px solid var(--border-subtle);border-radius:0 0 12px 12px;box-shadow:0 -6px 16px rgba(3,7,18,.06)}
+ .mobile-filter-footer>button{min-width:0;white-space:normal}
+ body:has(.mobile-filter-fields) .floating-chat-root{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+ /* #11 #36: no 9–10px labels. */
+ .asset-card-badges .badge,.asset-card-body>.badge,.park-meta .badge{font-size:12px;line-height:16px}
+ .asset-lot-code{font-size:12px;line-height:16px;padding:1px 6px}
+ .park-card .industries span{font-size:12px}
+ .asset-card-actions a,.asset-card-actions button{font-size:13px;padding:6px 10px}
+ /* #15: horizontally scrolling strips fade at the right edge so the cut label reads as "more". */
+ .filter-tabs,.applied-filters{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent);padding-right:28px}
+ .filter-tabs button{font-size:13px}
+ /* #35: the quick province select reads "Tất cả tỉnh/thành" on its own; its label stays for screen readers. */
+ .mobile-quick-province label{font-size:0}
+ /* #50: breadcrumb wraps as text; the current page is the H1 just below, so its crumb is dropped. */
+ .asset-detail-v2 .breadcrumbs{flex-wrap:wrap;row-gap:2px;font-size:13px;line-height:20px}
+ .asset-detail-v2 .breadcrumbs>span:last-child,.asset-detail-v2 .breadcrumbs>svg:nth-last-child(2){display:none}
+ .asset-detail-v2 .breadcrumbs a{min-width:0;overflow-wrap:anywhere}
+ /* #46: the masterplan scrolls inside its own frame; long buttons wrap. */
+ .asset-detail-main,.asset-detail-section,.asset-detail-v2 .park-plan-stage,.asset-detail-v2 .park-plan-scroll{min-width:0;max-width:100%}
+ .asset-section-link a.button{width:100%}
+ /* #52: infrastructure figures in two columns. */
+ .asset-utilities{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .asset-utilities article{grid-template-columns:minmax(0,1fr);gap:4px;padding:12px}
+ .asset-utilities article svg{grid-row:auto}
+ /* #17: smaller floating AI launcher; the page end stays readable above it. */
+ body .floating-chat-root>.floating-chat-launcher{width:52px;height:52px}
+ body .floating-chat-root>.floating-chat-panel{bottom:68px}
+ #root>footer{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+ .asset-grid,.park-grid:not(.mobile-swipe){padding-bottom:8px}
+}

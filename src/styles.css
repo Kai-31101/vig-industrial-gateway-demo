@@ -4460,3 +4460,132 @@ td small {
 .asset-sort label{font-size:13px;font-weight:600;color:var(--text-strong)}
 .asset-sort select{min-height:44px;max-width:100%;padding:6px 10px;border:1px solid var(--border-control);border-radius:8px;background:var(--surface);color:var(--text-body);font:inherit;font-size:14px}
 .asset-sort small{flex-basis:100%;font-size:12px;color:var(--text-light)}
+/* ==== Design review 2026-11-27 (outputs/design-review-2026-11-27/review.md). Role tokens from theme.css only. ==== */
+/* Public discovery filters, moved out of admin/admin.css (#1 #2 #4 #5 #6 #33). */
+.discovery-extra { display:grid; gap:16px; min-width:0; margin-bottom:20px; padding:20px 24px; background:var(--surface); border:1px solid var(--border-subtle); border-radius:var(--radius-md); }
+.discovery-head { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:4px 16px; min-width:0; }
+.discovery-title { margin:0; font-size:16px; line-height:24px; font-weight:600; color:var(--text-strong); }
+.discovery-head-actions { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:0 20px; margin-left:auto; }
+.discovery-more, .discovery-clear { display:inline-flex; align-items:center; gap:8px; min-height:var(--control-h); padding:0 2px; border:0; background:none; color:var(--action); font:inherit; font-size:14px; line-height:20px; font-weight:600; cursor:pointer; }
+.discovery-clear { text-decoration:underline; text-underline-offset:3px; }
+.discovery-more::after { content:""; width:7px; height:7px; margin-top:-4px; border-right:2px solid currentColor; border-bottom:2px solid currentColor; transform:rotate(45deg); }
+.discovery-more[aria-expanded="true"]::after { margin-top:4px; transform:rotate(-135deg); }
+@media (hover: hover) { .discovery-more:hover, .discovery-clear:hover { color:var(--action-hover); } }
+.discovery-primary { display:grid; grid-template-columns:minmax(0,2fr) repeat(3,minmax(0,1fr)); gap:12px 16px; align-items:end; min-width:0; }
+.discovery-groups { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; min-width:0; }
+.discovery-groups[hidden] { display:none; }
+@media (min-width: 1201px) {
+  /* Status & infrastructure holds three selects: a wider column keeps them on one row so the three groups end level. */
+  .is-asset .discovery-groups { grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) minmax(0,1.2fr); }
+  .is-asset .discovery-group[data-group=status] .discovery-pair { grid-template-columns:repeat(3,minmax(0,1fr)); }
+}
+.discovery-group { min-width:0; margin:0; padding:12px 16px 16px; border:1px solid var(--border-subtle); border-radius:var(--radius-sm); background:var(--surface-subtle); }
+.discovery-group > legend { float:left; width:100%; margin:0 0 10px; padding:0; font-size:12px; line-height:16px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--text-light); }
+.discovery-group > legend + * { clear:both; }
+.discovery-pair { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,128px),1fr)); gap:12px; align-items:end; min-width:0; }
+.discovery-area { display:grid; grid-template-columns:minmax(84px,.8fr) minmax(0,1fr) auto minmax(0,1fr); gap:8px; align-items:end; min-width:0; }
+.discovery-dash { line-height:var(--control-h); color:var(--text-light); }
+.discovery-primary label, .discovery-group label { display:flex; flex-direction:column; gap:6px; min-width:0; font-size:13px; line-height:18px; font-weight:500; color:var(--text-body); }
+.discovery-primary :is(input,select), .discovery-group :is(input:not([type=checkbox]),select) { box-sizing:border-box; width:100%; min-width:0; min-height:var(--control-h); padding:0 12px; border:1px solid var(--border-control); border-radius:var(--radius-sm); background:var(--surface); color:var(--text-body); font:inherit; font-size:14px; font-weight:400; }
+.discovery-primary :is(input,select):focus-visible, .discovery-group :is(input,select):focus-visible { outline:2px solid var(--brand); outline-offset:2px; border-color:var(--brand); }
+.discovery-primary input::placeholder { color:var(--text-light); }
+.discovery-checks { display:flex; flex-wrap:wrap; gap:0 20px; margin:0; }
+.discovery-checks label { flex-direction:row; align-items:center; gap:8px; min-height:var(--control-h); font-size:14px; font-weight:400; }
+.discovery-checks input { width:18px; height:18px; margin:0; accent-color:var(--action); }
+.discovery-error { margin:8px 0 0; color:var(--danger); font-size:13px; line-height:18px; }
+.discovery-extra .filter-panel { margin:0; padding:0; border:0; border-radius:0; background:none; flex-wrap:wrap; }
+.discovery-extra .filter-panel label { flex:2 1 300px; min-width:0; }
+.discovery-extra .filter-panel input { font:inherit; font-size:14px; color:var(--text-body); }
+.discovery-extra .filter-panel input::placeholder { color:var(--text-light); }
+.discovery-extra .filter-panel select { flex:1 1 170px; min-width:0; color:var(--text-body); font:inherit; font-size:14px; }
+.discovery-applied { display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; padding-top:16px; border-top:1px solid var(--border-subtle); min-width:0; }
+.discovery-count { margin:0; font-size:14px; line-height:20px; color:var(--text-body); }
+.discovery-count b { color:var(--text-strong); }
+.discovery-applied .applied-filters { display:flex; flex-wrap:wrap; gap:8px; min-width:0; padding:0; }
+.applied-filters button { display:inline-flex; align-items:center; gap:6px; min-height:var(--control-h-sm); max-width:100%; padding:4px 12px; border:1px solid var(--action); border-radius:var(--radius-full); background:var(--selection-bg); color:var(--action-strong); font:inherit; font-size:13px; line-height:18px; font-weight:500; text-align:left; cursor:pointer; }
+@media (max-width: 1200px) {
+  .discovery-groups { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .discovery-group:is([data-group=status],[data-group=infrastructure]) { grid-column:1 / -1; }
+}
+@media (max-width: 1024px) { .applied-filters button { min-height:var(--control-h); } }
+@media (max-width: 900px) {
+  .discovery-extra { padding:16px; }
+  .discovery-primary { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .discovery-keyword { grid-column:1 / -1; }
+  .discovery-groups { grid-template-columns:minmax(0,1fr); }
+}
+
+/* Asset type tabs, sort and result bar (#5 #10 #18). */
+.filter-tabs button { min-height:var(--control-h); font-size:13px; }
+.filter-tabs button:focus-visible { outline:2px solid var(--brand); outline-offset:2px; }
+.asset-result-bar { align-items:flex-start; }
+.asset-result-bar > b { line-height:var(--control-h); }
+.asset-sort { justify-content:flex-end; margin-left:auto; max-width:min(100%,440px); }
+.asset-sort small { text-align:right; }
+
+/* Asset cards: one CTA shape (pill, as .button), readable size; muted price states; leased cards visibly de-emphasised (#3 #7 #8). */
+.asset-card-actions { grid-template-columns:repeat(auto-fit,minmax(min(100%,132px),1fr)); }
+.asset-card-actions button, .asset-card-actions a { min-height:var(--control-h); padding:8px 14px; border-radius:var(--radius-full); font-size:14px; line-height:18px; font-weight:500; white-space:normal; text-align:center; }
+.asset-card-actions svg { flex:none; }
+.asset-price.is-muted .asset-price-amount { font-size:14px; line-height:20px; font-weight:500; color:var(--text-muted); }
+.asset-offer .asset-price.is-muted { font-size:18px; }
+.asset-offer .asset-price.is-muted .asset-price-amount { font-size:18px; line-height:26px; }
+.asset-card[data-leasing-status="leased"] { background:var(--surface-subtle); box-shadow:none; }
+.asset-card[data-leasing-status="leased"] .asset-card-image :is(img,.illustrated-image,.image-fallback) { filter:grayscale(1); opacity:.6; }
+.asset-card[data-leasing-status="leased"] h3, .asset-card[data-leasing-status="leased"] h3 a { color:var(--text-muted); }
+.asset-card[data-leasing-status="leased"] .asset-price, .asset-card[data-leasing-status="leased"] .asset-price-amount { color:var(--text-muted); font-weight:500; }
+.asset-card[data-leasing-status="leased"] .asset-card-specs li { background:var(--surface-muted); color:var(--text-muted); }
+
+/* Asset detail (#46 #48 #49 #50 #51 #53). */
+.asset-detail-head p.asset-detail-loc { display:block; }
+.asset-detail-loc svg { display:inline-block; margin-right:6px; vertical-align:-3px; }
+.asset-detail-section .section-title h2 { font-size:26px; line-height:1.25; }
+.asset-detail-section .pill-list span { font-size:13px; line-height:18px; color:var(--text-body); }
+.asset-utilities.is-own strong { font-size:20px; line-height:28px; color:var(--text-strong); }
+.asset-utilities.is-shared article { padding:14px 16px; background:var(--surface-subtle); }
+.asset-utilities.is-shared .source-value strong { font-size:16px; line-height:24px; }
+.asset-visit-link { font-size:14px; line-height:20px; text-decoration:none; }
+@media (hover: hover) { .asset-visit-link:hover { color:var(--action-hover); text-decoration:underline; } }
+.asset-section-link a.button { max-width:100%; white-space:normal; text-align:center; }
+.doc-list:not(:has(> article:only-child)) { grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr)); }
+.doc-list article { min-width:0; flex-wrap:wrap; }
+.doc-list article > div { min-width:min(100%,180px); }
+.doc-list h3 { font-size:15px; line-height:20px; overflow-wrap:anywhere; }
+.doc-list p, .doc-list small { font-size:13px; line-height:18px; }
+.doc-list a, .doc-list button { min-height:var(--control-h); padding:8px 14px; border-color:var(--border-control); border-radius:var(--radius-full); color:var(--text-medium); font-size:14px; font-weight:500; }
+.mobile-bar-price small { display:block; font-size:12px; line-height:16px; font-weight:500; color:var(--text-light); }
+
+/* Park profile navigation was 9–11px (#36). */
+.park-section-nav > b { font-size:12px; line-height:16px; }
+.park-section-nav button { min-height:var(--control-h); font-size:14px; line-height:20px; }
+.park-section-nav button > span { font-size:12px; }
+
+/* Home: search card visible in the first screen, title clear of the logo burnt into the video, reset inside the card (#28 #29 #31). */
+.hero.hero-with-video { min-height:max(480px, calc(100svh - 76px - 176px)); padding-top:max(clamp(36px,4vw,64px), 9.5vw); }
+.home-park-search { position:relative; z-index:3; margin-top:-52px; }
+.home-search-controls { box-shadow:var(--shadow-lg); }
+.home-search-keyword { gap:12px; }
+.home-search-reset { flex:none; min-height:var(--control-h); padding:0 4px; font:inherit; font-size:14px; font-weight:600; color:var(--action); text-underline-offset:3px; cursor:pointer; }
+.home-search-keyword, .home-search-controls label { border-color:var(--border-subtle); }
+@media (max-width: 760px) {
+  .home-park-search { margin-top:-32px; }
+  .home-search-controls { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .home-search-controls label:nth-of-type(odd) { border-inline-start:0; }
+  .home-search-controls label:last-of-type:nth-of-type(odd) { grid-column:1 / -1; }
+  .home-search-controls label + label + label { border-top:1px solid var(--border-subtle); }
+}
+@media (max-width: 680px) {
+  .hero.hero-with-video { min-height:max(420px, calc(100svh - 64px - 236px)); padding-top:24px; }
+}
+
+/* Short pages keep the footer at the bottom of the viewport (#54); partner logo reserves its box (#24). */
+#root:has(> footer) { display:flex; flex-direction:column; min-height:100vh; }
+#root:has(> footer) > main { flex:1 0 auto; }
+.arobid-logo-wrap img { color:transparent; }
+/* Touch targets on tablets (768/1024) reach the 44px control height (#21). */
+@media (max-width: 1024px) {
+  .button { min-height:var(--control-h); }
+  .mobile-menu { min-width:44px; min-height:44px; }
+  .language-select { height:var(--control-h); }
+  .language-select select { font-size:13px; }
+}

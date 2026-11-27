@@ -43,6 +43,6 @@ describe('Crossing synchronization',()=>{
  it('never leaks hidden prices, even with an old specific value',()=>{
   const a={...assets[0],priceMode:'negotiable' as const,price:{...assets[0].price,value:4.5,disclosureStatus:'not_disclosed' as const}};
   expect(assetPriceText(a,'vi')).toBe('Không công bố');
-  expect(assetPriceText({...a,price:{...a.price,disclosureStatus:'public'}},'vi')).toBe('Thỏa thuận');
+  expect(assetPriceText({...a,price:{...a.price,disclosureStatus:'public'}},'vi')).toBe('Giá thỏa thuận');
  });
 });

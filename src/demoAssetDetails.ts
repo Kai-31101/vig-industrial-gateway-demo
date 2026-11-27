@@ -9,6 +9,12 @@ export const DEMO_WITHOUT_SPECS=[5,11,17,23,29,41];
 const LEASED=[13,34];
 const round=(n:number,step:number)=>Math.round(n/step)*step;
 
+/** DEMO lot position: 250-700 m from the park point, angle and distance derived from the asset's slot in the park so lots never overlap. */
+export function demoLotCoordinates(park:{coordinates?:{lat:number;lng:number}|null}|undefined,slot:number):{lat:number;lng:number}|undefined{
+ const c=park?.coordinates;if(!c||!Number.isFinite(c.lat)||!Number.isFinite(c.lng))return undefined;
+ const angle=((slot*137.5+40)%360)*Math.PI/180,meters=250+((slot*173)%451);
+ return {lat:Math.round((c.lat+meters*Math.cos(angle)/111320)*1e6)/1e6,lng:Math.round((c.lng+meters*Math.sin(angle)/(111320*Math.cos(c.lat*Math.PI/180)))*1e6)/1e6};
+}
 export function withDemoDetails(list:IndustrialAsset[],parks:IndustrialParkProfile[],galleryPool:string[]):IndustrialAsset[]{
  const perPark=new Map<string,number>();
  return list.map((asset,n)=>{
@@ -18,7 +24,8 @@ export function withDemoDetails(list:IndustrialAsset[],parks:IndustrialParkProfi
   const phase=park?.phases?.[0]?.name;
   const zone=L(`Khu ${letter}${phase?.vi?` · ${phase.vi}`:''}`,`Zone ${letter}${phase?.en?` · ${phase.en}`:''}`,`${letter}区${phase?.zh?` · ${phase.zh}`:''}`);
   const leasingStatus:NonNullable<IndustrialAsset['leasingStatus']>=LEASED.includes(n)?'leased':n%10===9?'unknown':n%10>=7?'reserved':'available';
-  const base:Partial<IndustrialAsset>={lotCode:`A-0${slot+1}`,zone,leasingStatus};
+  const coordinates=demoLotCoordinates(park,slot);
+  const base:Partial<IndustrialAsset>={lotCode:`A-0${slot+1}`,zone,leasingStatus,...(coordinates?{coordinates}:{})};
   if(DEMO_WITHOUT_SPECS.includes(n))return {...asset,...base};
   const land=asset.type==='industrial_land'||asset.type==='build_to_suit',factory=asset.type==='ready_built_factory';
   const m2=asset.unit==='ha'?asset.area*10000:asset.area;

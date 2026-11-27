@@ -33,7 +33,7 @@ export default function LegacyMap(p:GeoMapProps){
  // Directory mode selection (opt-in via onSelect): highlight, fly to the park and open its card
  useEffect(()=>{
   const map=mapRef.current;if(!map||!p.cluster||!p.onSelect)return;
-  for(const [id,c] of Object.entries(circles.current)){const on=id===p.selectedId;c.setStyle({radius:on?12:8,color:on?'#ffbf47':'#fff',weight:on?4:3});if(on)c.bringToFront()}
+  for(const [id,c] of Object.entries(circles.current)){const on=id===p.selectedId;c.setStyle({radius:on?12:8,color:on?'#022582':'#fff',weight:on?4:3});if(on)c.bringToFront()}
   const m=p.markers.find(x=>x.id===p.selectedId),c=m&&circles.current[m.id];if(!m||!c)return;
   map.flyTo([m.lat,m.lng],Math.max(map.getZoom(),11),{duration:.7});
   const box=document.createElement('div');const b=document.createElement('b');b.textContent=m.label;box.append(b);if(m.subtitle){const s=document.createElement('div');s.textContent=m.subtitle;box.append(s)}

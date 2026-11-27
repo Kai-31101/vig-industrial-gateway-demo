@@ -709,6 +709,8 @@ export const fieldLabels: Record<string,[string,string,string]> = {
   "leasingStatus": ["Tình trạng cho thuê", "Leasing status", "租赁状态"],
   "waterM3Day": ["Cấp nước (m³/ngày)", "Water supply (m³/day)", "供水量（m³/天）"],
   "gallery": ["Bộ ảnh mặt bằng (tối đa 12)", "Asset photo gallery (max 12)", "物业图库（最多12张）"],
+  "gallery.url": ["Đường dẫn ảnh (URL)", "Image URL", "图片链接"],
+  "gallery.approved": ["Ảnh đã duyệt (hiển thị công khai)", "Approved (shown publicly)", "已审核（公开显示）"],
   "caption": ["Chú thích ảnh", "Photo caption", "图片说明"],
   "specs": ["Thông số kỹ thuật", "Technical specifications", "技术参数"],
   "terms": ["Điều kiện thuê", "Lease terms", "租赁条件"],

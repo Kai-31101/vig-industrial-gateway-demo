@@ -3,12 +3,12 @@
 import {lazy,Suspense,useState} from 'react';
 import type {Language} from './types';
 import './GeoMap.css';
-export interface GeoMarker {id:string;lat:number;lng:number;label:string;color:string;symbol?:string;subtitle?:string;href?:string}
+export interface GeoMarker {id:string;lat:number;lng:number;label:string;color:string;symbol?:string;/** Static SVG markup for the pin icon (from amenityIcons); preferred over symbol. */icon?:string;subtitle?:string;href?:string}
 export interface GeoBounds {west:number;south:number;east:number;north:number}
 export interface GeoMapProps {
  language:Language;ariaLabel:string;
  center:{lat:number;lng:number};
- origin?:{lat:number;lng:number;label:string}|null;
+ origin?:{lat:number;lng:number;label:string;/** Pin text (default KCN); e.g. a lot code. */badge?:string}|null;
  markers:GeoMarker[];
  route?:[number,number][]|null;
  selectedId?:string|null;

@@ -6,7 +6,7 @@ import {AiChat,InternalAccess,AdminAssistant} from './AiChat';
 import {LotusChatIcon} from './LotusChatIcon';
 import type {IndustrialAsset} from './types';
 import {ParkLocationMap,ParkMasterplan} from "./ParkMaps";
-import {NearbyConnectivity} from "./NearbyPlaces";
+import {NearbyConnectivity,googleMapsPlaceUrl} from "./NearbyPlaces";
 import {ParksMapView} from "./ParksMapView";
 import {HomeParkMap} from "./HomeParkMap";
 import {AreaInput,areaFactors,convertArea,type AreaUnit} from "./AreaInput";
@@ -86,6 +86,10 @@ import {
   Sparkles,
   TrainFront,
   Users,
+  Recycle,
+  Flame,
+  RadioTower,
+  Route as RouteIcon,
   Warehouse,
   X,
   Zap,
@@ -261,7 +265,7 @@ function SourceValue({
           {value.calculated
             ? ui(language, "Được tính toán", "Calculated")
             : value.asOf
-              ? `${ui(language, "Cập nhật", "As of")} ${value.asOf}`
+              ? `${ui(language, "Cập nhật", "As of")} ${formatDate(value.asOf,language)||value.asOf}`
               : ""}{" "}
           ·{" "}
           {tr(
@@ -313,7 +317,7 @@ function Header() {
       "/industrial-parks",
       ui(language, "Khu công nghiệp", "Industrial parks"),
     ],
-    ["/assets", ui(language, "BĐS công nghiệp", "Assets")],
+    ["/assets", ui(language, "Mặt bằng", "Assets")],
     ["/find-supply", ui(language, "Tư vấn thuê", "Leasing consultation")],
   ];
   return (
@@ -390,7 +394,7 @@ function Footer() {
             {ui(language, "Khu công nghiệp", "Industrial Parks")}
           </Link>
           <Link to="/assets">
-            {ui(language, "Bất động sản công nghiệp", "Industrial Assets")}
+            {ui(language, "Mặt bằng", "Industrial Assets")}
           </Link>
         </div>
         <div>
@@ -409,6 +413,8 @@ function Footer() {
               <img
                 src="https://hcminvhub1-2.vercel.app/figma-homepage/arobid-logo.svg"
                 alt="arobid.com - A Road to Big Deals"
+                width={159}
+                height={40}
               />
             </span>
           </div>
@@ -602,7 +608,7 @@ function HomePage() {
               <div>
                 <b>{assets.filter(a=>isPublicAsset(a,parks)).length}</b>
                 <span>
-                  {ui(language, "BĐS công nghiệp mẫu", "demo assets")}
+                  {ui(language, "mặt bằng mẫu", "demo assets")}
                 </span>
               </div>
             </div>
@@ -627,6 +633,7 @@ function HomePage() {
                 ui(language, "Tìm KCN, tỉnh, ngành hoặc loại mặt bằng...", "Search park, province, industry or asset type...")
               }
             />
+            {(keyword || region || industry || status || kind || deal) && <button className="home-search-reset" type="button" onClick={() => {setKeyword("");setRegion("");setIndustry("");setStatus("");setKind("");setDeal("");}}>{emptyCopy(language, "Xóa bộ lọc", "Clear filters", "清除筛选")}</button>}
             <button className="home-search-submit" type="submit" aria-label={emptyCopy(language,"Tìm kiếm","Search","搜索")}><Search size={18} /></button>
           </div>
           <label>{emptyCopy(language, "Vùng miền", "Region", "地区")}
@@ -670,16 +677,6 @@ function HomePage() {
             </select>
           </label>
         </div>
-        <button className="home-search-reset" type="button" disabled={!keyword && !region && !industry && !status && !kind && !deal} onClick={() => {
-          setKeyword("");
-          setRegion("");
-          setIndustry("");
-          setStatus("");
-          setKind("");
-          setDeal("");
-        }}>
-          {emptyCopy(language, "Xóa bộ lọc", "Clear filters", "清除筛选")}
-        </button>
       </form>
       <HomeAds placement="top" />
       <HomeParkMap parks={publishedParks} assets={assets} language={language} />
@@ -856,7 +853,7 @@ function ParksPage() {
             {ui(language, "Tra cứu vị trí, quỹ đất, hạ tầng kỹ thuật, khả năng kết nối và hồ sơ pháp lý của từng khu công nghiệp.", "Compare park locations, land and infrastructure.")}
           </p>
         </div>
-        <DiscoveryFilters resultCount={filtered.length}/><div className="filter-panel desktop-park-filters">
+        <DiscoveryFilters resultCount={filtered.length} primary={<div className="filter-panel desktop-park-filters">
           <label>
             <Search size={17} />
             <input
@@ -866,7 +863,7 @@ function ParksPage() {
               }
             />
           </label>
-          <select value={region} onChange={(e) => setRegion(e.target.value)}>
+          <select value={region} onChange={(e) => setRegion(e.target.value)} aria-label={emptyCopy(language,"Vùng miền","Region","地区")}>
             <option value="all">
               {ui(language, "Tất cả vùng miền", "All regions")}
             </option>
@@ -894,7 +891,7 @@ function ParksPage() {
               </option>
             ))}
           </select>
-          <select value={status} onChange={(e) => setStatus(e.target.value)}>
+          <select value={status} onChange={(e) => setStatus(e.target.value)} aria-label={emptyCopy(language,"Trạng thái","Status","状态")}>
             <option value="all">
               {ui(language, "Tất cả trạng thái", "All statuses")}
             </option>
@@ -906,7 +903,7 @@ function ParksPage() {
             </option>
             <option value="planned">{tr(labels.planned, language)}</option>
           </select>
-        </div>
+        </div>}/>
         <div className="result-bar" id="directory-results" tabIndex={-1}>
           <b>
             {filtered.length}{" "}
@@ -1201,6 +1198,7 @@ export function ParkDetailPage({draft,draftAssets}:{draft?:IndustrialParkProfile
             }
           />
           {!!park.places?.length && park.coordinates && Number.isFinite(park.coordinates.lat) && Number.isFinite(park.coordinates.lng) && <NearbyConnectivity park={park} language={language}/>}
+          {!!park.places?.length && park.connectivity.length > 0 && <h3 className="asset-subhead">{emptyCopy(language,"Tuyến kết nối chính","Key transport links","主要交通连接")}</h3>}
           <div className="connect-grid">
             {!park.places?.length && park.coordinates && Number.isFinite(park.coordinates.lat) && Number.isFinite(park.coordinates.lng) && <ParkLocationMap park={park} language={language}/>}<div className="connect-list">
               {park.connectivity.map((c, i) => (
@@ -1526,7 +1524,7 @@ export function ParkDetailPage({draft,draftAssets}:{draft?:IndustrialParkProfile
                   <h3>{tr(d.title, language)}</h3>
                   <p>
                     {tr(d.issuer, language)}{" "}
-                    {d.issueDate ? `· ${d.issueDate}` : ""} ·{" "}
+                    {d.issueDate ? `· ${formatDate(d.issueDate,language)||d.issueDate}` : ""} ·{" "}
                     {documentLanguageLabel(d.language, language)}
                   </p>
                   <small>
@@ -1592,6 +1590,13 @@ export function ParkDetailPage({draft,draftAssets}:{draft?:IndustrialParkProfile
   );
 }
 
+/** Drops a leading copy of the field label from a free-text value ("Mặt tiền 50 m" under the label "Mặt tiền" shows "50 m"). */
+function withoutLeadingLabel(value: string, labels: string[]) {
+  const v = value.trim();
+  for (const label of labels) if (label && v.toLowerCase().startsWith(label.toLowerCase())) { const rest = v.slice(label.length).replace(/^[\s:：-]+/, ""); if (rest) return rest; }
+  return v;
+}
+const utilityIcon = (key: string) => key === "electricity" || key === "power" ? <Zap /> : key === "water" ? <Droplets /> : key === "wastewater" ? <Recycle /> : key === "roads" || key === "road" ? <RouteIcon /> : key === "telecom" ? <RadioTower /> : key === "fire" ? <Flame /> : <Activity />;
 function AssetStatusBadge({asset}:{asset:IndustrialAsset}){
   const {language}=useApp();const badge=leasingBadge(asset,language);
   return badge?<span className={`badge ${badge.tone}`.trim()} data-asset-status={badge.key}>{badge.label}</span>:null;
@@ -1638,7 +1643,7 @@ function AssetCard({
             {subline}
           </p>}
           <div className="asset-card-facts">
-            <strong className="asset-price"><span className="asset-price-amount">{price.amount}</span>{price.basis && <span className="asset-price-basis">{price.basis}</span>}</strong>
+            <strong className={`asset-price${price.specific ? "" : " is-muted"}`}><span className="asset-price-amount">{price.amount}</span>{price.basis && <span className="asset-price-basis">{price.basis}</span>}</strong>
             {vat && <small className="asset-price-note">{vat}</small>}
           </div>
           {chips.length > 0 && <ul className="asset-card-specs" aria-label={t("Thông số chính", "Key specifications", "主要参数")}>
@@ -1711,7 +1716,7 @@ function AssetsPage() {
         </div>
         <div className="asset-result-bar" id="directory-results" tabIndex={-1}>
           <b>
-            {filtered.length} {ui(language, "bất động sản công nghiệp", "industrial assets")}
+            {filtered.length} {emptyCopy(language, "mặt bằng", filtered.length === 1 ? "asset" : "assets", "个物业")}
           </b>
           <AssetSortSelect list={filtered}/>
 
@@ -1725,7 +1730,7 @@ function AssetsPage() {
         ) : (
           <Empty
             title={ui(language, "Chưa có mặt bằng phù hợp", "No matching assets")}
-            text={ui(language, "Vui lòng chọn loại hình khác hoặc gửi yêu cầu tìm mặt bằng.", "Choose another asset type or send a leasing enquiry.")}
+            text={emptyCopy(language, "Hãy nới bớt điều kiện lọc hoặc gửi yêu cầu để VSIP tìm mặt bằng phù hợp.", "Try loosening the filters or send an enquiry and VSIP will look for a match.", "请放宽筛选条件，或提交需求由VSIP为您寻找合适物业。")}
             action={<><button className="button primary" onClick={() => setParams({},{replace:true})}>{ui(language,"Xóa bộ lọc","Clear filters")}</button><Link className="button outline" to="/find-supply">{ui(language,"Gửi yêu cầu","Send inquiry")}</Link></>}
           />
         )}
@@ -1743,7 +1748,7 @@ export function AssetDetailPage({draft,draftPark}:{draft?:IndustrialAsset;draftP
   const mode = import.meta.env.DEV ? params.get("demoState") : null;
   const original = draft || assets.find(a => a.id === id && isPublicAsset(a,parks) && parks.some(p=>p.id===a.parkId&&isPublicPark(p)));
   const asset = original ? previewAsset(original,mode) : undefined;
-  if (!asset) return <Shell><div className="page page-top"><DetailUnavailable to="/assets" label={ui(language,"Bất động sản công nghiệp","Assets")} /></div></Shell>;
+  if (!asset) return <Shell><div className="page page-top"><DetailUnavailable to="/assets" label={ui(language,"Mặt bằng","Assets")} /></div></Shell>;
   const park = draftPark || (mode === "orphan" ? undefined : parks.find(p => p.id === asset.parkId));
   const requestUrl = park ? `/find-supply?${new URLSearchParams({parkId:park.id,assetId:asset.id})}` : "/find-supply";
   const parkAssetsUrl = park?.slug ? `/industrial-parks/${park.slug}?tab=assets` : "/industrial-parks";
@@ -1772,7 +1777,7 @@ export function AssetDetailPage({draft,draftPark}:{draft?:IndustrialAsset;draftP
     { label: t("Hệ thống PCCC", "Fire protection", "消防系统"), value: specs.fireSystem && hasValue(specs.fireSystem) ? tr(specs.fireSystem, language) : "" },
   ] : [
     { label: t("Kích thước", "Dimensions", "尺寸"), value: specs.dimensions },
-    { label: t("Mặt tiền", "Frontage", "临街面宽"), value: specs.frontage && hasValue(specs.frontage) ? tr(specs.frontage, language) : "" },
+    { label: t("Mặt tiền", "Frontage", "临街面宽"), value: specs.frontage && hasValue(specs.frontage) ? withoutLeadingLabel(tr(specs.frontage, language), [t("Mặt tiền", "Frontage", "临街面宽"), "Mặt tiền", "Frontage"]) : "" },
     { label: t("Mật độ xây dựng tối đa", "Maximum building coverage", "最大建筑密度"), value: n(specs.coverageMaxPct, "%") },
   ];
   const visibleSpecs = specFacts.filter(f => hasValue(f.value));
@@ -1794,16 +1799,17 @@ export function AssetDetailPage({draft,draftPark}:{draft?:IndustrialAsset;draftP
   const others = leasedLast(parkAssets.filter(a => a.id !== asset.id)).slice(0, 3);
   const hasLot = !!park?.masterplan?.plots.some(p => p.assetId === asset.id);
   const hasCoords = !!park?.coordinates && Number.isFinite(park.coordinates.lat) && Number.isFinite(park.coordinates.lng);
+  const lotPoint = asset.coordinates && Number.isFinite(asset.coordinates.lat) && Number.isFinite(asset.coordinates.lng) ? asset.coordinates : null;
   const publicDocs = (park?.documents || []).filter(d => d.visibility === "public");
   const hasSpecData = visibleSpecs.length > 0 || termRows.length > 0 || ownUtilities.length > 0;
   const verification = asset.specsVerification === "verified" ? t("Đã xác minh", "Verified", "已核验") : asset.specsVerification === "reviewed" ? t("Đã rà soát", "Reviewed", "已审阅") : t("Chưa xác minh", "Unverified", "未核验");
   const asOf = formatDate(asset.specsAsOf, language);
   return <Shell><div className="page page-top asset-detail-page asset-detail-v2">
-    <div className="breadcrumbs"><Link to="/assets">{ui(language,"Bất động sản công nghiệp","Assets")}</Link>{park && <><ChevronRight size={14}/><Link to={parkAssetsUrl}>{tr(park.name,language)}</Link></>}<ChevronRight size={14}/><span>{name}</span></div>
+    <div className="breadcrumbs"><Link to="/assets">{ui(language,"Mặt bằng","Assets")}</Link>{park && <><ChevronRight size={14}/><Link to={parkAssetsUrl}>{tr(park.name,language)}</Link></>}<ChevronRight size={14}/><span>{name}</span></div>
     <header className="asset-detail-head">
       <div className="asset-detail-badges"><Badge value={asset.type}/><AssetStatusBadge asset={asset}/>{lot && <span className="badge asset-lot-badge">{t("Lô", "Lot", "地块")} {lot}</span>}</div>
       <h1>{name}{areaText ? ` · ${areaText}` : ""}</h1>
-      {park ? <p><MapPin size={16}/><Link to={`/industrial-parks/${park.slug}`}>{tr(park.name,language)}</Link>{zone && <span> · {zone}</span>}</p> : <p className="missing-summary">{t("Chưa xác định được KCN liên kết. VSIP có thể hỗ trợ tìm mặt bằng.","The linked park is unavailable. VSIP can help find a property.","关联园区暂不可用，VSIP可协助寻找场地。")}</p>}
+      {park ? <p className="asset-detail-loc"><MapPin size={16}/><Link to={`/industrial-parks/${park.slug}`}>{tr(park.name,language)}</Link>{zone && <span>{" · "}{zone}</span>}</p> : <p className="missing-summary">{t("Chưa xác định được KCN liên kết. VSIP có thể hỗ trợ tìm mặt bằng.","The linked park is unavailable. VSIP can help find a property.","关联园区暂不可用，VSIP可协助寻找场地。")}</p>}
       {hasValue(asset.description) && <p className="asset-detail-description">{tr(asset.description,language)}</p>}
       {asOf && <small className="asset-detail-asof">{t("Cập nhật", "Updated", "更新")} {asOf} · {verification}</small>}
     </header>
@@ -1816,7 +1822,7 @@ export function AssetDetailPage({draft,draftPark}:{draft?:IndustrialAsset;draftP
     <div className="asset-detail-grid">
       <aside className="asset-offer" aria-label={t("Giá và điều kiện thuê", "Price and lease terms", "价格与租赁条件")}>
         <h2>{t("Giá và điều kiện thuê", "Price and lease terms", "价格与租赁条件")}</h2>
-        <p className="asset-offer-price"><strong className="asset-price"><span className="asset-price-amount">{price.amount}</span>{price.basis && <span className="asset-price-basis">{price.basis}</span>}</strong>{vat && <small className="asset-price-note">{vat}</small>}</p>
+        <p className="asset-offer-price"><strong className={`asset-price${price.specific ? "" : " is-muted"}`}><span className="asset-price-amount">{price.amount}</span>{price.basis && <span className="asset-price-basis">{price.basis}</span>}</strong>{vat && <small className="asset-price-note">{vat}</small>}</p>
         {termRows.length > 0 && <dl className="asset-terms">{termRows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>}
         <div className="asset-offer-actions">
           {leased
@@ -1835,10 +1841,10 @@ export function AssetDetailPage({draft,draftPark}:{draft?:IndustrialAsset;draftP
         </OptionalSection>
         <OptionalSection show={ownUtilities.length > 0 || parkUtilities.length > 0} id="asset-infrastructure" className="asset-detail-section">
           <SectionTitle eyebrow={t("HẠ TẦNG", "INFRASTRUCTURE", "基础设施")} title={t("Hạ tầng và tiện ích", "Infrastructure and utilities", "基础设施与配套")} />
-          {ownUtilities.length > 0 && <div className="utility-grid asset-utilities">{ownUtilities.map(u => <article key={u.key}>{u.icon}<span>{u.label}</span><strong>{u.value}</strong></article>)}</div>}
+          {ownUtilities.length > 0 && <div className="utility-grid asset-utilities is-own">{ownUtilities.map(u => <article key={u.key}>{u.icon}<span>{u.label}</span><strong>{u.value}</strong></article>)}</div>}
           {parkUtilities.length > 0 && <>
             <h3 className="asset-subhead">{t("Hạ tầng chung của KCN", "Shared park infrastructure", "园区共用基础设施")}</h3>
-            <div className="utility-grid asset-utilities">{parkUtilities.map(u => <article key={u.key}><Activity /><span>{tr(u.label,language)}</span><SourceValue compact value={u.capacity} /></article>)}</div>
+            <div className="utility-grid asset-utilities is-shared">{parkUtilities.map(u => <article key={u.key}>{utilityIcon(u.key)}<span>{tr(u.label,language)}</span><SourceValue compact value={u.capacity} /></article>)}</div>
           </>}
         </OptionalSection>
         <OptionalSection show={industries.length > 0} id="asset-industries" className="asset-detail-section">
@@ -1846,16 +1852,20 @@ export function AssetDetailPage({draft,draftPark}:{draft?:IndustrialAsset;draftP
           <div className="pill-list">{industries.map(i => <span key={i}><Check />{industryLabel(i, language)}</span>)}</div>
           {park?.slug && <p className="asset-section-link"><Link to={`/industrial-parks/${park.slug}`}>{t("Xem ngành thu hút đầu tư của KCN", "See the park's target industries", "查看园区重点行业")} <ArrowRight size={14}/></Link></p>}
         </OptionalSection>
-        <OptionalSection show={!!park && (hasLot || hasCoords)} id="asset-location" className="asset-detail-section">
+        <OptionalSection show={!!park && (hasLot || hasCoords || !!lotPoint)} id="asset-location" className="asset-detail-section">
           <SectionTitle eyebrow={t("VỊ TRÍ", "LOCATION", "位置")} title={t("Vị trí trong khu công nghiệp", "Location in the park", "园区内位置")} />
+          {park && (lotPoint || hasCoords) && <div className="asset-lot-row">
+            <p><MapPin size={18} aria-hidden="true" /><span>{lotPoint ? <>{lot ? `${t("Lô", "Plot", "地块")} ${lot} · ` : ""}{tr(park.name, language)}{park.province ? ` · ${park.province}` : ""}<small>{t("Vị trí lô mang tính minh hoạ (dữ liệu demo)", "Plot position is illustrative (demo data)", "地块位置仅为示意（演示数据）")}</small></> : <>{t("Vị trí KCN", "Park location", "园区位置")} · {tr(park.name, language)}{park.province ? ` · ${park.province}` : ""}<small>{t("Chưa có vị trí lô; hiển thị vị trí khu công nghiệp", "No plot position yet; showing the park location", "暂无地块位置；显示园区位置")}</small></>}</span></p>
+            <a className="button outline" href={googleMapsPlaceUrl((lotPoint || park.coordinates)!)} target="_blank" rel="noopener noreferrer">{t("Mở Google Maps", "Open in Google Maps", "在 Google Maps 中打开")}<ExternalLink size={14} aria-hidden="true" /></a>
+          </div>}
           {park && hasLot && <ParkMasterplan assets={parkAssets} language={language} plan={park.masterplan} parkId={park.id} highlightAssetId={asset.id} />}
-          {park && hasCoords && (park.places?.length ? <NearbyConnectivity park={park} language={language} /> : <ParkLocationMap park={park} language={language} />)}
+          {park && hasCoords && (park.places?.length ? <NearbyConnectivity park={park} language={language} lot={{ assetId: asset.id, code: lot || undefined, coordinates: lotPoint || undefined }} /> : <ParkLocationMap park={park} language={language} />)}
         </OptionalSection>
         <OptionalSection show={publicDocs.length > 0} id="asset-documents" className="asset-detail-section">
           <SectionTitle eyebrow={t("TÀI LIỆU", "DOCUMENTS", "文件")} title={t("Tài liệu công khai của KCN", "Public park documents", "园区公开文件")} />
           <div className="doc-list">{publicDocs.map(d => <article key={d.id}>
             <span className="doc-icon"><FileCheck2 /></span>
-            <div><h3>{tr(d.title, language)}</h3><p>{tr(d.issuer, language)}{d.issueDate ? ` · ${d.issueDate}` : ""}</p></div>
+            <div><h3>{tr(d.title, language)}</h3><p>{tr(d.issuer, language)}{d.issueDate ? ` · ${formatDate(d.issueDate,language)||d.issueDate}` : ""}</p></div>
             {safeUrl(d.sourceUrl) ? <a href={d.sourceUrl} target="_blank" rel="noreferrer"><Download size={15}/>{ui(language, "Xem tài liệu", "View source")}</a> : <span className="document-unavailable">{emptyCopy(language,"Chưa có bản tải xuống","Download not available","暂无下载文件")}</span>}
           </article>)}</div>
         </OptionalSection>
@@ -1866,7 +1876,7 @@ export function AssetDetailPage({draft,draftPark}:{draft?:IndustrialAsset;draftP
       <div className="asset-grid profile-assets">{others.map(a => <AssetCard key={a.id} asset={a} context="park" />)}</div>
       <p className="asset-section-link"><Link className="button outline" to={parkAssetsUrl}>{t("Xem tất cả mặt bằng tại", "View all assets at", "查看全部物业：")} {tr(park.name,language)}</Link></p>
     </section>}
-  </div>{!draft&&<MobileActionBar>{price.specific && <span className="mobile-bar-price">{price.amount}</span>}<Link className="button primary" to={requestUrl}><Send size={16}/>{ui(language,"Gửi yêu cầu","Inquiry")}</Link>{park&&<button data-chat onClick={()=>openParkChat(park.id,asset.id)}><MessageCircle size={16}/>{ui(language,"Trao đổi","Chat")}</button>}</MobileActionBar>}</Shell>;
+  </div>{!draft&&<MobileActionBar>{price.specific && <span className="mobile-bar-price">{price.amount}{price.basis && <small>{price.basis}</small>}</span>}<Link className="button primary" to={requestUrl}><Send size={16}/>{ui(language,"Gửi yêu cầu","Inquiry")}</Link>{park&&<button data-chat onClick={()=>openParkChat(park.id,asset.id)}><MessageCircle size={16}/>{ui(language,"Trao đổi","Chat")}</button>}</MobileActionBar>}</Shell>;
 }
 
 const emptyForm = {

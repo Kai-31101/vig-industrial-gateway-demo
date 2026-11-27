@@ -575,7 +575,7 @@ function HomePage() {
         <HomeHeroVideo title={emptyCopy(language, "Video giới thiệu VSIP", "VSIP introduction video", "VSIP 介绍视频")}/>
         <div className="hero-content">
           <div className="hero-intro">
-            <span className="hero-logo"><img src="/images/vsip-logo.webp" alt="VSIP" width={1920} height={900}/></span>
+            <img className="hero-logo" src="/images/vsip-logo-hero.webp" alt="VSIP" width={1474} height={483}/>
             <h1
               className={
                 language === "vi"
